@@ -27,7 +27,7 @@ export default function LoginPage() {
       <main className="min-h-screen bg-black flex items-center justify-center p-6 font-sans">
         <form onSubmit={handleLogin} className="w-full max-w-sm bg-slate-900 border border-white/5 p-10 rounded-[40px]">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black uppercase italic text-orange-500">GR Pontos</h1>
+            <h1 className="text-3xl font-black uppercase italic text-orange-500">GR Ponto</h1>
             {erro && <p className="text-red-500 text-[10px] font-bold uppercase mt-2">Acesso negado!</p>}
           </div>
 
