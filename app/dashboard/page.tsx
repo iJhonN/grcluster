@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 
-// Definindo a interface para o TypeScript aceitar as propriedades do card
+// Interface para o TypeScript
 interface MenuCardProps {
     href: string;
     title: string;
@@ -23,7 +23,9 @@ export default function DashboardHome() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {/* Grid ajustado para comportar os 5 botões de forma equilibrada */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+
                 {/* CARD FUNCIONÁRIOS */}
                 <MenuCard
                     href="/dashboard/funcionario"
@@ -42,12 +44,21 @@ export default function DashboardHome() {
                     color="bg-orange-600"
                 />
 
-                {/* CARD PONTOS/RELATÓRIOS */}
+                {/* CARD ATRASOS (Antiga Contabilidade) */}
                 <MenuCard
                     href="/dashboard/atrasos"
-                    title="Contabilidade"
-                    desc="Relatórios e Horas Extras"
-                    icon="📊"
+                    title="Atrasos"
+                    desc="Relatório de Inconsistências"
+                    icon="⚠️"
+                    color="bg-red-600"
+                />
+
+                {/* CARD HORAS EXTRAS */}
+                <MenuCard
+                    href="/dashboard/he"
+                    title="Horas Extras"
+                    desc="Fechamento de Adicionais"
+                    icon="💰"
                     color="bg-green-600"
                 />
 
@@ -64,7 +75,6 @@ export default function DashboardHome() {
     );
 }
 
-// Componente corrigido com a tipagem MenuCardProps
 function MenuCard({ href, title, desc, icon, color }: MenuCardProps) {
     return (
         <Link href={href} className="group bg-slate-900 border border-white/5 p-8 rounded-[45px] hover:border-white/20 transition-all active:scale-95">
