@@ -34,15 +34,8 @@ function ConteudoHorasExtras() {
     useEffect(() => {
         const buscarDados = async () => {
             setCarregando(true);
-
-            // Puxa a URL configurada na Vercel
             const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-            if (!baseUrl) {
-                console.error("ERRO: NEXT_PUBLIC_API_URL não configurada.");
-                setCarregando(false);
-                return;
-            }
+            if (!baseUrl) { setCarregando(false); return; }
 
             try {
                 const [resFunc, resPontos] = await Promise.all([
@@ -61,18 +54,15 @@ function ConteudoHorasExtras() {
                             (dt.getMonth() + 1) === mes &&
                             dt.getFullYear() === ano;
                     });
-
                     setDados({ extras: filtrados, funcionarios: f });
                 }
-            } catch (error) {
-                console.error("Erro VPS:", error);
-            } finally {
-                setCarregando(false);
-            }
+            } catch (error) { console.error(error); }
+            finally { setCarregando(false); }
         };
         buscarDados();
     }, [mesUrl]);
 
+    // Lógica Matemática de Tempo
     const converterParaMinutos = (horario: string) => {
         const [h, m] = horario.split(':').map(Number);
         return (h * 60) + m;
@@ -85,45 +75,29 @@ function ConteudoHorasExtras() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto p-4 md:p-10">
-            <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6 print:hidden">
-                <div>
-                    <Link href="/dashboard" className="text-green-500 font-black text-[10px] uppercase tracking-[4px] mb-2 block hover:opacity-70 transition-all">← Painel Admin</Link>
-                    <h1 className="text-3xl font-black uppercase italic leading-none text-white">Horas <span className="text-green-500">Extras</span></h1>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <input
-                        type="month"
-                        value={mesUrl}
-                        onChange={(e) => router.push(`/dashboard/he?mes=${e.target.value}`)}
-                        className="bg-slate-900 border border-white/10 p-3 rounded-xl text-white font-bold uppercase text-xs outline-none focus:border-green-500"
-                    />
-                    <button
-                        onClick={() => window.print()}
-                        className="bg-green-600 text-white px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-green-500 transition-all shadow-xl shadow-green-900/20"
-                    >
-                        🖨️ Imprimir
-                    </button>
+        <div className="max-w-4xl mx-auto p-4 md:p-10">
+            <header className="flex justify-between items-center mb-8 print:hidden">
+                <Link href="/dashboard" className="text-green-500 font-black text-[10px] uppercase tracking-widest hover:opacity-70">← Dashboard</Link>
+                <div className="flex gap-4">
+                    <input type="month" value={mesUrl} onChange={(e) => router.push(`/dashboard/he?mes=${e.target.value}`)} className="bg-slate-900 border border-white/10 p-2 rounded text-white font-bold text-xs" />
+                    <button onClick={() => window.print()} className="bg-white text-black px-4 py-2 rounded font-black uppercase text-[10px] hover:bg-green-500 transition-all">Imprimir</button>
                 </div>
             </header>
 
-            <div className="bg-white text-black p-12 rounded-[40px] shadow-2xl print:shadow-none print:p-0 print:rounded-none">
-                <div className="flex justify-between items-start border-b-4 border-green-600 pb-8 mb-10">
+            <div className="bg-white text-black p-0 md:p-8 print:p-0">
+                {/* CABEÇALHO COMPACTO */}
+                <div className="border-b-2 border-black pb-4 mb-6 flex justify-between items-end">
                     <div>
-                        <h2 className="text-4xl font-black uppercase italic leading-none text-green-700">Adicionais</h2>
-                        <p className="text-sm font-bold text-slate-500 mt-2 uppercase tracking-tighter">GR AUTOPEÇAS • GESTÃO DE PRODUTIVIDADE</p>
+                        <h1 className="text-2xl font-black uppercase tracking-tighter text-green-700">Fechamento de Horas Extras</h1>
+                        <p className="text-[10px] font-bold text-slate-500">GR AUTOPEÇAS | COMPETÊNCIA: {mesUrl.split('-').reverse().join('/')}</p>
                     </div>
-                    <div className="text-right">
-                        <p className="font-black text-2xl uppercase italic text-black">{mesUrl.split('-').reverse().join('/')}</p>
-                        <p className="text-[9px] font-bold opacity-40">GERADO VIA GR-ADMIN • SYNC VPS</p>
-                    </div>
+                    <p className="text-[8px] font-mono opacity-50 uppercase">Cálculo Automático VPS</p>
                 </div>
 
                 {carregando ? (
-                    <div className="py-20 text-center font-black uppercase text-slate-300 animate-pulse tracking-[10px]">Processando Banco de Horas...</div>
+                    <div className="py-10 text-center font-black uppercase animate-pulse">Calculando...</div>
                 ) : (
-                    <div className="space-y-16">
+                    <div className="space-y-10">
                         {dados.funcionarios.map(func => {
                             const suasExtras = dados.extras.filter(e => String(e.funcionarioId) === String(func.id));
                             if (suasExtras.length === 0) return null;
@@ -131,72 +105,79 @@ function ConteudoHorasExtras() {
                             let minDiurnos = 0;
                             let minNoturnos = 0;
 
-                            suasExtras.forEach(e => {
-                                const [h] = e.horaFormatada.split(':').map(Number);
-                                if (h >= 18) {
-                                    minNoturnos += (converterParaMinutos(e.horaFormatada) - converterParaMinutos("18:00"));
-                                } else {
-                                    minDiurnos += 30;
-                                }
-                            });
-
                             return (
-                                <section key={func.id} className="break-inside-avoid">
-                                    <div className="flex justify-between items-center bg-green-50 p-5 rounded-2xl border-l-8 border-green-700 mb-6 text-black">
-                                        <h3 className="text-2xl font-black uppercase italic">{func.nome} {func.sobrenome}</h3>
-                                        <p className="text-[10px] font-black uppercase text-green-800 tracking-widest">{func.cargo}</p>
+                                <section key={func.id} className="break-inside-avoid border border-slate-200 p-4">
+                                    <div className="border-b border-slate-200 pb-2 mb-3 flex justify-between items-center">
+                                        <h3 className="text-sm font-black uppercase">{func.nome} {func.sobrenome}</h3>
+                                        <span className="text-[9px] font-bold text-slate-400 italic">{func.cargo}</span>
                                     </div>
 
-                                    <table className="w-full text-left text-[12px] border-collapse mb-6 text-black">
+                                    <table className="w-full text-[11px] border-collapse mb-4">
                                         <thead>
-                                        <tr className="border-b-2 border-slate-200 text-slate-400 uppercase">
-                                            <th className="py-3 font-black">Data</th>
-                                            <th className="py-3 font-black">Registro</th>
-                                            <th className="py-3 font-black text-right">Classificação</th>
+                                        <tr className="text-slate-500 uppercase">
+                                            <th className="py-1 text-left border-b">Data</th>
+                                            <th className="py-1 text-left border-b">Hora Registro</th>
+                                            <th className="py-1 text-right border-b">Classificação</th>
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        {suasExtras.map((e, i) => (
-                                            <tr key={i} className="border-b border-slate-100">
-                                                <td className="py-4 font-bold">{new Date(e.data).toLocaleDateString('pt-BR')}</td>
-                                                <td className="py-4 font-black text-green-700">{e.horaFormatada}</td>
-                                                <td className="py-4 text-right italic font-black uppercase text-[10px] text-slate-400">
-                                                    {converterParaMinutos(e.horaFormatada) >= 1080 ? '🌙 Noturna' : '☀️ Diurna'}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {suasExtras.map((e, i) => {
+                                            const minutosPonto = converterParaMinutos(e.horaFormatada);
+                                            const isNoturno = minutosPonto >= 1080; // 18:00 em minutos
+
+                                            // Regra: se for extra, calculamos o excedente
+                                            // Nota: Aqui você pode ajustar a regra de 'quanto' tempo cada batida representa
+                                            // Se for apenas uma batida de saída, calculamos (Hora - 18:00) para noturnas
+                                            if (isNoturno) {
+                                                minNoturnos += (minutosPonto - 1080);
+                                            } else {
+                                                minDiurnos += 30; // Valor padrão por registro diurno se não houver cálculo de saída
+                                            }
+
+                                            return (
+                                                <tr key={i} className="border-b border-slate-50">
+                                                    <td className="py-2 font-medium">{new Date(e.data).toLocaleDateString('pt-BR')}</td>
+                                                    <td className="py-2 font-black text-green-700">{e.horaFormatada}</td>
+                                                    <td className="py-2 text-right font-bold uppercase text-[9px]">
+                                                        {isNoturno ? '🌙 Noturna (Pós-18h)' : '☀️ Diurna'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                         </tbody>
                                     </table>
 
-                                    <div className="grid grid-cols-2 gap-4 bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 text-black">
-                                        <div className="border-r border-slate-200">
-                                            <p className="text-[9px] font-black uppercase text-blue-600 tracking-widest">Extras Diurnas</p>
-                                            <p className="text-2xl font-black italic">{formatarMinutos(minDiurnos)}</p>
+                                    {/* RESUMO DE TEMPO CALCULADO */}
+                                    <div className="grid grid-cols-2 gap-2 border-t pt-3">
+                                        <div className="bg-slate-50 p-2 text-center">
+                                            <p className="text-[8px] font-black uppercase opacity-50">Total Diurnas</p>
+                                            <p className="text-sm font-black">{formatarMinutos(minDiurnos)}</p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-[9px] font-black uppercase text-green-700 tracking-widest">Extras Noturnas</p>
-                                            <p className="text-2xl font-black italic">{formatarMinutos(minNoturnos)}</p>
+                                        <div className="bg-green-50 p-2 text-center">
+                                            <p className="text-[8px] font-black uppercase text-green-600">Total Noturnas</p>
+                                            <p className="text-sm font-black text-green-700">{formatarMinutos(minNoturnos)}</p>
                                         </div>
                                     </div>
                                 </section>
                             );
                         })}
 
-                        <section className="pt-20 grid grid-cols-2 gap-20">
-                            <div className="text-center border-t-2 border-black pt-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-black">Visto do Colaborador</p>
+                        {/* ASSINATURAS */}
+                        <div className="pt-10 grid grid-cols-2 gap-10">
+                            <div className="border-t border-black text-center pt-2">
+                                <p className="text-[9px] font-black uppercase">Assinatura Colaborador</p>
                             </div>
-                            <div className="text-center border-t-2 border-black pt-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-black">Diretoria GR Autopeças</p>
+                            <div className="border-t border-black text-center pt-2">
+                                <p className="text-[9px] font-black uppercase">Gerência / RH</p>
                             </div>
-                        </section>
+                        </div>
                     </div>
                 )}
             </div>
 
             <style jsx global>{`
                 @media print {
-                    @page { margin: 15mm; size: A4; }
+                    @page { margin: 10mm; size: A4; }
                     body { background: white !important; color: black !important; }
                     header, .print\:hidden { display: none !important; }
                     .text-green-700 { color: #15803d !important; }
@@ -209,9 +190,7 @@ function ConteudoHorasExtras() {
 export default function HEAdmin() {
     return (
         <main className="min-h-screen bg-black text-white font-sans">
-            <Suspense fallback={<div className="flex items-center justify-center h-screen font-black uppercase opacity-20 tracking-[10px]">Calculando Horas Extras...</div>}>
-                <ConteudoHorasExtras />
-            </Suspense>
+            <Suspense fallback={null}><ConteudoHorasExtras /></Suspense>
         </main>
     );
 }
