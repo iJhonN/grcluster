@@ -83,7 +83,7 @@ export default function DashboardHome() {
                 {/* CARD HORAS EXTRAS */}
                 <MenuCard
                     href="/dashboard/he"
-                    title="Fechamento"
+                    title="Horas Extras"
                     desc="Cálculo de Extras"
                     icon="💰"
                     color="bg-green-600"
