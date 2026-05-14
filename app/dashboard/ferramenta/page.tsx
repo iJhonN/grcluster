@@ -53,14 +53,6 @@ export default function FerramentaHub() {
                     bg="bg-slate-900"
                 />
 
-                {/* STATUS EM TEMPO REAL */}
-                <HubCard
-                    href="/dashboard/ferramenta/status"
-                    title="Painel de Status"
-                    desc="Visão rápida de ferramentas em manutenção ou extraviadas."
-                    icon="⚠️"
-                    bg="bg-zinc-800"
-                />
             </div>
 
             <footer className="mt-20 opacity-20">
