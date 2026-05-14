@@ -39,7 +39,7 @@ export default function DashboardHome() {
                 <MenuCard
                     href="/dashboard/ferramenta"
                     title="Estoque"
-                    desc="Peças e Etiquetas"
+                    desc="Ferramentas e Etiquetas"
                     icon="📦"
                     color="bg-orange-600"
                 />
@@ -57,7 +57,7 @@ export default function DashboardHome() {
                 <MenuCard
                     href="/dashboard/retirada"
                     title="Retirada"
-                    desc="Saída de Peças"
+                    desc="Saída e devolução de ferramentas"
                     icon="🔧"
                     color="bg-blue-500"
                 />
