@@ -42,9 +42,9 @@ function ConteudoCrachas() {
                 <div>
                     <Link href="/dashboard/funcionario" className="text-orange-500 font-black text-[10px] uppercase tracking-[4px] mb-2 block">← Gestão</Link>
                     <h1 className="text-3xl font-black uppercase italic text-white leading-none">Emissão de <span className="text-orange-500">Crachás</span></h1>
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[3px] mt-1 italic">Ajuste: Código de barras elevado</p>
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[3px] mt-1 italic">Design Limpo: Sem sombras</p>
                 </div>
-                <button onClick={() => window.print()} className="bg-orange-600 px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-orange-500 transition-all shadow-xl shadow-orange-900/20">
+                <button onClick={() => window.print()} className="bg-orange-600 px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-orange-500 transition-all active:scale-95">
                     🖨️ Imprimir em Lote
                 </button>
             </header>
@@ -57,7 +57,7 @@ function ConteudoCrachas() {
                     funcionarios.map((func) => (
                         <div
                             key={func.id}
-                            className="relative mx-auto w-[320px] h-[480px] bg-white text-black border-[3px] border-slate-100 rounded-[30px] overflow-hidden shadow-2xl print:shadow-none print:border-black print:break-inside-avoid"
+                            className="relative mx-auto w-[320px] h-[480px] bg-white text-black border-[3px] border-slate-100 rounded-[30px] overflow-hidden print:border-black print:break-inside-avoid"
                         >
                             {/* Furo Cordão */}
                             <div className="absolute top-5 left-1/2 -translate-x-1/2 w-12 h-3.5 bg-slate-50 rounded-full border border-slate-200 print:border-black"></div>
@@ -70,7 +70,7 @@ function ConteudoCrachas() {
 
                             {/* Foto / Perfil */}
                             <div className="flex justify-center my-4">
-                                <div className="w-28 h-28 bg-slate-50 border-[6px] border-orange-500 rounded-full flex items-center justify-center text-5xl font-black text-slate-200 italic shadow-lg">
+                                <div className="w-28 h-28 bg-slate-50 border-[6px] border-orange-500 rounded-full flex items-center justify-center text-5xl font-black text-slate-200 italic">
                                     {func.nome.charAt(0)}
                                 </div>
                             </div>
@@ -88,7 +88,7 @@ function ConteudoCrachas() {
                                 </p>
                             </div>
 
-                            {/* Código de Barras - Reduzido e Posicionado 10px para cima */}
+                            {/* Código de Barras */}
                             <div className="absolute bottom-[60px] left-0 w-full flex flex-col items-center justify-center bg-white px-4">
                                 <div className="scale-[1.1] origin-center">
                                     <Barcode
