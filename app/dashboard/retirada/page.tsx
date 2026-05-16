@@ -2,8 +2,22 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
+interface Funcionario {
+    id: string;
+    nome: string;
+    sobrenome: string;
+}
+
+interface Ferramenta {
+    id: string; // ou codigo
+    nome: string;
+}
+
 export default function RetiradaDevolucao() {
     const [etapa, setEtapa] = useState<'colaborador' | 'item'>('colaborador');
+    const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+    const [ferramentas, setFerramentas] = useState<Ferramenta[]>([]);
+
     const [dados, setDados] = useState({ funcionarioId: '', funcionarioNome: '' });
     const [status, setStatus] = useState<{ msg: string; tipo: 'foco' | 'sucesso' | 'erro' | 'info' }>({
         msg: 'Aproxime o Crachá do Colaborador',
@@ -14,6 +28,8 @@ export default function RetiradaDevolucao() {
     const inputRef = useRef<HTMLInputElement>(null);
     const [barcode, setBarcode] = useState("");
 
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
     // Foco constante no input híbrido (leitor/teclado)
     useEffect(() => {
         const focus = () => inputRef.current?.focus();
@@ -22,38 +38,60 @@ export default function RetiradaDevolucao() {
         return () => document.removeEventListener('click', focus);
     }, []);
 
+    // Sincroniza as duas tabelas da VPS (Funcionários e Ferramentas) logo ao abrir a página
+    useEffect(() => {
+        const carregarDadosIniciais = async () => {
+            if (!baseUrl) return;
+            try {
+                const [resFunc, resFerramentas] = await Promise.all([
+                    fetch(`${baseUrl}/funcionarios`, { cache: 'no-store' }),
+                    fetch(`${baseUrl}/ferramentas`, { cache: 'no-store' }) // Puxa os dados da rota /ferramentas
+                ]);
+
+                if (resFunc.ok) setFuncionarios(await resFunc.json());
+                if (resFerramentas.ok) setFerramentas(await resFerramentas.json());
+            } catch (e) {
+                console.error("Erro ao sincronizar dados da VPS:", e);
+            }
+        };
+        carregarDadosIniciais();
+    }, [baseUrl]);
+
     const processarLeitura = async (codigo: string) => {
         if (!codigo) return;
         const codLimpo = codigo.trim();
-        setBarcode(""); // Limpa o campo para a próxima digitação ou bipe
-
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+        setBarcode("");
 
         if (etapa === 'colaborador') {
             setCarregando(true);
-            try {
-                const res = await fetch(`${baseUrl}/funcionarios`);
-                const funcionarios = await res.json();
-                const f = funcionarios.find((func: any) => String(func.id) === codLimpo);
 
-                if (f) {
-                    setDados({ funcionarioId: codLimpo, funcionarioNome: `${f.nome} ${f.sobrenome}` });
-                    setEtapa('item');
-                    setStatus({ msg: `Olá ${f.nome}! Bipe ou digite a Peça/Ferramenta`, tipo: 'info' });
-                } else {
-                    setStatus({ msg: 'Crachá não reconhecido', tipo: 'erro' });
-                    setTimeout(() => setStatus({ msg: 'Aproxime o Crachá do Colaborador', tipo: 'foco' }), 2000);
-                }
-            } catch (e) {
-                setStatus({ msg: 'Erro de conexão VPS', tipo: 'erro' });
-            } finally {
-                setCarregando(false);
+            // Valida se o colaborador existe localmente para evitar requests desnecessários
+            const f = funcionarios.find((func) => String(func.id) === codLimpo);
+
+            if (f) {
+                setDados({ funcionarioId: codLimpo, funcionarioNome: `${f.nome} ${f.sobrenome}` });
+                setEtapa('item');
+                setStatus({ msg: `Olá ${f.nome}! Bipe ou digite a Peça/Ferramenta`, tipo: 'info' });
+            } else {
+                setStatus({ msg: 'Crachá não reconhecido', tipo: 'erro' });
+                setTimeout(() => setStatus({ msg: 'Aproxime o Crachá do Colaborador', tipo: 'foco' }), 2000);
             }
+            setCarregando(false);
         } else {
-            // ETAPA DO ITEM: Lógica de Movimentação (Retirada ou Devolução)
             setCarregando(true);
+
+            // VALIDAÇÃO INTELIGENTE: Confere se a peça existe na lista carregada da rota /ferramentas
+            const itemExiste = ferramentas.some((item) => String(item.id) === codLimpo);
+
+            if (!itemExiste) {
+                setStatus({ msg: 'Código de peça/ferramenta inválido!', tipo: 'erro' });
+                setTimeout(() => setStatus({ msg: `Operador: ${dados.funcionarioNome} | Bipe o item`, tipo: 'info' }), 2500);
+                setCarregando(false);
+                return;
+            }
+
+            // Se a peça existir, segue para gravar o histórico em /ferramentas/movimentacao
             try {
-                // ROTA CORRIGIDA: Apontando exatamente para /ferramentas/movimentacao na sua VPS
                 const res = await fetch(`${baseUrl}/ferramentas/movimentacao`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -66,7 +104,6 @@ export default function RetiradaDevolucao() {
                 const resultado = await res.json();
 
                 if (res.ok) {
-                    // VPS processa se o item estava na rua ou não e retorna o tipo da ação
                     const acao = resultado.tipo === 'retirada' ? 'RETIRADA' : 'DEVOLUÇÃO';
                     setStatus({
                         msg: `${acao} CONCLUÍDA: ${codLimpo}`,
@@ -120,7 +157,7 @@ export default function RetiradaDevolucao() {
                     )}
                 </div>
 
-                {/* CAMPO DE DIGITAÇÃO VISÍVEL (Híbrido: Teclado + Scanner) */}
+                {/* INPUT HÍBRIDO (Teclado + Scanner) */}
                 <div className="relative max-w-xs mx-auto mb-8">
                     <input
                         ref={inputRef}
@@ -147,7 +184,7 @@ export default function RetiradaDevolucao() {
 
             <footer className="mt-12 text-[9px] font-black uppercase opacity-20 tracking-[6px] flex items-center gap-3">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Endpoint: /ferramentas/movimentacao • GR-API Active
+                Endpoints: /ferramentas & /movimentacao • GR-API Active
             </footer>
         </div>
     );
