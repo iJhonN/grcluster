@@ -13,6 +13,7 @@ export default function RegistrarAjuste() {
     const router = useRouter();
     const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
     const [carregando, setCarregando] = useState(false);
+    const [pesquisaFuncionario, setPesquisaFuncionario] = useState(''); // Estado para a busca
 
     // Estados do Formulário
     const [form, setForm] = useState({
@@ -36,25 +37,32 @@ export default function RegistrarAjuste() {
         carregarFuncionarios();
     }, [baseUrl]);
 
+    // Filtra os funcionários por Nome ou ID em tempo real
+    const funcionariosFiltrados = funcionarios.filter(f => {
+        const termo = pesquisaFuncionario.toLowerCase().trim();
+        if (!termo) return true;
+        const nomeCompleto = `${f.nome} ${f.sobrenome}`.toLowerCase();
+        return nomeCompleto.includes(termo) || String(f.id).includes(termo);
+    });
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!baseUrl) return;
         setCarregando(true);
 
         try {
-            // ENVIO REAL INTEGRADO COM O SEU ROUTE.TS
-            const res = await fetch(`${baseUrl}/pontos`, {
+            // ROTA ATUALIZADA: Apontando para a nova API de pausas isolada
+            const res = await fetch(`${baseUrl}/pausas`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     funcionarioId: form.funcionarioId,
-                    modo: 'manual',                     // Indica para a API ignorar a lógica do totem
-                    tipoManual: form.tipo,               // Mapeado para o 'tipoManual' do back-end
-                    minutosAjuste: form.minutos,         // Mapeado para o 'minutosAjuste' do back-end
-                    dataManual: `${form.data}T12:00:00.000Z`, // Evita problemas de fuso horário no faturamento do dia
-                    observacaoManual: form.observacao    // Mapeado para o 'observacaoManual' do back-end
+                    tipoManual: form.tipo,
+                    minutosAjuste: form.minutos,
+                    dataManual: `${form.data}T12:00:00.000Z`,
+                    observacaoManual: form.observacao
                 })
             });
 
@@ -85,18 +93,31 @@ export default function RegistrarAjuste() {
                 <form onSubmit={handleSubmit} className="bg-slate-900/40 border border-white/5 p-8 rounded-[45px] backdrop-blur-xl shadow-2xl">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                        {/* SELEÇÃO DE FUNCIONÁRIO */}
-                        <div className="md:col-span-2">
+                        {/* SELEÇÃO E PESQUISA DE FUNCIONÁRIO */}
+                        <div className="md:col-span-2 flex flex-col gap-2">
                             <label className="text-[10px] font-black uppercase text-slate-500 ml-2 tracking-widest">Colaborador</label>
+
+                            {/* Campo de Busca Rápida */}
+                            <input
+                                type="text"
+                                placeholder="Digite o nome ou ID para pesquisar..."
+                                value={pesquisaFuncionario}
+                                onChange={(e) => setPesquisaFuncionario(e.target.value)}
+                                className="w-full bg-black/60 border border-white/5 p-4 rounded-2xl outline-none focus:border-orange-500/50 transition-all font-bold text-sm text-white placeholder-slate-600"
+                            />
+
+                            {/* Select Filtrado */}
                             <select
                                 required
                                 value={form.funcionarioId}
                                 onChange={(e) => setForm({...form, funcionarioId: e.target.value})}
-                                className="w-full bg-black border border-white/10 p-5 rounded-3xl outline-none focus:border-orange-500 transition-all font-bold mt-2 text-white appearance-none cursor-pointer"
+                                className="w-full bg-black border border-white/10 p-5 rounded-3xl outline-none focus:border-orange-500 transition-all font-bold text-white appearance-none cursor-pointer"
                             >
-                                <option value="">Selecione o funcionário...</option>
-                                {funcionarios.map(f => (
-                                    <option key={f.id} value={f.id}>{f.nome} {f.sobrenome}</option>
+                                <option value="">
+                                    {funcionariosFiltrados.length === 0 ? "Nenhum funcionário encontrado..." : "Selecione o funcionário..."}
+                                </option>
+                                {funcionariosFiltrados.map(f => (
+                                    <option key={f.id} value={f.id}>{f.nome} {f.sobrenome} (ID: {f.id})</option>
                                 ))}
                             </select>
                         </div>
