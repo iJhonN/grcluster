@@ -10,10 +10,12 @@ interface Funcionario {
 }
 
 interface RegistroPonto {
-    id: string;
+    _id?: string;
     funcionarioId: string;
-    data: string;
-    acao: 'entrada' | 'saida';
+    data: string;          // Data salva pela API
+    horaFormatada: string; // Ex: "08:15" (Gerado pela sua API)
+    tipo: string;          // 'entrada', 'saida', 'extra', 'alerta', 'normal'
+    origem: 'totem' | 'admin';
 }
 
 function ConteudoRelatorio() {
@@ -32,9 +34,10 @@ function ConteudoRelatorio() {
             if (!baseUrl) return;
             setCarregando(true);
             try {
+                // ROTA CORRIGIDA: Buscando na rota exata coletada na VPS (/pontos)
                 const [resFunc, resPontos] = await Promise.all([
                     fetch(`${baseUrl}/funcionarios`, { cache: 'no-store' }),
-                    fetch(`${baseUrl}/ponto`, { cache: 'no-store' })
+                    fetch(`${baseUrl}/pontos`, { cache: 'no-store' })
                 ]);
 
                 if (resFunc.ok) setFuncionarios(await resFunc.json());
@@ -53,6 +56,7 @@ function ConteudoRelatorio() {
         return Array.from({ length: qtdDias }, (_, i) => i + 1);
     };
 
+    // Mapeia e organiza cronologicamente as batidas usando os dados REAIS da sua API
     const obterJornadaDiaria = (funcionarioId: string, dia: number) => {
         const pontosDoDia = pontos.filter(p => {
             const dataPonto = new Date(p.data);
@@ -64,18 +68,14 @@ function ConteudoRelatorio() {
             );
         });
 
+        // Ordena por horário para garantir a sequência correta de batidas (01º ao 04º bipe)
         pontosDoDia.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
-        const formatarHora = (ponto?: RegistroPonto) => {
-            if (!ponto) return '---';
-            return new Date(ponto.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        };
-
         return {
-            entrada: formatarHora(pontosDoDia[0]),
-            saidaAlmoço: formatarHora(pontosDoDia[1]),
-            voltaAlmoço: formatarHora(pontosDoDia[2]),
-            saidaFinal: formatarHora(pontosDoDia[3]),
+            entrada: pontosDoDia[0] ? pontosDoDia[0].horaFormatada : '---',
+            saidaAlmoço: pontosDoDia[1] ? pontosDoDia[1].horaFormatada : '---',
+            voltaAlmoço: pontosDoDia[2] ? pontosDoDia[2].horaFormatada : '---',
+            saidaFinal: pontosDoDia[3] ? pontosDoDia[3].horaFormatada : '---',
         };
     };
 
@@ -182,10 +182,10 @@ function ConteudoRelatorio() {
                                         );
                                     })}
                                     </tbody>
-                                </table> {/* CORRIGIDO AQUI: Removido o 'end' fantasma */}
+                                </table>
                             </div>
 
-                            {/* ASSINATURAS DO RODAPÉ */}
+                            {/* ASSINATURAS DO RODAPÉ (AJUSTADAS PARA A BASE DA PÁGINA) */}
                             <div className="mt-16 pt-4 border-t border-slate-300 flex justify-between items-center gap-12 print:mt-12">
                                 <div className="w-60 text-center">
                                     <div className="border-b border-black w-full h-6 mb-1"></div>
