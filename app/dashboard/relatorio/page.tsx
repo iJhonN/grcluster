@@ -49,8 +49,8 @@ function ConteudoRelatorio() {
         carregarDados();
     }, [baseUrl]);
 
-    // Gerar todos os dias do mês selecionado
-    const obtenerDiasDoMes = () => {
+    // CORRIGIDO: Nome da função unificado para evitar erro no TypeScript
+    const obterDiasDoMes = () => {
         const qtdDias = new Date(anoSelecionado, mesSelecionado, 0).getDate();
         return Array.from({ length: qtdDias }, (_, i) => i + 1);
     };
