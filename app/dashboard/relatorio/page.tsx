@@ -15,13 +15,20 @@ interface RegistroPonto {
     data: string;
     horaFormatada: string;
     tipo: string;
-    minutosAjuste?: number;
-    origem: 'totem' | 'admin';
+    origem: 'totem';
+}
+
+interface RegistroPausa {
+    funcionarioId: string;
+    data: string;
+    minutosAjuste: number;
+    tipo: string; // 'pausa'
 }
 
 function ConteudoRelatorio() {
     const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
     const [pontos, setPontos] = useState<RegistroPonto[]>([]);
+    const [pausas, setPausas] = useState<RegistroPausa[]>([]); // Estado para as pausas isoladas
     const [carregando, setCarregando] = useState(true);
     const [pesquisa, setPesquisa] = useState('');
 
@@ -36,13 +43,16 @@ function ConteudoRelatorio() {
             if (!baseUrl) return;
             setCarregando(true);
             try {
-                const [resFunc, resPontos] = await Promise.all([
+                // Puxa das 3 rotas da VPS em paralelo de forma limpa
+                const [resFunc, resPontos, resPausas] = await Promise.all([
                     fetch(`${baseUrl}/funcionarios`, { cache: 'no-store' }),
-                    fetch(`${baseUrl}/pontos`, { cache: 'no-store' })
+                    fetch(`${baseUrl}/pontos`, { cache: 'no-store' }),
+                    fetch(`${baseUrl}/pausas`, { cache: 'no-store' }) // Nova rota consumida aqui
                 ]);
 
                 if (resFunc.ok) setFuncionarios(await resFunc.json());
                 if (resPontos.ok) setPontos(await resPontos.json());
+                if (resPausas.ok) setPausas(await resPausas.json());
             } catch (error) {
                 console.error("Erro ao carregar dados do relatório:", error);
             } finally {
@@ -58,6 +68,7 @@ function ConteudoRelatorio() {
     };
 
     const obterJornadaDiaria = (funcionarioId: string, dia: number) => {
+        // Filtra os pontos do Totem
         const pontosDoDia = pontos.filter(p => {
             const dataPonto = new Date(p.data);
             return (
@@ -68,33 +79,38 @@ function ConteudoRelatorio() {
             );
         });
 
-        const totalMinutosPausa = pontosDoDia
-            .filter(p => p.tipo === 'pausa')
-            .reduce((soma, p) => soma + (p.minutosAjuste || 0), 0);
+        // Filtra e soma as pausas vindas da collection isolada
+        const pausasDoDia = pausas.filter(p => {
+            const dataPausa = new Date(p.data);
+            return (
+                String(p.funcionarioId) === String(funcionarioId) &&
+                dataPausa.getDate() === dia &&
+                (dataPausa.getMonth() + 1) === mesSelecionado &&
+                dataPausa.getFullYear() === anoSelecionado &&
+                p.tipo === 'pausa'
+            );
+        });
 
-        const batidasNormais = pontosDoDia.filter(p => p.tipo !== 'pausa');
-        batidasNormais.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+        const totalMinutosPausa = pausasDoDia.reduce((soma, p) => soma + (p.minutosAjuste || 0), 0);
+
+        pontosDoDia.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
         return {
-            entrada: batidasNormais[0] ? batidasNormais[0].horaFormatada : '---',
-            saidaAlmoço: batidasNormais[1] ? batidasNormais[1].horaFormatada : '---',
-            voltaAlmoço: batidasNormais[2] ? batidasNormais[2].horaFormatada : '---',
-            saidaFinal: batidasNormais[3] ? batidasNormais[3].horaFormatada : '---',
+            entrada: pontosDoDia[0] ? pontosDoDia[0].horaFormatada : '---',
+            saidaAlmoço: pontosDoDia[1] ? pontosDoDia[1].horaFormatada : '---',
+            voltaAlmoço: pontosDoDia[2] ? pontosDoDia[2].horaFormatada : '---',
+            saidaFinal: pontosDoDia[3] ? pontosDoDia[3].horaFormatada : '---',
             totalPausa: totalMinutosPausa > 0 ? `${totalMinutosPausa} min` : '---'
         };
     };
 
     const diasDoMes = obterDiasDoMes();
 
-    // Filtro inteligente por Nome, Sobrenome ou ID
     const funcionariosFiltrados = funcionarios.filter(func => {
         const termo = pesquisa.toLowerCase().trim();
         if (!termo) return true;
-
         const nomeCompleto = `${func.nome} ${func.sobrenome}`.toLowerCase();
-        const idFuncionario = String(func.id).toLowerCase();
-
-        return nomeCompleto.includes(termo) || idFuncionario.includes(termo);
+        return nomeCompleto.includes(termo) || String(func.id).includes(termo);
     });
 
     return (
@@ -109,7 +125,6 @@ function ConteudoRelatorio() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-                        {/* CAMPO DE PESQUISA ADICIONADO */}
                         <div className="relative flex-1 sm:w-64">
                             <input
                                 type="text"
@@ -119,16 +134,10 @@ function ConteudoRelatorio() {
                                 className="w-full bg-black border border-white/10 pl-4 pr-10 py-2 rounded-xl font-bold text-white text-sm outline-none focus:border-orange-500 transition-all placeholder-slate-500"
                             />
                             {pesquisa && (
-                                <button
-                                    onClick={() => setPesquisa('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white font-bold text-xs"
-                                >
-                                    ✕
-                                </button>
+                                <button onClick={() => setPesquisa('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white font-bold text-xs">✕</button>
                             )}
                         </div>
 
-                        {/* Filtro de Mês */}
                         <select
                             value={mesSelecionado}
                             onChange={(e) => setMesSelecionado(Number(e.target.value))}
@@ -139,11 +148,7 @@ function ConteudoRelatorio() {
                             ))}
                         </select>
 
-                        {/* Botão Imprimir */}
-                        <button
-                            onClick={() => window.print()}
-                            className="bg-orange-600 px-5 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-orange-500 transition-all shadow-md shadow-orange-900/20"
-                        >
+                        <button onClick={() => window.print()} className="bg-orange-600 px-5 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-orange-500 transition-all shadow-md shadow-orange-900/20">
                             🖨️ Imprimir
                         </button>
                     </div>
@@ -160,18 +165,15 @@ function ConteudoRelatorio() {
                     </div>
                 ) : (
                     funcionariosFiltrados.map((func) => (
-                        <div
-                            key={func.id}
-                            className="bg-white text-black p-6 mb-8 border border-slate-200 rounded-[30px] print:border-none print:p-0 print:m-0 print:break-inside-avoid print:page-break-after-always bg-white"
-                        >
+                        <div key={func.id} className="bg-white text-black p-6 mb-8 border border-slate-200 rounded-[30px] print:border-none print:p-0 print:m-0 print:break-inside-avoid print:page-break-after-always bg-white">
+
                             {/* CABEÇALHO INTEGRADO */}
                             <div className="grid grid-cols-2 border-b-2 border-black pb-2 mb-3 text-xs">
                                 <div className="pr-4 border-r border-slate-200 print:border-slate-300">
                                     <h2 className="text-base font-black uppercase tracking-tight text-black leading-none mb-0.5">GR AUTOPECAS LTDA</h2>
                                     <p className="text-[10px] font-bold text-slate-700 font-mono mb-0.5">CNPJ: 51.415.349/0001-25</p>
                                     <p className="text-[9px] text-slate-500 leading-tight">
-                                        Rua Coronel Vicente Ramos, Nº1552 — Olho D'água dos Cazuzinhas <br />
-                                        Arapiraca - AL
+                                        Rua Coronel Vicente Ramos, Nº1552 — Olho D'água dos Cazuzinhas <br /> Arapiraca - AL
                                     </p>
                                 </div>
 
@@ -187,7 +189,7 @@ function ConteudoRelatorio() {
                                 </div>
                             </div>
 
-                            {/* TABELA DE BATIDAS COMPACTA */}
+                            {/* TABELA COM DADOS DO TOTEM + SOMA DE PAUSAS DA OUTRA API */}
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-[11px] border-collapse">
                                     <thead>
@@ -232,7 +234,7 @@ function ConteudoRelatorio() {
                                 </table>
                             </div>
 
-                            {/* ASSINATURAS DO RODAPÉ */}
+                            {/* ASSINATURAS */}
                             <div className="mt-16 pt-4 border-t border-slate-300 flex justify-between items-center gap-12 print:mt-12">
                                 <div className="w-60 text-center">
                                     <div className="border-b border-black w-full h-6 mb-1"></div>
@@ -248,26 +250,13 @@ function ConteudoRelatorio() {
                 )}
             </section>
 
-            {/* ESTILOS DE IMPRESSÃO */}
             <style jsx global>{`
                 @media print {
-                    @page {
-                        size: A4;
-                        margin: 8mm 10mm 8mm 10mm;
-                    }
+                    @page { size: A4; margin: 8mm 10mm 8mm 10mm; }
                     header { display: none !important; }
-                    body {
-                        background: white !important;
-                        color: black !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
+                    body { background: white !important; color: black !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                     main { background: white !important; padding: 0 !important; }
-
-                    .print\:page-break-after-always {
-                        page-break-after: always !important;
-                        break-after: always !important;
-                    }
+                    .print\:page-break-after-always { page-break-after: always !important; break-after: always !important; }
                 }
             `}</style>
         </main>
