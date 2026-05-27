@@ -24,7 +24,7 @@ export default function DashboardHome() {
                 </div>
             </header>
 
-            {/* Grid Principal - 8 cards com destaque nos dois primeiros */}
+            {/* Grid Principal - Agora com 9 cards bem distribuídos */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto items-start">
 
                 {/* 1º PRINCIPAL: TERMINAL DE PONTO (TOTEM) */}
@@ -72,6 +72,15 @@ export default function DashboardHome() {
                     desc="Pausas e Extras Manuais"
                     icon="✍️"
                     color="bg-indigo-600"
+                />
+
+                {/* CARD NOVO: FECHAMENTO / RELATÓRIO DE FOLHA A4 */}
+                <MenuCard
+                    href="/dashboard/relatorio"
+                    title="Fechamento"
+                    desc="Imprimir Folhas A4"
+                    icon="🖨️"
+                    color="bg-yellow-600 shadow-lg shadow-yellow-600/10"
                 />
 
                 {/* CARD ATRASOS */}
