@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GR Cluster,
+  title: "GR Cluster",
   description: "Criado por Jhon",
 };
 

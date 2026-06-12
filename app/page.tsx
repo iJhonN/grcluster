@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 
@@ -9,6 +9,11 @@ export default function LoginPage() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mensagemErro, setMensagemErro] = useState('');
   const [carregando, setCarregando] = useState(false);
+
+  // Estado para controlar a tela de apresentação da logo inicial
+  const [introCarregando, setIntroCarregando] = useState(true);
+  const [esconderIntro, setEsconderIntro] = useState(false);
+
   const router = useRouter();
 
   const supabase = createBrowserClient(
@@ -16,13 +21,29 @@ export default function LoginPage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  // Efeito para segurar a splash screen da logo
+  useEffect(() => {
+    const timerEsmaecer = setTimeout(() => {
+      setEsconderIntro(true); // Inicia a animação de fade-out
+    }, 1800);
+
+    const timerRemover = setTimeout(() => {
+      setIntroCarregando(false); // Destrói o componente da DOM para liberar memória
+    }, 2300);
+
+    return () => {
+      clearTimeout(timerEsmaecer);
+      clearTimeout(timerRemover);
+    };
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensagemErro('');
     setCarregando(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
@@ -46,11 +67,57 @@ export default function LoginPage() {
   };
 
   return (
-      <main className="relative min-h-screen bg-[#030303] flex items-center justify-center p-6 font-sans overflow-hidden antialiased">
+      <main className="relative min-h-screen bg-[#030303] flex items-center justify-center p-6 font-sans overflow-hidden antialiased w-full">
 
-        {/* ── FUNDO ── */}
+        {/* ── SPALSH SCREEN / TELA DE INTRO CARREGANDO ── */}
+        {introCarregando && (
+            <div
+                className={`absolute inset-0 bg-[#030303] z-50 flex flex-col justify-between items-center p-10 select-none transition-opacity duration-500 ease-in-out ${
+                    esconderIntro ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                }`}
+            >
+              {/* Espaçador superior para manter o grid equilibrado */}
+              <div className="w-10 h-10 opacity-0" />
+
+              {/* ELEMENTO CENTRAL: LOGO NOVA */}
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative w-44 h-44 sm:w-52 sm:h-52 animate-pulse">
+                  {/* Brilho laranja de fundo atrás da sua logo */}
+                  <div className="absolute inset-4 bg-orange-500/20 rounded-full blur-3xl scale-110" />
+                  <img
+                      src="/grlogo720.png"
+                      alt="GR Logo"
+                      className="w-full h-full object-contain relative z-10"
+                  />
+                </div>
+                {/* Barra de progresso tecnológica discreta */}
+                <div className="w-24 h-[1px] bg-white/[0.04] relative overflow-hidden rounded-full">
+                  <div className="absolute inset-y-0 bg-gradient-to-r from-orange-500 to-amber-400 w-1/2 rounded-full animate-[loading_1.5s_infinite_ease-in-out]" style={{
+                    animationName: 'loading'
+                  }} />
+                  <style jsx global>{`
+                  @keyframes loading {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(200%); }
+                  }
+                `}</style>
+                </div>
+              </div>
+
+              {/* FOOTER DA SPLASH: CREDITOS ASSINADOS */}
+              <div className="text-center space-y-1">
+                <p className="text-[9px] text-slate-600 uppercase font-bold tracking-[4px]">
+                  GR Cluster Core Operating System
+                </p>
+                <p className="text-[10px] text-orange-500/80 uppercase font-black tracking-[5px] italic">
+                  Desenvolvido por Jhon
+                </p>
+              </div>
+            </div>
+        )}
+
+        {/* ── FUNDO TECNOLÓGICO DO LOGIN ── */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-          {/* Grid sutil */}
           <div
               className="absolute inset-0 opacity-[0.025]"
               style={{
@@ -58,52 +125,45 @@ export default function LoginPage() {
                 backgroundSize: '50px 50px',
               }}
           />
-          {/* Glow central */}
           <div
               className="absolute inset-0"
               style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 100%, rgba(234,88,12,0.07), transparent)' }}
           />
-          {/* Glow superior esquerdo */}
           <div className="absolute -top-60 -left-60 w-[500px] h-[500px] bg-orange-600/[0.06] rounded-full blur-[140px]" />
-          {/* Glow inferior direito */}
           <div className="absolute -bottom-60 -right-60 w-[400px] h-[400px] bg-orange-500/[0.04] rounded-full blur-[120px]" />
         </div>
 
-        {/* ── CARD ── */}
+        {/* ── CARD DE LOGIN PRINCIPAL ── */}
         <div className="relative w-full max-w-sm z-10">
-
-          {/* Brilho atrás do card */}
           <div className="absolute -inset-px rounded-[44px] bg-gradient-to-b from-orange-500/10 to-transparent blur-sm" />
 
           <div className="relative w-full bg-[#09090b]/90 border border-white/[0.06] rounded-[40px] shadow-2xl backdrop-blur-2xl overflow-hidden">
-
-            {/* Linha de acabamento topo */}
             <div className="absolute top-0 left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
 
             <div className="p-10">
 
-              {/* ── LOGO / MARCA ── */}
+              {/* LOGO INTERNA DO CARD */}
               <div className="flex flex-col items-center mb-10">
-                <div className="relative mb-5">
-                  {/* Glow atrás do logo */}
-                  <div className="absolute inset-0 bg-orange-500/30 rounded-[22px] blur-xl scale-110" />
-                  <div className="relative w-14 h-14 bg-gradient-to-b from-orange-400 to-orange-600 rounded-[20px] flex items-center justify-center shadow-xl border border-orange-400/30">
-                    <span className="text-xl font-black italic text-black tracking-tighter select-none">GR</span>
-                  </div>
+                <div className="relative mb-4 w-16 h-16">
+                  <img
+                      src="/grlogo720.png"
+                      alt="GR Logo"
+                      className="w-full h-full object-contain"
+                  />
                 </div>
 
                 <h1 className="text-3xl font-black uppercase italic tracking-tighter text-white leading-none mb-1.5">
                   GR{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">
-                  Cluster
-                </span>
+                    Cluster
+                  </span>
                 </h1>
                 <p className="text-[9px] text-slate-600 uppercase tracking-[5px] font-bold">
                   Acesso Restrito
                 </p>
               </div>
 
-              {/* ── ERRO ── */}
+              {/* MENSAGEM DE ERRO */}
               {mensagemErro && (
                   <div className="mb-6 flex items-start gap-2.5 bg-red-500/[0.06] border border-red-500/20 p-3.5 rounded-2xl">
                     <svg className="w-3.5 h-3.5 text-red-400 mt-0.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
@@ -116,7 +176,7 @@ export default function LoginPage() {
                   </div>
               )}
 
-              {/* ── FORMULÁRIO ── */}
+              {/* FORMULÁRIO */}
               <form onSubmit={handleLogin} className="space-y-4">
 
                 {/* E-mail */}
@@ -186,7 +246,7 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Botão */}
+                {/* Botão de Disparo */}
                 <div className="pt-2">
                   <button
                       type="submit"
@@ -194,7 +254,6 @@ export default function LoginPage() {
                       className="relative w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-[3px] text-black transition-all active:scale-[0.98] disabled:opacity-50 overflow-hidden group"
                       style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
                   >
-                    {/* Brilho no hover */}
                     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="relative flex items-center justify-center gap-2">
                       {carregando ? (
@@ -218,7 +277,7 @@ export default function LoginPage() {
 
             </div>
 
-            {/* ── RODAPÉ DO CARD ── */}
+            {/* RODAPÉ DO CARD */}
             <div className="border-t border-white/[0.04] px-10 py-4 flex items-center justify-center">
               <p className="text-[8px] uppercase tracking-[3px] text-slate-700 font-bold">
                 Sistema Interno · Acesso Restrito
