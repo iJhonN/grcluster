@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
     // ─── MATRIZ DE SEGURANÇA REQUISITADA PELO JHON ───
 
     // Regra do RH e Cadastro de Usuários (Apenas Admin e Gerente)
-    if (pathname.startsWith('/dashboard/rh') || pathname.startsWith('/dashboard/rh/cadastrousuario')) {
+    if (pathname.startsWith('/dashboard/rh')) {
         const autorizados = ['ADMIN', 'GERENTE'];
         if (!autorizados.includes(cargo)) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Regra do Ponto Geral (Admin, Gerente e Técnico)
+    // Regra do Ponto Geral e Totem de Ponto (Admin, Gerente e Técnico liberados!)
     if (pathname.startsWith('/dashboard/ponto')) {
         const autorizados = ['ADMIN', 'GERENTE', 'TECNICO'];
         if (!autorizados.includes(cargo)) {
@@ -73,15 +73,15 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Nota: As rotas de ferramentas (/dashboard/ferramentas/retirada, etc) estão liberadas
-    // para todos os cargos da sua lista (Admin, Gerente, Tecnico, Mecanico), então o middleware deixa passar.
+    // Nota: As rotas de ferramentas (/dashboard/ferramentas) estão liberadas
+    // para todos os cargos (Admin, Gerente, Tecnico, Mecanico).
 
     return response;
 }
 
-// Configura o filtro de quais caminhos o Next.js deve monitorar (Ignora arquivos públicos e assets)
+// Configura o filtro de quais caminhos o Next.js deve monitorar
 export const config = {
     matcher: [
-        '/dashboard/:path*' // Protege a rota mãe e todas as subpastas criadas dentro dela
+        '/dashboard/:path*'
     ],
 };
