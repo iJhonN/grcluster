@@ -41,6 +41,14 @@ export async function middleware(request: NextRequest) {
 
     // ─── MATRIZ DE SEGURANÇA REQUISITADA PELO JHON ───
 
+    // Regra da Central de Auditoria e Logs (Apenas ADMIN tem poder total de visualização)
+    if (pathname.startsWith('/dashboard/rh/logs')) {
+        const autorizados = ['ADMIN'];
+        if (!autorizados.includes(cargo)) {
+            return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
+        }
+    }
+
     // Regra do RH e Cadastro de Usuários (Apenas Admin e Gerente)
     if (pathname.startsWith('/dashboard/rh')) {
         const autorizados = ['ADMIN', 'GERENTE'];
