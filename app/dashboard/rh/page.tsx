@@ -2,7 +2,7 @@
 import Link from 'next/link';
 
 export default function HubRHPage() {
-    // Links focados em gestão direta de pessoal e credenciais
+    // Links focados em gestão direta de pessoal, credenciais e histórico disciplinar
     const acoesDiretas = [
         {
             titulo: "Provisionar Credenciais",
@@ -15,6 +15,12 @@ export default function HubRHPage() {
             descricao: "Lançamento e auditoria de justificativas médicas, dispensas e afastamentos legais.",
             icone: "📄",
             rota: "/dashboard/rh/atestados"
+        },
+        {
+            titulo: "Histórico Disciplinar",
+            descricao: "Aplicação e monitoramento de avisos, advertências e suspensões de pátio com cálculo de retorno.",
+            icone: "⚖️",
+            rota: "/dashboard/rh/advertencias"
         },
         {
             titulo: "Fechamento Contábil",
@@ -86,7 +92,8 @@ export default function HubRHPage() {
                     <h2 className="text-[9px] font-black uppercase tracking-[3px] text-orange-500 mb-4 pl-1">
                         I. Diretoria & Administração
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                    {/* Alterado grid de md:grid-cols-3 para md:grid-cols-2 lg:grid-cols-4 para acomodar os 4 cards simetricamente */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
                         {acoesDiretas.map((o, idx) => (
                             <Link
                                 key={idx}
