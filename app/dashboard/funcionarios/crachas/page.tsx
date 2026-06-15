@@ -95,22 +95,19 @@ function ConteudoCrachas() {
                                 </p>
                             </div>
 
-                            {/* CÓDIGO DE BARRAS CONFIGURADO PARA O TAMANHO REAL DO SEU DESIGN */}
+                            {/* CÓDIGO DE BARRAS ATUALIZADO PARA COMPONENTE REAL (Mantendo escala e posição exatas) */}
                             <div className="absolute bottom-[60px] left-0 w-full flex flex-col items-center justify-center bg-white px-4">
-                                <div className="flex flex-col items-center justify-center bg-white p-1">
+                                <div className="scale-[1.1] origin-center">
                                     <Barcode
                                         value={func.id.toString()}
-                                        width={1.2}          // Espessura exata da barra para não estourar os lados
-                                        height={45}          // Altura exata (h-[45px]) do seu layout original
-                                        margin={0}           // Remove margens externas que quebravam o card
-                                        displayValue={false} // Oculta o texto padrão da biblioteca para usar o seu abaixo
+                                        width={1.5}
+                                        height={45}
+                                        fontSize={12}
+                                        fontOptions="bold"
+                                        textMargin={4}
                                         background="transparent"
                                         lineColor="#000000"
                                     />
-                                    {/* Texto do ID centralizado abaixo das listras (Exatamente como estava no seu CSS) */}
-                                    <div className="text-[12px] font-mono font-black tracking-[5px] mt-1 uppercase text-black">
-                                        {func.id}
-                                    </div>
                                 </div>
                             </div>
 
