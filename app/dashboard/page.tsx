@@ -239,7 +239,7 @@ export default function DashboardPage() {
             {/* RODAPÉ */}
             <footer className="relative z-10 w-full border-t border-white/[0.02] pt-6 flex flex-col sm:flex-row items-center justify-between text-[9px] text-slate-600 uppercase font-bold tracking-widest gap-4 text-center sm:text-left px-2 md:px-4">
                 <div>GR Autopeças & Serviços</div>
-                <div className="font-mono text-slate-700">Módulo RBAC Cluster Security v3.1</div>
+                <div className="font-mono text-slate-700">Módulo De DASHBOARD</div>
             </footer>
         </main>
     );
