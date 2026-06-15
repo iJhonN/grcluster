@@ -18,13 +18,14 @@ export default function CadastroUsuarioPainelPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Os 5 cargos estritos aprovados na constraint do banco
+    // Os 6 cargos estritos aprovados na matriz de permissões (ESTOQUE Adicionado!)
     const cargosDisponiveis = [
         { id: "ADMIN", label: "ADMINISTRADOR (ACESSO TOTAL)" },
         { id: "GERENTE", label: "GERENTE OPERACIONAL" },
         { id: "TECNICO", label: "TÉCNICO DE PÁTIO / ALMOXARIFADO" },
         { id: "MECANICO", label: "MECÂNICO / OPERADOR DE PISTA" },
-        { id: "GESTORDEFROTAS", label: "GESTOR DE FROTAS & LOGÍSTICA" }
+        { id: "GESTORDEFROTAS", label: "GESTOR DE FROTAS & LOGÍSTICA" },
+        { id: "ESTOQUE", label: "AUXILIAR DE ESTOQUE / CONFERENTE" }
     ];
 
     // Máscara dinâmica para o contato corporativo ((00) 00000-0000)
@@ -62,7 +63,6 @@ export default function CadastroUsuarioPainelPage() {
                 email: email.trim().toLowerCase(),
                 password: senha,
                 options: {
-                    // Impede o Next.js de deslogar o RH ao criar uma conta de terceiro
                     emailRedirectTo: undefined
                 }
             });
@@ -75,7 +75,7 @@ export default function CadastroUsuarioPainelPage() {
                 id: authData.user.id,
                 nome: nome.trim().toUpperCase(),
                 email: email.trim().toLowerCase(),
-                senha: senha, // Mantém salvo de forma controlada conforme estrutura da tabela
+                senha: senha,
                 contato: contato.trim(),
                 cargo: cargo
             };
@@ -91,7 +91,6 @@ export default function CadastroUsuarioPainelPage() {
                 texto: `💼 Credenciais criadas! Operador ${payload.nome} registrado sob o cargo [${payload.cargo}]`
             });
 
-            // Reseta o formulário limpo para o próximo cadastro
             setNome('');
             setEmail('');
             setSenha('');
@@ -131,7 +130,7 @@ export default function CadastroUsuarioPainelPage() {
                     </Link>
                 </div>
 
-                {/* FORM CONTAINER (DESIGN COERENTE COM A DASHBOARD PRINCIPAL) */}
+                {/* FORM CONTAINER */}
                 <div className="w-full max-w-2xl relative bg-[#09090b]/90 border border-white/[0.06] rounded-[36px] p-8 shadow-2xl backdrop-blur-3xl">
                     <div className="absolute top-0 left-[25%] right-[25%] h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
 
@@ -245,7 +244,7 @@ export default function CadastroUsuarioPainelPage() {
 
             </div>
 
-            {/* RODAPÉ OPERACIONAL COERENTE COM A MARCA */}
+            {/* RODAPÉ */}
             <footer className="w-full border-t border-white/[0.02] pt-6 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-600 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left max-w-[1400px] mx-auto px-2">
                 <div>GR Autopeças & Serviços</div>
                 <div className="font-mono text-slate-700">Módulo RBAC Core Security v3.0</div>

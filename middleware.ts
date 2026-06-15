@@ -39,6 +39,14 @@ export async function middleware(request: NextRequest) {
 
     const cargo = perfil?.cargo?.toUpperCase() || 'MECANICO';
 
+    // ─── REGRA EXCLUSIVA DO ESTOQUE REQUISITADA PELO JHON ───
+    // Se for ESTOQUE, barra se tentar acessar qualquer rota que não seja o próprio painel de estoque ou a home do dashboard
+    if (cargo === 'ESTOQUE') {
+        if (pathname !== '/dashboard' && !pathname.startsWith('/dashboard/estoque')) {
+            return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
+        }
+    }
+
     // ─── MATRIZ DE SEGURANÇA REQUISITADA PELO JHON ───
 
     // Regra da Central de Auditoria e Logs (Apenas ADMIN)
@@ -83,6 +91,7 @@ export async function middleware(request: NextRequest) {
 
     // Nota: As rotas de ferramentas (/dashboard/ferramentas) estão liberadas
     // para todos os cargos (Admin, Gerente, Tecnico, Mecanico, GestorDeFrotas).
+    // O Estoque não passará aqui por causa do primeiro bloqueio de segurança acima.
 
     return response;
 }

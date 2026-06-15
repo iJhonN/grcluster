@@ -83,6 +83,8 @@ export default function DashboardPage() {
     const podeVerFechamento = ['ADMIN', 'GERENTE'];
     const podeVerFuncionarios = ['ADMIN', 'GERENTE'];
     const podeVerRH = ['ADMIN', 'GERENTE'];
+    // ESTOQUE adicionado com acesso exclusivo a este módulo na interface
+    const podeVerEstoque = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS', 'ESTOQUE'];
 
     return (
         <main className="relative min-h-screen bg-[#030303] text-white p-4 sm:p-6 md:p-8 font-sans overflow-hidden antialiased flex flex-col justify-between gap-10 w-full">
@@ -135,7 +137,7 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 w-full">
 
-                    {/* ⏱️ CARD PONTO (LARGURA DUPLA) - Visível para Admin, Gerente, Técnico, Gestor de Frotas */}
+                    {/* ⏱️ CARD PONTO (LARGURA DUPLA) */}
                     {podeVerPonto.includes(userRole) && (
                         <Link href="/dashboard/ponto" className="bg-[#09090b]/90 border border-orange-500/30 hover:border-orange-500/70 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px] sm:col-span-2">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/[0.06] rounded-full blur-2xl transition-all" />
@@ -150,7 +152,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 🛠️ CARD RETIRADA FERRAMENTAS (LARGURA DUPLA) - Visível para Admin, Gerente, Técnico, Mecânico, Gestor de Frotas */}
+                    {/* 🛠️ CARD RETIRADA FERRAMENTAS (LARGURA DUPLA) */}
                     {podeVerRetiradaFerramentas.includes(userRole) && (
                         <Link href="/dashboard/ferramentas/retirada" className="bg-[#09090b]/90 border border-emerald-500/30 hover:border-emerald-500/70 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px] sm:col-span-2">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/[0.06] rounded-full blur-2xl transition-all" />
@@ -165,7 +167,18 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* ⚙️ HUB FERRAMENTAS (Retirada e devolução) - Visível para Admin, Gerente, Técnico, Mecânico, Gestor de Frotas */}
+                    {/* 📦 CARD BALANÇO DE ESTOQUE */}
+                    {podeVerEstoque.includes(userRole) && (
+                        <Link href="/dashboard/estoque" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-orange-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
+                            <div className="w-11 h-11 bg-orange-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-orange-400 text-lg font-black mb-4 group-hover:bg-orange-600 group-hover:text-white transition-all">📦</div>
+                            <div>
+                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 group-hover:text-orange-400 transition-colors">Estoque</h3>
+                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Módulo de contagem direta de peças, endereçamento e inventário rápido.</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {/* ⚙️ HUB FERRAMENTAS (Retirada e devolução) */}
                     {podeVerHubFerramentas.includes(userRole) && (
                         <Link href="/dashboard/ferramentas" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-blue-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
                             <div className="w-11 h-11 bg-blue-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-blue-400 text-lg font-black mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">⚙️</div>
@@ -176,7 +189,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 🚚 HUB FROTAS - Visível para Admin, Gerente, Gestordefrotas */}
+                    {/* 🚚 HUB FROTAS */}
                     {podeVerFrota.includes(userRole) && (
                         <Link href="/dashboard/frota" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-indigo-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
                             <div className="w-11 h-11 bg-indigo-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-indigo-400 text-lg font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all">🚚</div>
@@ -187,7 +200,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 📊 FECHAMENTO CONTÁBIL - Visível para Admin, Gerente */}
+                    {/* 📊 FECHAMENTO CONTÁBIL */}
                     {podeVerFechamento.includes(userRole) && (
                         <Link href="/dashboard/fechamento" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-purple-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
                             <div className="w-11 h-11 bg-purple-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-purple-400 text-lg font-black mb-4 group-hover:bg-purple-600 group-hover:text-white transition-all">📊</div>
@@ -198,7 +211,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 👥 BASE DE FUNCIONÁRIOS - Visível para Admin, Gerente */}
+                    {/* 👥 BASE DE FUNCIONÁRIOS */}
                     {podeVerFuncionarios.includes(userRole) && (
                         <Link href="/dashboard/funcionarios" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-amber-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
                             <div className="w-11 h-11 bg-amber-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-amber-400 text-lg font-black mb-4 group-hover:bg-amber-600 group-hover:text-white transition-all">👥</div>
@@ -209,7 +222,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 💼 DIRETORIA / RECURSOS HUMANOS - Visível para Admin, Gerente */}
+                    {/* 💼 DIRETORIA / RECURSOS HUMANOS */}
                     {podeVerRH.includes(userRole) && (
                         <Link href="/dashboard/rh" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-pink-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
                             <div className="w-11 h-11 bg-pink-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-pink-400 text-lg font-black mb-4 group-hover:bg-pink-600 group-hover:text-white transition-all">💼</div>
