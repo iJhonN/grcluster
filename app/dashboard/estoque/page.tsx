@@ -34,7 +34,7 @@ export default function InventarioRapidoPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Adiciona o item atual na lista temporária da tela
+    // Adiciona ou soma o item atual na lista temporária da tela
     const handleAdicionarItem = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -50,20 +50,41 @@ export default function InventarioRapidoPage() {
         }
 
         const localizacaoFormatada = `R:${rua.trim().padStart(2, '0')}-E:${estante.trim().padStart(2, '0')}-AP:${apartamento.trim().padStart(2, '0')}-N:${nivel.trim().padStart(2, '0')}`;
+        const referenciaFormatada = referencia.trim().toUpperCase();
+        const qtdInserida = Number(quantidade);
 
-        const novoItem: ItemContado = {
-            id_temporario: Math.random().toString(36).substring(2, 9),
-            localizacao: localizacaoFormatada,
-            referencia: referencia.trim().toUpperCase(),
-            quantidade: Number(quantidade)
-        };
+        // Verifica se a mesma peça já existe exatamente na mesma localização
+        const itemExistenteIndex = filaContagem.findIndex(
+            item => item.localizacao === localizacaoFormatada && item.referencia === referenciaFormatada
+        );
 
-        setFilaContagem([novoItem, ...filaContagem]);
+        if (itemExistenteIndex !== -1) {
+            // Se já existe, clona a fila, soma a quantidade e joga o item para o topo para dar feedback visual
+            const novaFila = [...filaContagem];
+            const itemAtualizado = {
+                ...novaFila[itemExistenteIndex],
+                quantidade: novaFila[itemExistenteIndex].quantidade + qtdInserida
+            };
+
+            // Remove da posição antiga e insere no topo
+            novaFila.splice(itemExistenteIndex, 1);
+            setFilaContagem([itemAtualizado, ...novaFila]);
+            setStatus({ tipo: 'sucesso', texto: `Soma aplicada! Adicionado +${qtdInserida} unidades para a referência ${referenciaFormatada}.` });
+        } else {
+            // Se não existe, cria um novo registro na fila
+            const novoItem: ItemContado = {
+                id_temporario: Math.random().toString(36).substring(2, 9),
+                localizacao: localizacaoFormatada,
+                referencia: referenciaFormatada,
+                quantidade: qtdInserida
+            };
+            setFilaContagem([novoItem, ...filaContagem]);
+            setStatus({ tipo: '', texto: '' });
+        }
 
         // Limpa apenas os campos da peça para manter o endereço fixo enquanto ele trabalha na mesma prateleira
         setReferencia('');
         setQuantidade('');
-        setStatus({ tipo: '', texto: '' });
 
         // Devolve o foco do teclado para a Referência imediatamente
         referenciaInputRef.current?.focus();
@@ -93,7 +114,7 @@ export default function InventarioRapidoPage() {
 
             if (error) throw error;
 
-            setStatus({ tipo: 'sucesso', texto: '🔥 Contagem enviada e salva no banco de dados com sucesso!' });
+            setStatus({ tipo: 'sucesso', texto: '🔥 Contagem acumulada enviada e salva no banco de dados com sucesso!' });
             setFilaContagem([]);
             referenciaInputRef.current?.focus();
         } catch (err: any) {
@@ -114,7 +135,7 @@ export default function InventarioRapidoPage() {
             </div>
 
             <div className="relative z-10 w-full flex-1 flex flex-col gap-8">
-                {/* HEADER */}
+                {/* HEADER COM NOVO BOTÃO DE ATALHO */}
                 <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/[0.04] pb-6 px-2">
                     <div>
                         <Link href="/dashboard" className="text-orange-500 font-black text-[9px] uppercase tracking-[4px] mb-1.5 block hover:opacity-70 transition-all">
@@ -127,6 +148,14 @@ export default function InventarioRapidoPage() {
                             Módulo de Inventário em Tempo Real • GR Autopeças
                         </p>
                     </div>
+
+                    {/* Botão de redirecionamento para estoque/lista */}
+                    <Link
+                        href="/dashboard/estoque/lista"
+                        className="text-[9px] font-black uppercase tracking-widest bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/20 text-orange-400 px-4 py-2.5 rounded-xl transition-all"
+                    >
+                        📋 Ver Lista / Etiquetas
+                    </Link>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start w-full px-2">
