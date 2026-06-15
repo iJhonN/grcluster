@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
+export const dynamic = 'force-dynamic';
+
 export default function DashboardPage() {
     const [userName, setUserName] = useState('Carregando...');
     const [userRole, setUserRole] = useState('...');
@@ -73,10 +75,10 @@ export default function DashboardPage() {
         );
     }
 
-    // ─── MATRIZ DE ACESSOS REQUISITADA PELO JHON ───
-    const podeVerPonto = ['ADMIN', 'GERENTE', 'TECNICO'];
-    const podeVerRetiradaFerramentas = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO'];
-    const podeVerHubFerramentas = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO'];
+    // ─── MATRIZ DE ACESSOS REQUISITADA PELO JHON (CORRIGIDA) ───
+    const podeVerPonto = ['ADMIN', 'GERENTE', 'TECNICO', 'GESTORDEFROTAS'];
+    const podeVerRetiradaFerramentas = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS'];
+    const podeVerHubFerramentas = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS'];
     const podeVerFrota = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS'];
     const podeVerFechamento = ['ADMIN', 'GERENTE'];
     const podeVerFuncionarios = ['ADMIN', 'GERENTE'];
@@ -133,7 +135,7 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 w-full">
 
-                    {/* ⏱️ CARD PONTO (LARGURA DUPLA) - Visível para Admin, Gerente, Técnico */}
+                    {/* ⏱️ CARD PONTO (LARGURA DUPLA) - Visível para Admin, Gerente, Técnico, Gestor de Frotas */}
                     {podeVerPonto.includes(userRole) && (
                         <Link href="/dashboard/ponto" className="bg-[#09090b]/90 border border-orange-500/30 hover:border-orange-500/70 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px] sm:col-span-2">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/[0.06] rounded-full blur-2xl transition-all" />
@@ -148,7 +150,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 🛠️ CARD RETIRADA FERRAMENTAS (LARGURA DUPLA) - Visível para Admin, Gerente, Técnico, Mecânico */}
+                    {/* 🛠️ CARD RETIRADA FERRAMENTAS (LARGURA DUPLA) - Visível para Admin, Gerente, Técnico, Mecânico, Gestor de Frotas */}
                     {podeVerRetiradaFerramentas.includes(userRole) && (
                         <Link href="/dashboard/ferramentas/retirada" className="bg-[#09090b]/90 border border-emerald-500/30 hover:border-emerald-500/70 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px] sm:col-span-2">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/[0.06] rounded-full blur-2xl transition-all" />
@@ -163,7 +165,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* ⚙️ HUB FERRAMENTAS (Retirada e devolução) - Visível para Admin, Gerente, Técnico, Mecânico */}
+                    {/* ⚙️ HUB FERRAMENTAS (Retirada e devolução) - Visível para Admin, Gerente, Técnico, Mecânico, Gestor de Frotas */}
                     {podeVerHubFerramentas.includes(userRole) && (
                         <Link href="/dashboard/ferramentas" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-blue-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
                             <div className="w-11 h-11 bg-blue-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-blue-400 text-lg font-black mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">⚙️</div>
