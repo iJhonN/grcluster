@@ -11,11 +11,11 @@ interface ItemContado {
 }
 
 export default function InventarioRapidoPage() {
-    // Estados de localização (Ficam travados para agilizar o trabalho na mesma prateleira)
-    const [rua, setRua] = useState('02');
-    const [estante, setEstante] = useState('02');
-    const [apartamento, setApartamento] = useState('03');
-    const [nivel, setNivel] = useState('04');
+    // Estados de localização iniciados COMPLETAMENTE VAZIOS para não induzir a erros
+    const [rua, setRua] = useState('');
+    const [estante, setEstante] = useState('');
+    const [apartamento, setApartamento] = useState('');
+    const [nivel, setNivel] = useState('');
 
     // Estados dos inputs da peça atual
     const [referencia, setReferencia] = useState('');
@@ -38,12 +38,18 @@ export default function InventarioRapidoPage() {
     const handleAdicionarItem = (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Validação estrita para impedir o cadastro caso o operador tenha esquecido de preencher o endereço
+        if (!rua.trim() || !estante.trim() || !apartamento.trim() || !nivel.trim()) {
+            setStatus({ tipo: 'erro', texto: 'Atenção! Preencha todo o endereço de localização (Rua, Estante, Apart. e Nível) antes de incluir a peça.' });
+            return;
+        }
+
         if (!referencia.trim() || !quantidade || Number(quantidade) <= 0) {
             setStatus({ tipo: 'erro', texto: 'Informe uma referência válida e a quantidade.' });
             return;
         }
 
-        const localizacaoFormatada = `R:${rua.padStart(2, '0')}-E:${estante.padStart(2, '0')}-AP:${apartamento.padStart(2, '0')}-N:${nivel.padStart(2, '0')}`;
+        const localizacaoFormatada = `R:${rua.trim().padStart(2, '0')}-E:${estante.trim().padStart(2, '0')}-AP:${apartamento.trim().padStart(2, '0')}-N:${nivel.trim().padStart(2, '0')}`;
 
         const novoItem: ItemContado = {
             id_temporario: Math.random().toString(36).substring(2, 9),
@@ -54,7 +60,7 @@ export default function InventarioRapidoPage() {
 
         setFilaContagem([novoItem, ...filaContagem]);
 
-        // Limpa apenas os campos da peça para a próxima entrada
+        // Limpa apenas os campos da peça para manter o endereço fixo enquanto ele trabalha na mesma prateleira
         setReferencia('');
         setQuantidade('');
         setStatus({ tipo: '', texto: '' });
@@ -139,25 +145,25 @@ export default function InventarioRapidoPage() {
                             </div>
                         )}
 
-                        {/* COORDENADAS DE LOCALIZAÇÃO FIXAS */}
+                        {/* COORDENADAS DE LOCALIZAÇÃO OBRIGATÓRIAS */}
                         <div className="bg-black/40 border border-white/[0.03] p-4 rounded-2xl space-y-3">
                             <span className="block text-[8px] font-black uppercase tracking-[2px] text-slate-500">Endereço do Estoque (Fica salvo)</span>
                             <div className="grid grid-cols-4 gap-2">
                                 <div className="space-y-1">
                                     <label className="block text-[7px] font-bold text-slate-600 uppercase">Rua</label>
-                                    <input type="text" value={rua} onChange={e => setRua(e.target.value)} className="w-full bg-black border border-white/[0.06] focus:border-orange-500/40 text-center py-1.5 rounded-lg outline-none font-mono text-xs text-orange-400 font-bold" />
+                                    <input type="text" placeholder="--" value={rua} onChange={e => setRua(e.target.value)} className="w-full bg-black border border-white/[0.06] focus:border-orange-500/40 text-center py-1.5 rounded-lg outline-none font-mono text-xs text-orange-400 font-bold placeholder-slate-800" required />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="block text-[7px] font-bold text-slate-600 uppercase">Estante</label>
-                                    <input type="text" value={estante} onChange={e => setEstante(e.target.value)} className="w-full bg-black border border-white/[0.06] focus:border-orange-500/40 text-center py-1.5 rounded-lg outline-none font-mono text-xs text-orange-400 font-bold" />
+                                    <input type="text" placeholder="--" value={estante} onChange={e => setEstante(e.target.value)} className="w-full bg-black border border-white/[0.06] focus:border-orange-500/40 text-center py-1.5 rounded-lg outline-none font-mono text-xs text-orange-400 font-bold placeholder-slate-800" required />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="block text-[7px] font-bold text-slate-600 uppercase">Apart.</label>
-                                    <input type="text" value={apartamento} onChange={e => setApartamento(e.target.value)} className="w-full bg-black border border-white/[0.06] focus:border-orange-500/40 text-center py-1.5 rounded-lg outline-none font-mono text-xs text-orange-400 font-bold" />
+                                    <input type="text" placeholder="--" value={apartamento} onChange={e => setApartamento(e.target.value)} className="w-full bg-black border border-white/[0.06] focus:border-orange-500/40 text-center py-1.5 rounded-lg outline-none font-mono text-xs text-orange-400 font-bold placeholder-slate-800" required />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="block text-[7px] font-bold text-slate-600 uppercase">Nível</label>
-                                    <input type="text" value={nivel} onChange={e => setNivel(e.target.value)} className="w-full bg-black border border-white/[0.06] focus:border-orange-500/40 text-center py-1.5 rounded-lg outline-none font-mono text-xs text-orange-400 font-bold" />
+                                    <input type="text" placeholder="--" value={nivel} onChange={e => setNivel(e.target.value)} className="w-full bg-black border border-white/[0.06] focus:border-orange-500/40 text-center py-1.5 rounded-lg outline-none font-mono text-xs text-orange-400 font-bold placeholder-slate-800" required />
                                 </div>
                             </div>
                         </div>
