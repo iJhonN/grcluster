@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
 
     // ─── MATRIZ DE SEGURANÇA REQUISITADA PELO JHON ───
 
-    // Regra da Central de Auditoria e Logs (Apenas ADMIN tem poder total de visualização)
+    // Regra da Central de Auditoria e Logs (Apenas ADMIN)
     if (pathname.startsWith('/dashboard/rh/logs')) {
         const autorizados = ['ADMIN'];
         if (!autorizados.includes(cargo)) {
@@ -73,16 +73,16 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Regra do Ponto Geral e Totem de Ponto (Admin, Gerente e Técnico liberados!)
+    // Regra do Ponto Geral e Totem de Ponto (Admin, Gerente, Técnico e Gestor de Frotas liberados!)
     if (pathname.startsWith('/dashboard/ponto')) {
-        const autorizados = ['ADMIN', 'GERENTE', 'TECNICO'];
+        const autorizados = ['ADMIN', 'GERENTE', 'TECNICO', 'GESTORDEFROTAS'];
         if (!autorizados.includes(cargo)) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
         }
     }
 
     // Nota: As rotas de ferramentas (/dashboard/ferramentas) estão liberadas
-    // para todos os cargos (Admin, Gerente, Tecnico, Mecanico).
+    // para todos os cargos (Admin, Gerente, Tecnico, Mecanico, GestorDeFrotas).
 
     return response;
 }
