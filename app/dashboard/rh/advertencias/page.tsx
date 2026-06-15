@@ -17,10 +17,10 @@ interface RegistroDisciplinar {
     nome_funcionario: string;
     cargo_funcionario: string;
     tipo: 'AVISO' | 'ADVERTENCIA' | 'SUSPENSAO';
-    motivo: TEXT;
+    motivo: string; // <-- Corrigido aqui de TEXT para string!
     data_aplicacao: string;
     dias_suspensao: number;
-    criado_by: string;
+    criado_por: string;
 }
 
 export default function AdvertenciasPage() {
@@ -31,7 +31,7 @@ export default function AdvertenciasPage() {
 
     // Estados do Formulário
     const [idFuncionario, setIdFuncionario] = useState('');
-    const [tipoMedida, setTipoMedida] = useState('AVISO');
+    const [tipoMedida, setTipoMedida] = useState<'AVISO' | 'ADVERTENCIA' | 'SUSPENSAO'>('AVISO');
     const [motivo, setMotivo] = useState('');
     const [diasSuspensao, setDiasSuspensao] = useState('0');
     const [dataAplicacao, setDataAplicacao] = useState(new Date().toISOString().split('T')[0]);
@@ -111,16 +111,11 @@ export default function AdvertenciasPage() {
 
             if (error) throw error;
 
-            // Logar ação automaticamente na central de auditoria externa se houver
-            await supabase.from('logs_sistema').insert([{
-                nome_usuario: operador,
-                cargo_usuario: 'GESTOR_RH',
-                acao: `Aplicou ${tipoMedida} para o colaborador ${novaMedida.nome_funcionario}`,
-                rota: '/dashboard/rh/advertencias'
-            }]);
+            // Atualizar UI de forma segura tratando o retorno
+            if (data && data[0]) {
+                setRegistros([data[0] as RegistroDisciplinar, ...registros]);
+            }
 
-            // Atualizar UI
-            setRegistros([data[0], ...registros]);
             setMotivo('');
             setDiasSuspensao('0');
             setIdFuncionario('');
@@ -197,7 +192,7 @@ export default function AdvertenciasPage() {
                         <div className="flex flex-col gap-1.5">
                             <label className="text-[9px] font-black uppercase tracking-wider text-slate-400">Tipo de Infração *</label>
                             <div className="grid grid-cols-3 gap-2">
-                                {['AVISO', 'ADVERTENCIA', 'SUSPENSAO'].map(tipo => (
+                                {(['AVISO', 'ADVERTENCIA', 'SUSPENSAO'] as const).map(tipo => (
                                     <button
                                         key={tipo}
                                         type="button"
@@ -216,7 +211,7 @@ export default function AdvertenciasPage() {
 
                         {/* DIAS DE SUSPENSÃO (CONDICIONAL) */}
                         {tipoMedida === 'SUSPENSAO' && (
-                            <div className="flex flex-col gap-1.5 animate-fade-in">
+                            <div className="flex flex-col gap-1.5">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-slate-400">Tempo de Afastamento (Dias) *</label>
                                 <input
                                     type="number"
@@ -301,7 +296,7 @@ export default function AdvertenciasPage() {
                         ) : (
                             registrosFiltrados.map((item) => {
                                 // Lógica de cálculo de data de retorno
-                                const dataInicio = new Date(item.data_application || item.data_aplicacao);
+                                const dataInicio = new Date(item.data_aplicacao);
                                 if (item.dias_suspensao > 0) {
                                     dataInicio.setDate(dataInicio.getDate() + item.dias_suspensao);
                                 }
@@ -346,11 +341,11 @@ export default function AdvertenciasPage() {
                                         <div className="text-left sm:text-right flex flex-col justify-between shrink-0 pl-2 sm:pl-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.03]">
                                             <div>
                                                 <p className="text-[9px] font-mono font-bold text-orange-500/80">
-                                                    {new Date(item.data_application || item.data_aplicacao).toLocaleDateString('pt-BR')}
+                                                    {new Date(item.data_aplicacao).toLocaleDateString('pt-BR')}
                                                 </p>
                                                 <p className="text-[7px] text-slate-600 uppercase font-black tracking-widest mt-0.5">Data Lançamento</p>
                                             </div>
-                                            <p className="text-[7px] font-mono text-slate-600 mt-2 sm:mt-0">Por: {item.criado_by || item.criado_por}</p>
+                                            <p className="text-[7px] font-mono text-slate-600 mt-2 sm:mt-0">Por: {item.criado_por}</p>
                                         </div>
                                     </div>
                                 );
