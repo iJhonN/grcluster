@@ -24,8 +24,8 @@ export default function ListaEstoquePage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // Função interna para buscar a carga inicial do banco
     async function carregarInventario() {
-        setCarregando(true);
         try {
             const { data, error } = await supabase
                 .from('inventario_balanco')
@@ -43,6 +43,34 @@ export default function ListaEstoquePage() {
 
     useEffect(() => {
         carregarInventario();
+
+        // 🔥 SINCRONIZAÇÃO EM TEMPO REAL (REALTIME)
+        // Escuta qualquer mudança na tabela inventario_balanco e injeta na UI
+        const canalRealtime = supabase
+            .channel('mudancas_estoque_gr')
+            .on(
+                'postgres_changes',
+                { event: '*', scheme: 'public', table: 'inventario_balanco' },
+                (payload) => {
+                    if (payload.eventType === 'INSERT') {
+                        const novoItem = payload.new as ItemEstoque;
+                        // Adiciona o novo item no topo da lista instantaneamente
+                        setPecas(prev => [novoItem, ...prev]);
+                    } else if (payload.eventType === 'UPDATE') {
+                        const itemAtualizado = payload.new as ItemEstoque;
+                        setPecas(prev => prev.map(p => p.id === itemAtualizado.id ? itemAtualizado : p));
+                    } else if (payload.eventType === 'DELETE') {
+                        const itemRemovido = payload.old as { id: string };
+                        setPecas(prev => prev.filter(p => p.id !== itemRemovido.id));
+                    }
+                }
+            )
+            .subscribe();
+
+        // Limpa o listener ao sair da tela para poupar memória no MacBook
+        return () => {
+            supabase.removeChannel(canalRealtime);
+        };
     }, []);
 
     // Atualiza o status da peça e da etiqueta diretamente no banco de dados
@@ -54,8 +82,8 @@ export default function ListaEstoquePage() {
                 .eq('id', id);
 
             if (error) throw error;
-
-            // Atualiza a UI local instantaneamente sem precisar dar reload total na tabela
+            // O próprio listener Realtime vai notar o update e atualizar a UI,
+            // mas alteramos localmente também para resposta visual imediata no clique
             setPecas(prev => prev.map(p => p.id === id ? { ...p, status: novoStatus } : p));
         } catch (err) {
             console.error("Falha ao atualizar status:", err);
