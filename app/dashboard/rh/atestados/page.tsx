@@ -14,12 +14,9 @@ interface Atestado {
     id: string;
     funcionario_id: string;
     data_emissao: string;
-    data_inicio: string;
-    data_fim: string;
     quantidade_dias: number;
     cid: string | null;
     justificativa: string;
-    // MUDANÇA NO TIPO: Agora recebe um array de caminhos
     arquivos: string[] | null;
     funcionarios: {
         nome: string;
@@ -34,15 +31,12 @@ export default function ControleAtestadosPage() {
     const [carregando, setCarregando] = useState(true);
     const [enviando, setEnviando] = useState(false);
 
-    // Estados do Formulário
+    // Estados do Formulário Atualizados
     const [funcionarioId, setFuncionarioId] = useState('');
     const [dataEmissao, setDataEmissao] = useState('');
-    const [dataInicio, setDataInicio] = useState('');
-    const [dataFim, setDataFim] = useState('');
+    const [quantidadeDias, setQuantidadeDias] = useState('');
     const [cid, setCid] = useState('');
     const [justificativa, setJustificativa] = useState('');
-
-    // MUDANÇA 1: Estado para lista de arquivos em vez de um único
     const [arquivosSelecionados, setArquivosSelecionados] = useState<File[]>([]);
 
     const [statusFeed, setStatusFeed] = useState({ tipo: '', texto: '' });
@@ -57,7 +51,6 @@ export default function ControleAtestadosPage() {
         try {
             const [resFunc, resAtestados] = await Promise.all([
                 supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome'),
-                // Busca a nova coluna 'arquivos'
                 supabase.from('atestados_medicos').select('*, funcionarios(nome, sobrenome, cargo)').order('criado_em', { ascending: false })
             ]);
 
@@ -74,22 +67,34 @@ export default function ControleAtestadosPage() {
         carregarDados();
     }, []);
 
-    // Lógica para lidar com a seleção múltipla de arquivos
+    // Função auxiliar para calcular data de retorno na tela em tempo real
+    const calcularDataRetorno = (emissao: string, dias: string) => {
+        if (!emissao || !dias || Number(dias) <= 0) return '---';
+        const data = new Date(emissao + 'T00:00:00');
+        data.setDate(data.getDate() + Number(dias));
+        return data.toLocaleDateString('pt-BR');
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setArquivosSelecionados([...arquivosSelecionados, e.target.files[0]]);
         }
     };
 
-    // Remove um arquivo específico da lista antes do envio
     const handleRemoveFile = (index: number) => {
         setArquivosSelecionados(arquivosSelecionados.filter((_, i) => i !== index));
     };
 
     const handleCadastrarAtestado = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!funcionarioId || !dataEmissao || !dataInicio || !dataFim || !justificativa.trim()) {
+        if (!funcionarioId || !dataEmissao || !quantidadeDias || !justificativa.trim()) {
             setStatusFeed({ tipo: 'erro', texto: 'Preencha todos os campos obrigatórios.' });
+            return;
+        }
+
+        const diasNum = Number(quantidadeDias);
+        if (diasNum <= 0) {
+            setStatusFeed({ tipo: 'erro', texto: 'A quantidade de dias deve ser maior que zero.' });
             return;
         }
 
@@ -97,10 +102,8 @@ export default function ControleAtestadosPage() {
         setStatusFeed({ tipo: '', texto: '' });
 
         try {
-            // MUDANÇA 2: Upload de múltiplos arquivos em laço
             const urlsDocumentos: string[] = [];
 
-            // Loop para enviar cada arquivo da lista para o bucket 'atestados'
             for (const file of arquivosSelecionados) {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${funcionarioId}-${Date.now()}-${Math.random()}.${fileExt}`;
@@ -113,35 +116,27 @@ export default function ControleAtestadosPage() {
                 if (uploadData) urlsDocumentos.push(uploadData.path);
             }
 
-            const inicio = new Date(dataInicio);
-            const fim = new Date(dataFim);
-            const diferencaTempo = fim.getTime() - inicio.getTime();
-            const diferencaDias = Math.ceil(diferencaTempo / (1000 * 60 * 60 * 24)) + 1;
-
-            if (diferencaDias <= 0) {
-                throw new Error("A data de término não pode ser anterior à data de início.");
-            }
-
             const { error: insertError } = await supabase
                 .from('atestados_medicos')
                 .insert([{
                     funcionario_id: funcionarioId,
                     data_emissao: dataEmissao,
-                    data_inicio: dataInicio,
-                    data_fim: dataFim,
-                    quantidade_dias: diferencaDias,
+                    quantidade_dias: diasNum,
                     cid: cid.trim().toUpperCase() || null,
                     justificativa: justificativa.trim(),
-                    arquivos: urlsDocumentos // Salva o array de caminhos no banco
+                    arquivos: urlsDocumentos
                 }]);
 
             if (insertError) throw insertError;
 
             setStatusFeed({ tipo: 'sucesso', texto: 'Atestado e anexos registrados com sucesso!' });
 
-            // Reset do formulário mantendo o seu design
-            setFuncionarioId(''); setDataEmissao(''); setDataInicio(''); setDataFim(''); setCid(''); setJustificativa('');
-            setArquivosSelecionados([]); // Reseta a lista de arquivos
+            setFuncionarioId('');
+            setDataEmissao('');
+            setQuantidadeDias('');
+            setCid('');
+            setJustificativa('');
+            setArquivosSelecionados([]);
 
             carregarDados();
 
@@ -172,7 +167,7 @@ export default function ControleAtestadosPage() {
     return (
         <main className="relative min-h-screen bg-[#030303] text-white p-4 sm:p-6 md:p-10 font-sans overflow-hidden antialiased flex flex-col justify-between w-full">
 
-            {/* BACKGROUND LINES MANTIDO IGUAL */}
+            {/* BACKGROUND LINES */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <div
                     className="absolute inset-0 opacity-[0.015]"
@@ -186,7 +181,7 @@ export default function ControleAtestadosPage() {
 
             <div className="relative z-10 w-full flex-1 flex flex-col gap-8">
 
-                {/* HEADER MANTIDO IGUAL */}
+                {/* HEADER */}
                 <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/[0.04] pb-6 px-2">
                     <div>
                         <Link href="/dashboard" className="text-orange-500 font-black text-[9px] uppercase tracking-[4px] mb-1.5 block hover:opacity-70 transition-all">
@@ -203,7 +198,7 @@ export default function ControleAtestadosPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start w-full px-2">
 
-                    {/* FORM CARD MANTIDO IGUAL */}
+                    {/* FORM CARD */}
                     <div className="relative bg-[#09090b]/80 border border-white/[0.06] rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl overflow-hidden lg:col-span-1">
                         <div className="absolute top-0 left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
 
@@ -221,7 +216,7 @@ export default function ControleAtestadosPage() {
 
                         <form onSubmit={handleCadastrarAtestado} className="space-y-4">
 
-                            {/* Campo Colaborador MANTIDO IGUAL */}
+                            {/* Colaborador */}
                             <div className="space-y-1">
                                 <label className="block text-[8px] font-black uppercase tracking-[2px] text-slate-500">Colaborador</label>
                                 <select
@@ -239,7 +234,7 @@ export default function ControleAtestadosPage() {
                                 </select>
                             </div>
 
-                            {/* Campos Emissão e CID MANTIDO IGUAL */}
+                            {/* Emissão e CID */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <label className="block text-[8px] font-black uppercase tracking-[2px] text-slate-500">Emissão</label>
@@ -263,35 +258,33 @@ export default function ControleAtestadosPage() {
                                 </div>
                             </div>
 
-                            {/* Campos Datas MANTIDO IGUAL */}
+                            {/* Quantidade de dias e cálculo automático de retorno */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                    <label className="block text-[8px] font-black uppercase tracking-[2px] text-slate-500">Data Início</label>
+                                    <label className="block text-[8px] font-black uppercase tracking-[2px] text-slate-500">Dias de Atestado</label>
                                     <input
-                                        type="date"
-                                        value={dataInicio}
-                                        onChange={e => setDataInicio(e.target.value)}
-                                        className="w-full bg-black/40 border border-white/[0.05] focus:border-orange-500/40 px-3 py-2.5 rounded-xl outline-none text-white text-xs font-medium uppercase"
+                                        type="number"
+                                        min="1"
+                                        placeholder="Ex: 5"
+                                        value={quantidadeDias}
+                                        onChange={e => setQuantidadeDias(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/[0.05] focus:border-orange-500/40 px-3 py-2.5 rounded-xl outline-none text-white text-xs font-mono tracking-wide placeholder-slate-700"
                                         required
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="block text-[8px] font-black uppercase tracking-[2px] text-slate-500">Data Fim</label>
-                                    <input
-                                        type="date"
-                                        value={dataFim}
-                                        onChange={e => setDataFim(e.target.value)}
-                                        className="w-full bg-black/40 border border-white/[0.05] focus:border-orange-500/40 px-3 py-2.5 rounded-xl outline-none text-white text-xs font-medium uppercase"
-                                        required
-                                    />
+                                    <label className="block text-[8px] font-black uppercase tracking-[2px] text-orange-500/80">Data de Retorno</label>
+                                    <div className="w-full bg-orange-500/5 border border-orange-500/20 px-3 py-2.5 rounded-xl text-orange-400 text-xs font-mono font-black tracking-wider flex items-center h-[38px]">
+                                        {calcularDataRetorno(dataEmissao, quantidadeDias)}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Campo Justificativa MANTIDO IGUAL */}
+                            {/* Justificativa */}
                             <div className="space-y-1">
                                 <label className="block text-[8px] font-black uppercase tracking-[2px] text-slate-500">Justificativa / Motivo</label>
                                 <textarea
-                                    placeholder="Informe o motivo ou observações do afastamento..."
+                                    placeholder="Informe o motivo ou observações..."
                                     value={justificativa}
                                     onChange={e => setJustificativa(e.target.value)}
                                     rows={3}
@@ -300,11 +293,10 @@ export default function ControleAtestadosPage() {
                                 />
                             </div>
 
-                            {/* MUDANÇA 3: ÁREA DE MÚLTIPLOS ANEXOS (Botão +) MANTENDO O SEU DESIGN */}
+                            {/* Área de múltiplos anexos */}
                             <div className="space-y-1">
                                 <label className="block text-[8px] font-black uppercase tracking-[2px] text-slate-500">Anexos (PDF, JPG, PNG)</label>
 
-                                {/* Lista de arquivos pré-selecionados para o seu design */}
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {arquivosSelecionados.map((file, idx) => (
                                         <div key={idx} className="bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[8px] px-2 py-1 rounded flex items-center gap-2 font-black uppercase tracking-wide">
@@ -314,8 +306,7 @@ export default function ControleAtestadosPage() {
                                     ))}
                                 </div>
 
-                                {/* Botão + Adicionar Documento conforme solicitado */}
-                                <label className="cursor-pointer flex items-center justify-center gap-2 border-dashed border border-orange-500/30 hover:border-orange-500/60 p-3 rounded-xl text-[10px] uppercase font-black tracking-widest text-orange-400 hover:text-orange-300 active:scale-[0.99] transition-all bg-black/20">
+                                <label className="cursor-pointer flex items-center justify-center gap-2 border-dashed border border-orange-500/30 hover:border-orange-500/60 p-3 rounded-xl text-[10px] uppercase font-black tracking-widest text-orange-400 hover:text-orange-300 transition-all bg-black/20">
                                     <span>➕ Adicionar Documento</span>
                                     <input
                                         type="file"
@@ -326,7 +317,6 @@ export default function ControleAtestadosPage() {
                                 </label>
                             </div>
 
-                            {/* Botão Salvar MANTIDO IGUAL */}
                             <button
                                 type="submit"
                                 disabled={enviando}
@@ -339,7 +329,7 @@ export default function ControleAtestadosPage() {
                         </form>
                     </div>
 
-                    {/* TABLE CARD MANTIDO IGUAL */}
+                    {/* TABLE CARD */}
                     <div className="relative bg-[#09090b]/80 border border-white/[0.06] rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl overflow-hidden lg:col-span-2 min-h-[400px]">
                         <div className="absolute top-0 left-[5%] right-[5%] h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
 
@@ -361,8 +351,9 @@ export default function ControleAtestadosPage() {
                                     <thead>
                                     <tr className="border-b border-white/[0.04] text-slate-500 uppercase tracking-wider text-[8px] font-black pb-3">
                                         <th className="pb-3 pl-2">Funcionário</th>
-                                        <th className="pb-3 text-center">Período</th>
+                                        <th className="pb-3 text-center">Data Emissão</th>
                                         <th className="pb-3 text-center">Dias</th>
+                                        <th className="pb-3 text-center">Data Retorno</th>
                                         <th className="pb-3 text-center">CID</th>
                                         <th className="pb-3">Justificativa</th>
                                         <th className="pb-3 text-right pr-2">Documentos</th>
@@ -371,7 +362,6 @@ export default function ControleAtestadosPage() {
                                     <tbody className="divide-y divide-white/[0.015]">
                                     {atestados.map(a => (
                                         <tr key={a.id} className="hover:bg-white/[0.01] transition-colors group">
-                                            {/* Colunas Cadastrais MANTIDO IGUAL */}
                                             <td className="py-4 pl-2">
                                                 <p className="font-black text-slate-200 uppercase tracking-tight">
                                                     {a.funcionarios ? `${a.funcionarios.nome} ${a.funcionarios.sobrenome}` : 'Desconhecido'}
@@ -379,10 +369,13 @@ export default function ControleAtestadosPage() {
                                                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">ID: {a.funcionario_id}</span>
                                             </td>
                                             <td className="py-4 text-center font-mono text-[11px] text-slate-400">
-                                                {new Date(a.data_inicio).toLocaleDateString('pt-BR')} <span className="text-slate-600 font-sans text-xs">➔</span> {new Date(a.data_fim).toLocaleDateString('pt-BR')}
+                                                {new Date(a.data_emissao + 'T00:00:00').toLocaleDateString('pt-BR')}
                                             </td>
                                             <td className="py-4 text-center font-black text-orange-400 font-mono text-xs">
                                                 {a.quantidade_dias}d
+                                            </td>
+                                            <td className="py-4 text-center font-mono font-black text-[11px] text-emerald-400">
+                                                {calcularDataRetorno(a.data_emissao, String(a.quantidade_dias))}
                                             </td>
                                             <td className="py-4 text-center font-mono font-bold text-amber-500 uppercase tracking-wide">
                                                 {a.cid || '---'}
@@ -390,8 +383,6 @@ export default function ControleAtestadosPage() {
                                             <td className="py-4 text-slate-300 font-medium max-w-[200px] truncate uppercase text-[10px] tracking-wide" title={a.justificativa}>
                                                 {a.justificativa}
                                             </td>
-
-                                            {/* MUDANÇA 4: LISTAGEM DE MÚLTIPLOS ANEXOS NA TABELA (Botão Ver Anexo Múltiplo) MANTENDO DESIGN ANTERIOR */}
                                             <td className="py-4 text-right pr-2">
                                                 {a.arquivos && a.arquivos.length > 0 ? (
                                                     <div className="flex flex-col gap-1 items-end">
@@ -419,10 +410,10 @@ export default function ControleAtestadosPage() {
                 </div>
             </div>
 
-            {/* FOOTER MANTIDO IGUAL */}
+            {/* FOOTER */}
             <footer className="w-full border-t border-white/[0.02] pt-6 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-700 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left px-2 relative z-10">
                 <div>GR Autopeças & Serviços</div>
-                <div className="font-mono text-slate-800">Módulo RH v2.6</div>
+                <div className="font-mono text-slate-800">Módulo RH v2.7</div>
             </footer>
         </main>
     );
