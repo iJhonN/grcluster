@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 
 interface VeiculoOptions {
@@ -10,6 +11,8 @@ interface VeiculoOptions {
 }
 
 export default function CadastrarAbastecimentoPage() {
+    const router = useRouter();
+
     const [veiculos, setVeiculos] = useState<VeiculoOptions[]>([]);
     const [veiculoSelecionado, setVeiculoSelecionado] = useState<VeiculoOptions | null>(null);
 
@@ -52,9 +55,9 @@ export default function CadastrarAbastecimentoPage() {
             }
         } catch (err) {
             console.error("Erro ao buscar veículos para abastecimento:", err);
-        } declare {
+        } finally {
             setCarregandoListas(false);
-    }
+        }
     }
 
     useEffect(() => {
