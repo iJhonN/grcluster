@@ -17,6 +17,11 @@ export default function VincularRotaViagemPage() {
     const [motoristas, setMotoristas] = useState<DataSelect[]>([]);
     const [rotas, setRotas] = useState<DataSelect[]>([]);
 
+    // NOVOS ESTADOS: Termos de pesquisa para cada seletor
+    const [buscaVeiculo, setBuscaVeiculo] = useState('');
+    const [buscaMotorista, setBuscaMotorista] = useState('');
+    const [buscaRota, setBuscaRota] = useState('');
+
     // Estados dos campos do formulário
     const [veiculoId, setVeiculoId] = useState('');
     const [motoristaId, setMotoristaId] = useState('');
@@ -74,6 +79,19 @@ export default function VincularRotaViagemPage() {
         carregarDadosFormulario();
     }, []);
 
+    // FILTRAGEM DINÂMICA: Filtra os arrays locais em tempo real com base no que foi digitado
+    const veiculosFiltrados = veiculos.filter(v =>
+        v.label.toLowerCase().includes(buscaVeiculo.toLowerCase())
+    );
+
+    const motoristasFiltrados = motoristas.filter(m =>
+        m.label.toLowerCase().includes(buscaMotorista.toLowerCase())
+    );
+
+    const rotasFiltradas = rotas.filter(r =>
+        r.label.toLowerCase().includes(buscaRota.toLowerCase())
+    );
+
     const handleDespacharViagem = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!veiculoId || !motoristaId || !rotaId) {
@@ -89,7 +107,7 @@ export default function VincularRotaViagemPage() {
                 veiculo_id: veiculoId,
                 motorista_id: motoristaId,
                 rota_id: rotaId,
-                status_viagem: 'Em trânsito', // Nasce ativo nas rodovias
+                status_viagem: 'Em trânsito',
                 observacoes: observacoes.trim() || null,
                 data_saida: new Date().toISOString()
             };
@@ -110,8 +128,10 @@ export default function VincularRotaViagemPage() {
             setMotoristaId('');
             setRotaId('');
             setObservacoes('');
+            setBuscaVeiculo('');
+            setBuscaMotorista('');
+            setBuscaRota('');
 
-            // Redireciona o usuário de volta para o monitor principal após 1.5 segundos
             setTimeout(() => {
                 router.push('/dashboard/frota/rotas');
             }, 1500);
@@ -170,55 +190,85 @@ export default function VincularRotaViagemPage() {
                     ) : (
                         <form onSubmit={handleDespacharViagem} className="space-y-5">
 
-                            {/* SELECT VEÍCULO */}
+                            {/* SELECT VEÍCULO COM PESQUISA */}
                             <div className="space-y-1.5">
                                 <label className="block text-[9px] font-black uppercase tracking-[2px] text-slate-400">1. Selecione o Veículo / Ativo</label>
-                                <select
-                                    value={veiculoId}
-                                    onChange={e => setVeiculoId(e.target.value)}
-                                    className="w-full bg-black/50 border border-white/[0.06] focus:border-blue-500/50 px-4 py-3 rounded-xl outline-none text-slate-200 text-xs font-bold uppercase tracking-wide cursor-pointer"
-                                    required
-                                    disabled={enviando}
-                                >
-                                    <option value="">-- Escolha o veículo da garagem --</option>
-                                    {veiculos.map(v => (
-                                        <option key={v.id} value={v.id} className="bg-[#1a1f29]">{v.label}</option>
-                                    ))}
-                                </select>
+                                <div className="space-y-1">
+                                    <input
+                                        type="text"
+                                        placeholder="🔍 Pesquisar veículo por modelo ou placa..."
+                                        value={buscaVeiculo}
+                                        onChange={e => setBuscaVeiculo(e.target.value)}
+                                        className="w-full bg-black/30 border border-white/[0.04] focus:border-blue-500/30 px-3 py-1.5 rounded-lg outline-none text-white text-[11px] font-medium placeholder-slate-600 uppercase tracking-wide"
+                                        disabled={enviando}
+                                    />
+                                    <select
+                                        value={veiculoId}
+                                        onChange={e => setVeiculoId(e.target.value)}
+                                        className="w-full bg-black/50 border border-white/[0.06] focus:border-blue-500/50 px-4 py-3 rounded-xl outline-none text-slate-200 text-xs font-bold uppercase tracking-wide cursor-pointer"
+                                        required
+                                        disabled={enviando}
+                                    >
+                                        <option value="">-- Escolha o veículo da garagem ({veiculosFiltrados.length} encontrados) --</option>
+                                        {veiculosFiltrados.map(v => (
+                                            <option key={v.id} value={v.id} className="bg-[#1a1f29]">{v.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
-                            {/* SELECT MOTORISTA */}
+                            {/* SELECT MOTORISTA COM PESQUISA */}
                             <div className="space-y-1.5">
                                 <label className="block text-[9px] font-black uppercase tracking-[2px] text-slate-400">2. Escolha o Condutor Escalado</label>
-                                <select
-                                    value={motoristaId}
-                                    onChange={e => setMotoristaId(e.target.value)}
-                                    className="w-full bg-black/50 border border-white/[0.06] focus:border-blue-500/50 px-4 py-3 rounded-xl outline-none text-slate-200 text-xs font-bold uppercase tracking-wide cursor-pointer"
-                                    required
-                                    disabled={enviando}
-                                >
-                                    <option value="">-- Escolha o motorista parceiro --</option>
-                                    {motoristas.map(m => (
-                                        <option key={m.id} value={m.id} className="bg-[#1a1f29]">{m.label}</option>
-                                    ))}
-                                </select>
+                                <div className="space-y-1">
+                                    <input
+                                        type="text"
+                                        placeholder="🔍 Pesquisar motorista por nome..."
+                                        value={buscaMotorista}
+                                        onChange={e => setBuscaMotorista(e.target.value)}
+                                        className="w-full bg-black/30 border border-white/[0.04] focus:border-blue-500/30 px-3 py-1.5 rounded-lg outline-none text-white text-[11px] font-medium placeholder-slate-600 uppercase tracking-wide"
+                                        disabled={enviando}
+                                    />
+                                    <select
+                                        value={motoristaId}
+                                        onChange={e => setMotoristaId(e.target.value)}
+                                        className="w-full bg-black/50 border border-white/[0.06] focus:border-blue-500/50 px-4 py-3 rounded-xl outline-none text-slate-200 text-xs font-bold uppercase tracking-wide cursor-pointer"
+                                        required
+                                        disabled={enviando}
+                                    >
+                                        <option value="">-- Escolha o motorista parceiro ({motoristasFiltrados.length} encontrados) --</option>
+                                        {motoristasFiltrados.map(m => (
+                                            <option key={m.id} value={m.id} className="bg-[#1a1f29]">{m.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
-                            {/* SELECT ROTA */}
+                            {/* SELECT ROTA COM PESQUISA */}
                             <div className="space-y-1.5">
                                 <label className="block text-[9px] font-black uppercase tracking-[2px] text-slate-400">3. Itinerário & Turno de Destino</label>
-                                <select
-                                    value={rotaId}
-                                    onChange={e => setRotaId(e.target.value)}
-                                    className="w-full bg-black/50 border border-white/[0.06] focus:border-blue-500/50 px-4 py-3 rounded-xl outline-none text-slate-200 text-xs font-bold uppercase tracking-wide cursor-pointer"
-                                    required
-                                    disabled={enviando}
-                                >
-                                    <option value="">-- Vincular linha de trajeto --</option>
-                                    {rotas.map(r => (
-                                        <option key={r.id} value={r.id} className="bg-[#1a1f29]">{r.label}</option>
-                                    ))}
-                                </select>
+                                <div className="space-y-1">
+                                    <input
+                                        type="text"
+                                        placeholder="🔍 Pesquisar itinerário, km ou turno..."
+                                        value={buscaRota}
+                                        onChange={e => setBuscaRota(e.target.value)}
+                                        className="w-full bg-black/30 border border-white/[0.04] focus:border-blue-500/30 px-3 py-1.5 rounded-lg outline-none text-white text-[11px] font-medium placeholder-slate-600 uppercase tracking-wide"
+                                        disabled={enviando}
+                                    />
+                                    <select
+                                        value={rotaId}
+                                        onChange={e => setRotaId(e.target.value)}
+                                        className="w-full bg-black/50 border border-white/[0.06] focus:border-blue-500/50 px-4 py-3 rounded-xl outline-none text-slate-200 text-xs font-bold uppercase tracking-wide cursor-pointer"
+                                        required
+                                        disabled={enviando}
+                                    >
+                                        <option value="">-- Vincular linha de trajeto ({rotasFiltradas.length} encontradas) --</option>
+                                        {rotasFiltradas.map(r => (
+                                            <option key={r.id} value={r.id} className="bg-[#1a1f29]">{r.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
                             {/* OBSERVAÇÕES */}
