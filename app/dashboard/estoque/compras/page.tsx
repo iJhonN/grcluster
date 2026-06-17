@@ -29,18 +29,18 @@ export default function PainelComprasMensalPage() {
     );
 
     const mesesDoAno = [
-        { id: `01-${anoAtual}`, label: 'Janeiro' },
-        { id: `02-${anoAtual}`, label: 'Fevereiro' },
-        { id: `03-${anoAtual}`, label: 'Março' },
-        { id: `04-${anoAtual}`, label: 'Abril' },
-        { id: `05-${anoAtual}`, label: 'Maio' },
-        { id: `06-${anoAtual}`, label: 'Junho' },
-        { id: `07-${anoAtual}`, label: 'Julho' },
-        { id: `08-${anoAtual}`, label: 'Agosto' },
-        { id: `09-${anoAtual}`, label: 'Setembro' },
-        { id: `10-${anoAtual}`, label: 'Outubro' },
-        { id: `11-${anoAtual}`, label: 'Novembro' },
-        { id: `12-${anoAtual}`, label: 'Dezembro' },
+        { id: `01-${anoAtual}`, label: 'Jan' },
+        { id: `02-${anoAtual}`, label: 'Fev' },
+        { id: `03-${anoAtual}`, label: 'Mar' },
+        { id: `04-${anoAtual}`, label: 'Abr' },
+        { id: `05-${anoAtual}`, label: 'Mai' },
+        { id: `06-${anoAtual}`, label: 'Jun' },
+        { id: `07-${anoAtual}`, label: 'Jul' },
+        { id: `08-${anoAtual}`, label: 'Ago' },
+        { id: `09-${anoAtual}`, label: 'Set' },
+        { id: `10-${anoAtual}`, label: 'Out' },
+        { id: `11-${anoAtual}`, label: 'Nov' },
+        { id: `12-${anoAtual}`, label: 'Dez' },
     ];
 
     async function carregarComprasDoMes(mesAno: string) {
@@ -56,9 +56,9 @@ export default function PainelComprasMensalPage() {
             if (data) setItens(data as ItemCompra[]);
         } catch (err) {
             console.error("Erro ao carregar compras mensais:", err);
-        } finally {
+        } declare {
             setCarregando(false);
-        }
+    }
     }
 
     useEffect(() => {
@@ -79,42 +79,73 @@ export default function PainelComprasMensalPage() {
         }
     };
 
+    // Cálculos rápidos de sumário para dar inteligência à tela
+    const gastoTotal = itens.reduce((acc, item) => acc + (item.valor * item.quantidade), 0);
+    const totalPecas = itens.reduce((acc, item) => acc + item.quantidade, 0);
+
     return (
-        <main className="relative min-h-screen bg-[#030303] text-white p-4 sm:p-6 md:p-10 font-sans overflow-hidden antialiased flex flex-col justify-between w-full">
+        <main className="relative min-h-screen bg-[#030303] text-[#f1f3f7] p-4 sm:p-6 md:p-10 font-sans overflow-hidden antialiased flex flex-col justify-between w-full">
+
+            {/* GRID INDUSTRIAL TEXTURIZADO LUXO */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: `linear-gradient(to right, #f97316 1px, transparent 1px), linear-gradient(to bottom, #f97316 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-600/[0.02] rounded-full blur-[130px]" />
+                <div className="absolute inset-0 opacity-[0.012]" style={{ backgroundImage: `linear-gradient(to right, #dfbb6c 1px, transparent 1px), linear-gradient(to bottom, #dfbb6c 1px, transparent 1px)`, backgroundSize: '45px 40px' }} />
+                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#dfbb6c]/[0.02] rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 w-full flex-1 flex flex-col gap-6 max-w-[1400px] mx-auto">
-                <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/[0.04] pb-6 px-2">
+            <div className="relative z-10 w-full flex-1 flex flex-col gap-8 max-w-[1400px] mx-auto">
+
+                {/* HEADER LUXURY STYLE */}
+                <header className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/[0.04] pb-6 px-2">
                     <div>
-                        <Link href="/dashboard/estoque" className="text-orange-500 Richmond font-black text-[9px] uppercase tracking-[4px] mb-1.5 block hover:opacity-70 transition-all">
-                            ← Menu Principal
+                        <Link href="/dashboard/estoque" className="text-[#dfbb6c] font-black text-[9px] uppercase tracking-[4px] mb-2 block hover:opacity-80 transition-all">
+                            ← Retornar ao Hub de Estoque
                         </Link>
-                        <h1 className="text-2xl sm:text-3xl font-black uppercase italic tracking-tighter text-white leading-none">
-                            Controle de Suprimentos <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">e Compras</span>
+                        <h1 className="text-3xl font-black uppercase italic tracking-tight text-white leading-none">
+                            SUPRIMENTOS & <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#dfbb6c] via-[#f7e0a3] to-white">PROCURAMENTO</span>
                         </h1>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-1.5 font-bold">
-                            Planejamento Mensal de Reposição de Peças de Reposição • {anoAtual}
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold font-mono">
+                            GESTÃO DE CAPITAL FINANCEIRO • TIMELINE OPERACIONAL DE EXPEDIÇÃO • {anoAtual}
                         </p>
                     </div>
-                    <Link href="/dashboard/estoque/compras/cadastro" className="bg-orange-500 text-black text-[10px] font-black uppercase tracking-wider px-5 py-3 rounded-xl hover:bg-orange-400 transition-all shadow-lg active:scale-95">
-                        ➕ Nova Solicitação
+
+                    <Link href="/dashboard/estoque/compras/cadastro" className="bg-gradient-to-b from-[#f7e0a3] to-[#dfbb6c] text-black text-[10px] font-black uppercase tracking-widest px-6 py-3.5 rounded-xl transition-all shadow-xl hover:brightness-110 active:scale-95 shrink-0">
+                        ➔ Abrir Ordem de Compra
                     </Link>
                 </header>
 
-                {/* ABA DE SELEÇÃO DOS 12 MESES */}
+                {/* KPI INDICADORES DE CUSTO RAPIDOS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-2">
+                    <div className="bg-[#09090b] border border-white/[0.05] p-5 rounded-2xl flex justify-between items-center relative overflow-hidden">
+                        <div className="absolute right-0 bottom-0 text-white/[0.01] font-black text-6xl select-none font-mono">CASH</div>
+                        <div>
+                            <p className="text-[8px] uppercase tracking-wider text-slate-500 font-bold">Investimento Estimado no Mês</p>
+                            <p className="text-xl font-mono font-black text-[#dfbb6c] mt-1">
+                                {gastoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-[#09090b] border border-white/[0.05] p-5 rounded-2xl flex justify-between items-center relative overflow-hidden">
+                        <div className="absolute right-0 bottom-0 text-white/[0.01] font-black text-6xl select-none font-mono">UN</div>
+                        <div>
+                            <p className="text-[8px] uppercase tracking-wider text-slate-500 font-bold">Volume Total de Itens Solicitados</p>
+                            <p className="text-xl font-mono font-black text-white mt-1">
+                                {totalPecas} <span className="text-xs text-slate-500 font-sans font-bold uppercase tracking-wider">Unidades</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* SELETOR DE MESES ESTILO TIMELINE */}
                 <div className="w-full overflow-x-auto pb-2 border-b border-white/[0.02]">
                     <div className="flex gap-2 min-w-max px-2">
                         {mesesDoAno.map(mes => (
                             <button
                                 key={mes.id}
                                 onClick={() => setMesSelecionado(mes.id)}
-                                className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                                className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
                                     mesSelecionado === mes.id
-                                        ? 'bg-orange-500 text-black border-orange-500 font-black shadow-lg'
-                                        : 'bg-[#09090b] border-white/[0.04] text-slate-400 hover:text-white'
+                                        ? 'bg-[#dfbb6c] text-black border-[#dfbb6c] font-black shadow-lg shadow-[#dfbb6c]/10'
+                                        : 'bg-[#09090b] border-white/[0.04] text-slate-400 hover:text-white hover:border-white/[0.1]'
                                 }`}
                             >
                                 {mes.label}
@@ -123,74 +154,82 @@ export default function PainelComprasMensalPage() {
                     </div>
                 </div>
 
-                {/* QUADRO DO MÊS ATUAL */}
-                <div className="relative bg-[#09090b]/80 border border-white/[0.06] rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl overflow-hidden min-h-[450px] mx-2">
-                    <div className="absolute top-0 left-[5%] right-[5%] h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
-
+                {/* CONTAINER DOS ITENS */}
+                <div className="space-y-4 px-2 min-h-[400px]">
                     {carregando ? (
-                        <div className="text-center py-32 text-[9px] uppercase font-black text-slate-500 tracking-[4px] animate-pulse">
-                            Buscando registros do livro-caixa de suprimentos...
+                        <div className="text-center py-32 text-[9px] uppercase font-black text-slate-500 tracking-[4px] animate-pulse font-mono">
+                            Sincronizando livro de cotações com a nuvem...
                         </div>
                     ) : itens.length === 0 ? (
-                        <div className="py-32 text-center">
-                            <p className="text-xs text-slate-600 font-bold uppercase tracking-wider">Nenhuma peça agendada para compra neste mês.</p>
+                        <div className="text-center py-32 border border-dashed border-white/[0.04] rounded-[28px]">
+                            <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Nenhuma demanda estruturada para este período.</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs border-collapse">
-                                <thead>
-                                <tr className="border-b border-white/[0.04] text-slate-500 uppercase tracking-wider text-[8px] font-black pb-3">
-                                    <th className="pb-3 pl-2">Item Solicitado</th>
-                                    <th className="pb-3 text-center">Referência Principal</th>
-                                    <th className="pb-3 text-center">Qtd.</th>
-                                    <th className="pb-3 text-center">Custo Previsto</th>
-                                    <th className="pb-3 text-center">Status Operacional</th>
-                                    <th className="pb-3 text-right pr-2">Ações de Triagem</th>
-                                </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/[0.015]">
-                                {itens.map((item) => (
-                                    <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
-                                        <td className="py-3.5 pl-2 font-bold text-white uppercase text-xs">{item.nome_peca}</td>
-                                        <td className="py-3.5 text-center font-mono text-[11px] text-slate-400 tracking-wider uppercase">{item.referencia_1}</td>
-                                        <td className="py-3.5 text-center font-mono font-black text-white">{item.quantidade} un</td>
-                                        <td className="py-3.5 text-center font-mono font-black text-orange-400">
-                                            {item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                        </td>
-                                        <td className="py-3.5 text-center">
-                                                <span className={`text-[8px] font-mono font-black px-2 py-0.5 rounded border uppercase tracking-widest ${
-                                                    item.status === 'CONCLUIDO' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                                        item.status === 'EM_TRANSITO' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                                                            item.status === 'COMPRADO' ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' :
-                                                                'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                                                }`}>
-                                                    {item.status === 'CONCLUIDO' ? '📦 ENTREGUE' : item.status === 'EM_TRANSITO' ? '🚚 EM TRÂNSITO' : item.status === 'COMPRADO' ? '💳 COMPRADO' : '⏳ AGUARDANDO'}
-                                                </span>
-                                        </td>
-                                        <td className="py-3.5 text-right pr-2">
-                                            <select
-                                                value={item.status}
-                                                onChange={e => handleAlterarStatus(item.id, e.target.value as any)}
-                                                className="bg-black border border-white/[0.08] text-slate-300 text-[10px] px-2 py-1 rounded-lg font-bold outline-none uppercase cursor-pointer focus:border-orange-500"
-                                            >
-                                                <option value="SOLICITADO">⏳ Solicitado</option>
-                                                <option value="COMPRADO">💳 Comprado</option>
-                                                <option value="EM_TRANSITO">🚚 Em Trânsito</option>
-                                                <option value="CONCLUIDO">📦 Entregue</option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        itens.map((item) => (
+                            <div
+                                key={item.id}
+                                className="bg-[#09090b]/90 border border-white/[0.06] hover:border-[#dfbb6c]/30 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all relative group overflow-hidden"
+                            >
+                                {/* Borda esquerda com status color code */}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                                    item.status === 'CONCLUIDO' ? 'bg-emerald-500' :
+                                        item.status === 'EM_TRANSITO' ? 'bg-blue-500' :
+                                            item.status === 'COMPRADO' ? 'bg-purple-500' : 'bg-[#dfbb6c]'
+                                }`} />
+
+                                {/* Info Peça */}
+                                <div className="space-y-1 pl-2">
+                                    <h3 className="text-sm font-black uppercase tracking-wide text-white group-hover:text-[#dfbb6c] transition-colors">
+                                        {item.nome_peca}
+                                    </h3>
+                                    <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono font-bold uppercase">
+                                        <span>REF: <span className="text-slate-300">{item.referencia_1}</span></span>
+                                        <span>•</span>
+                                        <span>Volume: <span className="text-white">{item.quantidade} un</span></span>
+                                    </div>
+                                </div>
+
+                                {/* Preço e Valor total acumulado */}
+                                <div className="md:text-center font-mono">
+                                    <p className="text-[8px] text-slate-500 uppercase font-sans font-black tracking-wider">Custo Total Previsto</p>
+                                    <p className="text-sm font-black text-white mt-0.5">
+                                        {(item.valor * item.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </p>
+                                    <p className="text-[9px] text-slate-600 mt-0.5">({item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} p/un)</p>
+                                </div>
+
+                                {/* Seletor e Badge de Ações */}
+                                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/[0.04] pt-3 md:pt-0 shrink-0">
+                                    <span className={`text-[8px] font-mono font-black px-2.5 py-1 rounded border uppercase tracking-widest ${
+                                        item.status === 'CONCLUIDO' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' :
+                                            item.status === 'EM_TRANSITO' ? 'bg-blue-500/5 border-blue-500/20 text-blue-400' :
+                                                item.status === 'COMPRADO' ? 'bg-purple-500/5 border-purple-500/20 text-purple-400' :
+                                                    'bg-[#dfbb6c]/5 border-[#dfbb6c]/20 text-[#dfbb6c]'
+                                    }`}>
+                                        {item.status === 'CONCLUIDO' ? '📦 Entregue' : item.status === 'EM_TRANSITO' ? '🚚 Em Trânsito' : item.status === 'COMPRADO' ? '💳 Comprado' : '⏳ Aguardando'}
+                                    </span>
+
+                                    <select
+                                        value={item.status}
+                                        onChange={e => handleAlterarStatus(item.id, e.target.value as any)}
+                                        className="bg-black border border-white/[0.08] focus:border-[#dfbb6c] text-slate-300 text-[10px] px-3 py-2 rounded-xl font-bold outline-none uppercase cursor-pointer transition-colors"
+                                    >
+                                        <option value="SOLICITADO">⏳ Solicitado</option>
+                                        <option value="COMPRADO">💳 Comprado</option>
+                                        <option value="EM_TRANSITO">🚚 Em Trânsito</option>
+                                        <option value="CONCLUIDO">📦 Entregue</option>
+                                    </select>
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
             </div>
 
-            <footer className="w-full border-t border-white/[0.02] pt-6 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-700 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left max-w-[1400px] mx-auto px-2">
-                <div>GR Autopeças & Serviços</div>
-                <div className="font-mono text-slate-800">Módulo Compras v1.0</div>
+            {/* FOOTER GENERAL LUXURY BRAND */}
+            <footer className="w-full border-t border-white/[0.02] pt-6 mt-12 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-700 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left max-w-[1400px] mx-auto px-2">
+                <div>GR Autopeças &amp; Logística Corporativa</div>
+                <div className="font-mono text-slate-800">PROCUREMENT LEDGER CORE v2.0</div>
             </footer>
         </main>
     );

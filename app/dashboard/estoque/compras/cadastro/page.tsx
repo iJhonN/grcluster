@@ -44,7 +44,7 @@ export default function CadastroItemCompraPage() {
                 fornecedor: fornecedor.trim().toUpperCase(),
                 valor: parseFloat(valor) || 0,
                 quantidade: parseInt(quantidade) || 1,
-                prazo_entrega: prazoEntrega,
+                prazo_entrega: prazoEntrega.trim().toUpperCase(),
                 status: 'SOLICITADO',
                 mes_ano: mesAnoChave,
                 criado_em: new Date().toISOString()
@@ -58,7 +58,7 @@ export default function CadastroItemCompraPage() {
 
             setStatusFeed({
                 tipo: 'sucesso',
-                texto: '🛒 Solicitação injetada com sucesso no balanço de compras deste mês!'
+                texto: '🛒 Ordem de compra injetada com sucesso no balanço deste mês!'
             });
 
             setTimeout(() => {
@@ -77,27 +77,31 @@ export default function CadastroItemCompraPage() {
     };
 
     return (
-        <main className="relative min-h-screen bg-[#030303] text-white p-4 sm:p-6 md:p-10 font-sans overflow-hidden antialiased flex flex-col justify-between w-full">
+        <main className="relative min-h-screen bg-[#030303] text-[#f1f3f7] p-4 sm:p-6 md:p-10 font-sans overflow-hidden antialiased flex flex-col justify-between w-full">
+
+            {/* GRID INDUSTRIAL TEXTURIZADO LUXO */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 opacity-[0.01]" style={{ backgroundImage: `linear-gradient(to right, #f97316 1px, transparent 1px), linear-gradient(to bottom, #f97316 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
+                <div className="absolute inset-0 opacity-[0.012]" style={{ backgroundImage: `linear-gradient(to right, #dfbb6c 1px, transparent 1px), linear-gradient(to bottom, #dfbb6c 1px, transparent 1px)`, backgroundSize: '45px 40px' }} />
+                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#dfbb6c]/[0.01] rounded-full blur-[150px]" />
             </div>
 
             <div className="relative z-10 w-full flex-1 flex flex-col justify-center items-center max-w-[1400px] mx-auto">
                 <div className="w-full max-w-2xl mb-4 text-left px-2">
-                    <Link href="/dashboard/estoque/compras" className="text-orange-500 font-bold text-[10px] uppercase tracking-[3px] hover:opacity-80 transition-all">
+                    <Link href="/dashboard/estoque/compras" className="text-[#dfbb6c] font-black text-[9px] uppercase tracking-[4px] mb-2 block hover:opacity-80 transition-all">
                         ← Voltar ao Livro de Compras
                     </Link>
                 </div>
 
+                {/* FORM CONTAINER PRESET */}
                 <div className="w-full max-w-2xl relative bg-[#09090b]/95 border border-white/[0.06] rounded-[36px] p-8 shadow-2xl backdrop-blur-3xl">
-                    <div className="absolute top-0 left-[25%] right-[25%] h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
+                    <div className="absolute top-0 left-[25%] right-[25%] h-px bg-gradient-to-r from-transparent via-[#dfbb6c]/30 to-transparent" />
 
                     <div className="mb-8">
                         <h1 className="text-xl font-black uppercase tracking-tight text-white flex items-center gap-2">
-                            <span>🛒</span> Cadastrar Demanda de <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">Compra</span>
+                            <span>🛒</span> Requisição de <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#dfbb6c] via-[#f7e0a3] to-white">Suprimentos</span>
                         </h1>
-                        <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1 font-bold">
-                            Módulo do Comprador. Insira os códigos de referência cruzada para a cotação.
+                        <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1 font-bold font-mono">
+                            MÓDULO DE SOLICITAÇÃO • CRUZA DE REFERÊNCIAS DE CATÁLOGO
                         </p>
                     </div>
 
@@ -118,7 +122,7 @@ export default function CadastroItemCompraPage() {
                                 placeholder="EX: KIT EMBREAGEM VOLKSWAGEN DELIVERY"
                                 value={nomePeca}
                                 onChange={e => setNomePeca(e.target.value)}
-                                className="w-full bg-black border border-white/[0.06] focus:border-orange-500 px-4 py-3 rounded-xl outline-none text-white text-xs font-bold uppercase placeholder-slate-800"
+                                className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/50 px-4 py-3 rounded-xl outline-none text-white text-xs font-bold uppercase placeholder-slate-800 transition-colors"
                                 required
                                 disabled={enviando}
                             />
@@ -132,8 +136,8 @@ export default function CadastroItemCompraPage() {
                                     type="text"
                                     placeholder="EX: 10420-A"
                                     value={referencia1}
-                                    onChange={e => referencia1 === '' ? setReferencia1('') : setReferencia1(e.target.value)}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-orange-500 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800 uppercase"
+                                    onChange={e => setReferencia1(e.target.value)}
+                                    className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/50 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800 uppercase transition-colors"
                                     required
                                     disabled={enviando}
                                 />
@@ -145,7 +149,7 @@ export default function CadastroItemCompraPage() {
                                     placeholder="EX: 93201"
                                     value={referencia2}
                                     onChange={e => setReferencia2(e.target.value)}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-orange-500 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800 uppercase"
+                                    className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/50 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800 uppercase transition-colors"
                                     disabled={enviando}
                                 />
                             </div>
@@ -153,10 +157,10 @@ export default function CadastroItemCompraPage() {
                                 <label className="block text-[9px] font-black uppercase tracking-[2px] text-slate-400">Referência 3</label>
                                 <input
                                     type="text"
-                                    placeholder="Opcional..."
+                                    placeholder="OPCIONAL..."
                                     value={referencia3}
                                     onChange={e => setReferencia3(e.target.value)}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-orange-500 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800 uppercase"
+                                    className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/50 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800 uppercase transition-colors"
                                     disabled={enviando}
                                 />
                             </div>
@@ -165,13 +169,13 @@ export default function CadastroItemCompraPage() {
                         {/* FORNECEDOR E PRAZO */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="block text-[9px] font-black uppercase tracking-[2px] text-slate-400">Fornecedor Recomendado / Custo</label>
+                                <label className="block text-[9px] font-black uppercase tracking-[2px] text-slate-400">Fornecedor Recomendado</label>
                                 <input
                                     type="text"
-                                    placeholder="EX: DISTRIBUIDORA DE AUTOPEÇAS SÃO PAULO"
+                                    placeholder="EX: DISTRIBUIDORA DE AUTOPEÇAS SP"
                                     value={fornecedor}
                                     onChange={e => setFornecedor(e.target.value)}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-orange-500 px-4 py-3 rounded-xl outline-none text-white text-xs font-bold uppercase placeholder-slate-800"
+                                    className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/50 px-4 py-3 rounded-xl outline-none text-white text-xs font-bold uppercase placeholder-slate-800 transition-colors"
                                     required
                                     disabled={enviando}
                                 />
@@ -183,7 +187,7 @@ export default function CadastroItemCompraPage() {
                                     placeholder="EX: 3 DIAS ÚTEIS / IMEDIATO"
                                     value={prazoEntrega}
                                     onChange={e => setPrazoEntrega(e.target.value)}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-orange-500 px-4 py-3 rounded-xl outline-none text-white text-xs font-bold uppercase placeholder-slate-800"
+                                    className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/50 px-4 py-3 rounded-xl outline-none text-white text-xs font-bold uppercase placeholder-slate-800 transition-colors"
                                     required
                                     disabled={enviando}
                                 />
@@ -199,7 +203,7 @@ export default function CadastroItemCompraPage() {
                                     placeholder="1"
                                     value={quantidade}
                                     onChange={e => setQuantidade(e.target.value)}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-orange-500 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800"
+                                    className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/50 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800 transition-colors"
                                     required
                                     disabled={enviando}
                                 />
@@ -212,7 +216,7 @@ export default function CadastroItemCompraPage() {
                                     placeholder="0.00"
                                     value={valor}
                                     onChange={e => setValor(e.target.value)}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-orange-500 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800"
+                                    className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/50 px-4 py-3 rounded-xl outline-none text-white text-xs font-mono placeholder-slate-800 transition-colors"
                                     required
                                     disabled={enviando}
                                 />
@@ -223,18 +227,18 @@ export default function CadastroItemCompraPage() {
                             type="submit"
                             disabled={enviando}
                             className="w-full py-4 rounded-xl font-black uppercase text-[10px] tracking-[3px] text-black transition-all active:scale-[0.99] disabled:opacity-40 overflow-hidden relative group mt-2"
-                            style={{ background: 'linear-gradient(135deg, #fb923c, #f97316)' }}
+                            style={{ background: 'linear-gradient(135deg, #f7e0a3, #dfbb6c)' }}
                         >
                             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            {enviando ? "Injetando na planilha mensal..." : "Salvar Solicitação de Compra (Enter)"}
+                            {enviando ? "Aguardando Confirmação..." : "Salvar Solicitação de Compra (Enter)"}
                         </button>
                     </form>
                 </div>
             </div>
 
             <footer className="w-full border-t border-white/[0.02] pt-6 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-700 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left max-w-[1400px] mx-auto px-2">
-                <div>GR Autopeças & Serviços</div>
-                <div className="font-mono text-slate-800">Fleet Procurement Unit v1.0</div>
+                <div>GR Autopeças &amp; Logística Corporativa</div>
+                <div className="font-mono text-slate-800">PROCUREMENT LEDGER CORE v2.0</div>
             </footer>
         </main>
     );
