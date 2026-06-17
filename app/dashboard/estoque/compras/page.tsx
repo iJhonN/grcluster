@@ -56,9 +56,9 @@ export default function PainelComprasMensalPage() {
             if (data) setItens(data as ItemCompra[]);
         } catch (err) {
             console.error("Erro ao carregar compras mensais:", err);
-        } declare {
+        } finally {
             setCarregando(false);
-    }
+        }
     }
 
     useEffect(() => {
