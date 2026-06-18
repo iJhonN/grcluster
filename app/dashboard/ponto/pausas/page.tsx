@@ -26,7 +26,7 @@ export default function GestaoLancamentosManuaisPage() {
     const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
     const [historicoRecente, setHistoricoRecente] = useState<LancamentoGeral[]>([]);
 
-    // Estados do Formulário e Busca
+    // Estados do Formulário e Busca - Forçado a iniciar vazio para evitar falsos positivos
     const [buscaFuncionario, setBuscaFuncionario] = useState('');
     const [funcionarioId, setFuncionarioId] = useState('');
     const [minutosAjuste, setMinutosAjuste] = useState('');
@@ -62,9 +62,7 @@ export default function GestaoLancamentosManuaisPage() {
 
             if (resFunc.data) {
                 setFuncionarios(resFunc.data);
-                if (resFunc.data.length > 0 && !funcionarioId) {
-                    setFuncionarioId(resFunc.data[0].id);
-                }
+                // REMOVIDO: A pré-seleção automática do primeiro item foi desativada por segurança
             }
 
             const listaUnificada: LancamentoGeral[] = [];
@@ -124,15 +122,13 @@ export default function GestaoLancamentosManuaisPage() {
         );
     }, [funcionarios, buscaFuncionario]);
 
-    // Atualiza automaticamente a seleção se o funcionário atual sumir do filtro
+    // Reseta ou ajusta a seleção dinamicamente apenas se o item selecionado sumir da busca
     useEffect(() => {
-        if (funcionariosFiltrados.length > 0) {
+        if (funcionarioId) {
             const aindaExiste = funcionariosFiltrados.some(f => f.id === funcionarioId);
             if (!aindaExiste) {
-                setFuncionarioId(funcionariosFiltrados[0].id);
+                setFuncionarioId('');
             }
-        } else {
-            setFuncionarioId('');
         }
     }, [funcionariosFiltrados, funcionarioId]);
 
@@ -154,7 +150,14 @@ export default function GestaoLancamentosManuaisPage() {
 
     const handleProcessarLancamento = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!funcionarioId || !minutosAjuste || !observacao.trim()) {
+
+        // Bloqueio explícito caso o operador tente enviar com o placeholder selecionado
+        if (!funcionarioId || funcionarioId === "") {
+            setStatusFeed({ tipo: 'erro', texto: 'Por favor, selecione um colaborador válido na lista.' });
+            return;
+        }
+
+        if (!minutosAjuste || !observacao.trim()) {
             setStatusFeed({ tipo: 'erro', texto: 'Preencha todos os campos obrigatórios.' });
             return;
         }
@@ -198,6 +201,7 @@ export default function GestaoLancamentosManuaisPage() {
             }
 
             setStatusFeed({ tipo: 'sucesso', texto: `Lançamento de ${minutosAjuste} min gravado com sucesso para ${nomeCompleto}.` });
+            setFuncionarioId(''); // Reseta a seleção após o sucesso para forçar a próxima escolha consciente
             setMinutosAjuste('');
             setObservacao('');
             setBuscaFuncionario('');
@@ -262,13 +266,12 @@ export default function GestaoLancamentosManuaisPage() {
                                         className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] pl-3 pr-8 py-2.5 rounded-lg text-xs font-bold uppercase outline-none text-[#1d1d1f] cursor-pointer appearance-none transition-colors"
                                         required
                                     >
-                                        {funcionariosFiltrados.length === 0 ? (
-                                            <option value="">Nenhum resultado encontrado</option>
-                                        ) : (
-                                            funcionariosFiltrados.map(f => (
-                                                <option key={f.id} value={f.id}>{f.nome} {f.sobrenome} ({f.cargo})</option>
-                                            ))
-                                        )}
+                                        {/* OPÇÃO DE VALIDAÇÃO DE SEGURANÇA */}
+                                        <option value="">-- SELECIONE UM COLABORADOR --</option>
+
+                                        {funcionariosFiltrados.map(f => (
+                                            <option key={f.id} value={f.id}>{f.nome} {f.sobrenome} ({f.cargo})</option>
+                                        ))}
                                     </select>
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] pointer-events-none">
                                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -326,7 +329,7 @@ export default function GestaoLancamentosManuaisPage() {
 
                         <button
                             type="submit"
-                            disabled={enviando || funcionariosFiltrados.length === 0}
+                            disabled={enviando || !funcionarioId}
                             className="w-full bg-[#1d1d1f] active:bg-black text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
                         >
                             {enviando ? "Gravando..." : "Confirmar Lançamento"}
@@ -363,7 +366,6 @@ export default function GestaoLancamentosManuaisPage() {
                                             <tr key={idx} className={`hover:bg-[#f5f5f7]/50 transition-colors relative group/row ${estaFixo ? 'z-50 bg-[#f5f5f7]/30' : 'hover:z-50'}`}>
                                                 <td className="py-3.5 font-mono font-bold text-[#86868b] pl-1">{new Date(item.data).toLocaleDateString('pt-BR')}</td>
                                                 <td className="py-3.5 font-bold text-[#1d1d1f] relative overflow-visible">
-                                                    {/* CORRIGIDO AQUI: onClick simplificado e sem o Math.max inválido */}
                                                     <div
                                                         onClick={() => { alternarFixarJustificativa(chaveUnica); }}
                                                         className="cursor-pointer hover:text-[#ff9500] transition-colors flex items-center gap-1 select-none"
@@ -428,7 +430,6 @@ export default function GestaoLancamentosManuaisPage() {
                                             <tr key={idx} className={`hover:bg-[#f5f5f7]/50 transition-colors relative group/row ${estaFixo ? 'z-50 bg-[#f5f5f7]/30' : 'hover:z-50'}`}>
                                                 <td className="py-3.5 font-mono font-bold text-[#86868b] pl-1">{new Date(item.data).toLocaleDateString('pt-BR')}</td>
                                                 <td className="py-3.5 font-bold text-[#1d1d1f] relative overflow-visible">
-                                                    {/* CORRIGIDO AQUI: onClick simplificado e sem o Math.max inválido */}
                                                     <div
                                                         onClick={() => { alternarFixarJustificativa(chaveUnica); }}
                                                         className="cursor-pointer hover:text-[#007aff] transition-colors flex items-center gap-1 select-none"
