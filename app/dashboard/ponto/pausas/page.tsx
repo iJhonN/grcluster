@@ -262,7 +262,6 @@ export default function GestaoLancamentosManuaisPage() {
                                         className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] pl-3 pr-8 py-2.5 rounded-lg text-xs font-bold uppercase outline-none text-[#1d1d1f] cursor-pointer appearance-none transition-colors"
                                         required
                                     >
-                                        {/* CORRIGIDO AQUI: Alterado de funcionariosFiltradas para funcionariosFiltrados */}
                                         {funcionariosFiltrados.length === 0 ? (
                                             <option value="">Nenhum resultado encontrado</option>
                                         ) : (
@@ -364,8 +363,9 @@ export default function GestaoLancamentosManuaisPage() {
                                             <tr key={idx} className={`hover:bg-[#f5f5f7]/50 transition-colors relative group/row ${estaFixo ? 'z-50 bg-[#f5f5f7]/30' : 'hover:z-50'}`}>
                                                 <td className="py-3.5 font-mono font-bold text-[#86868b] pl-1">{new Date(item.data).toLocaleDateString('pt-BR')}</td>
                                                 <td className="py-3.5 font-bold text-[#1d1d1f] relative overflow-visible">
+                                                    {/* CORRIGIDO AQUI: onClick simplificado e sem o Math.max inválido */}
                                                     <div
-                                                        onClick={() => Math.max(0, alternarFixarJustificativa(chaveUnica))}
+                                                        onClick={() => { alternarFixarJustificativa(chaveUnica); }}
                                                         className="cursor-pointer hover:text-[#ff9500] transition-colors flex items-center gap-1 select-none"
                                                     >
                                                         <span>{item.nome}</span>
@@ -428,8 +428,9 @@ export default function GestaoLancamentosManuaisPage() {
                                             <tr key={idx} className={`hover:bg-[#f5f5f7]/50 transition-colors relative group/row ${estaFixo ? 'z-50 bg-[#f5f5f7]/30' : 'hover:z-50'}`}>
                                                 <td className="py-3.5 font-mono font-bold text-[#86868b] pl-1">{new Date(item.data).toLocaleDateString('pt-BR')}</td>
                                                 <td className="py-3.5 font-bold text-[#1d1d1f] relative overflow-visible">
+                                                    {/* CORRIGIDO AQUI: onClick simplificado e sem o Math.max inválido */}
                                                     <div
-                                                        onClick={() => Math.max(0, alternarFixarJustificativa(chaveUnica))}
+                                                        onClick={() => { alternarFixarJustificativa(chaveUnica); }}
                                                         className="cursor-pointer hover:text-[#007aff] transition-colors flex items-center gap-1 select-none"
                                                     >
                                                         <span>{item.nome}</span>
