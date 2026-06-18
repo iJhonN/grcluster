@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
@@ -23,6 +23,9 @@ export default function GestaoAtrasosPage() {
     const [pontoSelecionadoId, setPontoSelecionadoId] = useState<number | null>(null);
     const [textoJustificativa, setTextoJustificativa] = useState('');
     const [enviando, setEnviando] = useState(false);
+
+    // REFERÊNCIA PARA MANIPULAÇÃO DO SCROLL AUTOMÁTICO
+    const formularioRef = useRef<HTMLDivElement>(null);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -69,6 +72,19 @@ export default function GestaoAtrasosPage() {
             };
         });
     }, [pontos, justificativas]);
+
+    // Função para acionar o scroll e setar o ID selecionado
+    const handleIniciarJustificativa = (id: number) => {
+        setPontoSelecionadoId(id);
+
+        // Timeout pequeno de 50ms para dar tempo do DOM renderizar o formulário antes de mover a tela
+        setTimeout(() => {
+            formularioRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }, 50);
+    };
 
     const handleSalvarJustificativa = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -145,7 +161,7 @@ export default function GestaoAtrasosPage() {
                                                         <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-md font-black uppercase tracking-wider">Justificado</span>
                                                     ) : (
                                                         <button
-                                                            onClick={() => setPontoSelecionadoId(atraso.id)}
+                                                            onClick={() => handleIniciarJustificativa(atraso.id)}
                                                             className="text-[10px] bg-orange-500 hover:bg-orange-600 text-black px-3 py-1 rounded-md font-black uppercase tracking-wider transition-all"
                                                         >
                                                             Justificar
@@ -161,8 +177,8 @@ export default function GestaoAtrasosPage() {
                         )}
                     </div>
 
-                    {/* CAIXA DE INSERÇÃO DE JUSTIFICATIVA */}
-                    <div className="bg-[#0e1117] border border-white/[0.04] p-6 rounded-[28px] shadow-xl">
+                    {/* CAIXA DE INSERÇÃO DE JUSTIFICATIVA - RECEBE A REF */}
+                    <div ref={formularioRef} className="bg-[#0e1117] border border-white/[0.04] p-6 rounded-[28px] shadow-xl scroll-mt-6">
                         <h3 className="text-sm font-black uppercase tracking-wider text-slate-400 mb-4">Aplicar Justificativa</h3>
 
                         {pontoSelecionadoId ? (
