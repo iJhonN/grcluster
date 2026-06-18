@@ -4,17 +4,26 @@ import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import Barcode from 'react-barcode';
 
+export const dynamic = 'force-dynamic';
+
 interface Ferramenta {
     id: string;
     nome: string;
     status: string;
+    foto_url: string | null;
 }
 
 export default function ListaFerramentasPage() {
     const [ferramentas, setFerramentas] = useState<Ferramenta[]>([]);
     const [carregando, setCarregando] = useState(true);
     const [pesquisa, setPesquisa] = useState('');
-    const [filtroStatus, setFiltroStatus] = useState('todos'); // todos, disponivel, ocupado
+    const [filtroStatus, setFiltroStatus] = useState('todos');
+    const [uploadingId, setUploadingId] = useState<string | null>(null);
+    const [modalImagem, setModalImagem] = useState<string | null>(null);
+
+    // Controle de Paginação (15 itens por página)
+    const [paginaAtual, setPaginaAtual] = useState(1);
+    const itensPorPagina = 15;
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,13 +35,16 @@ export default function ListaFerramentasPage() {
         try {
             const { data, error } = await supabase
                 .from('ferramentas')
-                .select('id, nome, status')
+                .select('id, nome, status, foto_url')
                 .order('nome');
 
-            if (error) throw error;
+            if (error) {
+                console.error("Erro Supabase:", error.message, error.details, error.hint);
+                throw error;
+            }
             if (data) setFerramentas(data as Ferramenta[]);
         } catch (err) {
-            console.error("Erro ao carregar inventário de ferramentas:", err);
+            console.error("Erro completo ao carregar inventário:", err);
         } finally {
             setCarregando(false);
         }
@@ -42,6 +54,98 @@ export default function ListaFerramentasPage() {
         carregarInventario();
     }, []);
 
+    // Reseta para a primeira página sempre que os filtros mudarem
+    useEffect(() => {
+        setPaginaAtual(1);
+    }, [pesquisa, filtroStatus]);
+
+    // Compressão ultra eficiente focada no tamanho do retângulo (Max 400px de largura)
+    const processarEComprimirImagem = (arquivo: File): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(arquivo);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const TARGET_WIDTH = 400;
+                    const TARGET_HEIGHT = 300;
+
+                    canvas.width = TARGET_WIDTH;
+                    canvas.height = TARGET_HEIGHT;
+
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        const imgRatio = img.width / img.height;
+                        const targetRatio = TARGET_WIDTH / TARGET_HEIGHT;
+                        let sx = 0, sy = 0, sw = img.width, sh = img.height;
+
+                        if (imgRatio > targetRatio) {
+                            sw = img.height * targetRatio;
+                            sx = (img.width - sw) / 2;
+                        } else {
+                            sh = img.width / targetRatio;
+                            sy = (img.height - sh) / 2;
+                        }
+
+                        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+                    }
+
+                    canvas.toBlob(
+                        (blob) => {
+                            if (blob) resolve(blob);
+                            else reject(new Error("Falha na conversão de mídia"));
+                        },
+                        "image/jpeg",
+                        0.55
+                    );
+                };
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    };
+
+    const handleUploadFoto = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        const arquivoOriginal = e.target.files[0];
+
+        setUploadingId(id);
+        try {
+            const imagemCompactadaBlob = await processarEComprimirImagem(arquivoOriginal);
+            const nomeArquivo = `${id}-${Date.now()}.jpg`;
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('ferramentas')
+                .upload(nomeArquivo, imagemCompactadaBlob, {
+                    contentType: 'image/jpeg',
+                    upsert: true
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('ferramentas')
+                .getPublicUrl(nomeArquivo);
+
+            const { error: dbError } = await supabase
+                .from('ferramentas')
+                .update({ foto_url: publicUrl })
+                .eq('id', id);
+
+            if (dbError) throw dbError;
+
+            setFerramentas(prev => prev.map(f => f.id === id ? { ...f, foto_url: publicUrl } : f));
+
+        } catch (err) {
+            console.error("Erro na rotina de mídia:", err);
+            alert("Não foi possível salvar a imagem. Verifique a tabela no Supabase.");
+        } finally {
+            setUploadingId(null);
+        }
+    };
+
+    // 1. Pesquisa global rodando por trás do inventário inteiro
     const ferramentasFiltradas = useMemo(() => {
         const termo = pesquisa.toLowerCase().trim();
         return ferramentas.filter(f => {
@@ -51,6 +155,18 @@ export default function ListaFerramentasPage() {
         });
     }, [ferramentas, pesquisa, filtroStatus]);
 
+    // 2. Paginação em cima das ferramentas já tratadas pelos filtros
+    const ferramentasPaginadas = useMemo(() => {
+        const indiceInicial = (paginaAtual - 1) * itensPorPagina;
+        const indiceFinal = indiceInicial + itensPorPagina;
+        return ferramentasFiltradas.slice(indiceInicial, indiceFinal);
+    }, [ferramentasFiltradas, paginaAtual]);
+
+    // Cálculo total de páginas disponíveis pós-filtro
+    const totalPaginas = useMemo(() => {
+        return Math.ceil(ferramentasFiltradas.length / itensPorPagina) || 1;
+    }, [ferramentasFiltradas]);
+
     const metricas = useMemo(() => {
         const total = ferramentas.length;
         const disponiveis = ferramentas.filter(f => f.status === 'disponivel').length;
@@ -58,42 +174,35 @@ export default function ListaFerramentasPage() {
         return { total, disponiveis, ocupadas };
     }, [ferramentas]);
 
-    // Triga a impressão nativa do sistema
-    const dispararImpressao = () => {
-        window.print();
-    };
-
     return (
-        <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased flex flex-col justify-between w-full selection:bg-black/5 print:bg-white print:p-0">
+        <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-8 font-sans antialiased flex flex-col justify-between w-full selection:bg-black/5 print:bg-white print:p-0">
 
-            {/* CONTEÚDO PRINCIPAL (OCULTADO NA IMPRESSÃO SE QUISER FOCAR SÓ NAS ETIQUETAS) */}
-            <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col gap-6 sm:gap-8 print:hidden">
+            <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col gap-6 print:hidden">
 
                 {/* CABEÇALHO */}
-                <header className="w-full flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-[#e5e5ea] pb-6 pl-1">
-                    <div className="space-y-1">
+                <header className="w-full flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-[#e5e5ea] pb-5 pl-1">
+                    <div className="space-y-0.5">
                         <Link href="/dashboard" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block">
                             ← Menu Principal
                         </Link>
-                        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f]">
+                        <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-[#1d1d1f]">
                             Inventário Geral de Ativos
                         </h1>
                     </div>
 
-                    {/* BARRA DE PESQUISA, FILTROS E IMPRESSÃO EM LOTE */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
                         <input
                             type="text"
-                            placeholder="Buscar ferramenta ou ID..."
+                            placeholder="Buscar ativo global..."
                             value={pesquisa}
                             onChange={(e) => setPesquisa(e.target.value)}
-                            className="bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3.5 py-2 rounded-xl text-[#1d1d1f] text-xs font-medium outline-none w-full sm:w-64 uppercase transition-colors placeholder-[#b4b4b9]"
+                            className="bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-1.5 rounded-lg text-[#1d1d1f] text-xs font-medium outline-none w-full sm:w-56 uppercase transition-colors placeholder-[#b4b4b9]"
                         />
 
                         <select
                             value={filtroStatus}
                             onChange={(e) => setFiltroStatus(e.target.value)}
-                            className="bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-xl text-xs font-semibold outline-none text-[#1d1d1f] transition-colors cursor-pointer"
+                            className="bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-2 py-1.5 rounded-lg text-xs font-semibold outline-none text-[#1d1d1f] transition-colors cursor-pointer"
                         >
                             <option value="todos">Todos os Status</option>
                             <option value="disponivel">Em Bancada</option>
@@ -101,132 +210,185 @@ export default function ListaFerramentasPage() {
                         </select>
 
                         <button
-                            onClick={dispararImpressao}
+                            onClick={() => window.print()}
                             disabled={ferramentasFiltradas.length === 0}
-                            className="bg-[#1d1d1f] active:bg-black text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.01)] text-center disabled:opacity-40"
+                            className="bg-[#1d1d1f] active:bg-black text-white px-3.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.01)] text-center disabled:opacity-40"
                         >
-                            🖨️ Imprimir Etiquetas ({ferramentasFiltradas.length})
+                            🖨️ Etiquetas ({ferramentasFiltradas.length})
                         </button>
                     </div>
                 </header>
 
-                {/* METRICAS DO TOPO */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl text-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-[#86868b]">Total Catalogado</p>
-                        <p className="text-xl font-mono font-black mt-0.5 text-[#1d1d1f]">{metricas.total}</p>
+                {/* METRICAS COMPACTAS */}
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white border border-[#e5e5ea] p-2.5 rounded-xl text-center shadow-[0_1px_2px_rgba(0,0,0,0.005)]">
+                        <p className="text-[8px] font-bold uppercase tracking-wider text-[#86868b]">Total</p>
+                        <p className="text-base font-mono font-black mt-0.5 text-[#1d1d1f]">{metricas.total}</p>
                     </div>
-                    <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl text-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-[#248a3d]">Disponível em Bancada</p>
-                        <p className="text-xl font-mono font-black mt-0.5 text-[#248a3d]">{metricas.disponiveis}</p>
+                    <div className="bg-white border border-[#e5e5ea] p-2.5 rounded-xl text-center shadow-[0_1px_2px_rgba(0,0,0,0.005)]">
+                        <p className="text-[8px] font-bold uppercase tracking-wider text-[#248a3d]">Bancada</p>
+                        <p className="text-base font-mono font-black mt-0.5 text-[#248a3d]">{metricas.disponiveis}</p>
                     </div>
-                    <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl text-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-[#ff9500]">Retirado / Em Uso</p>
-                        <p className="text-xl font-mono font-black mt-0.5 text-[#ff9500]">{metricas.ocupadas}</p>
+                    <div className="bg-white border border-[#e5e5ea] p-2.5 rounded-xl text-center shadow-[0_1px_2px_rgba(0,0,0,0.005)]">
+                        <p className="text-[8px] font-bold uppercase tracking-wider text-[#ff9500]">Em Uso</p>
+                        <p className="text-base font-mono font-black mt-0.5 text-[#ff9500]">{metricas.ocupadas}</p>
                     </div>
                 </div>
 
-                {/* TABELA ADMINISTRATIVA */}
-                <section className="bg-white border border-[#e5e5ea] rounded-2xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] overflow-hidden min-h-[400px]">
-                    {carregando ? (
-                        <div className="text-center py-24 flex flex-col items-center justify-center gap-2 text-[#86868b]">
-                            <div className="w-5 h-5 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-[10px] uppercase font-bold tracking-wider font-mono">Carregando Ativos...</span>
-                        </div>
-                    ) : ferramentasFiltradas.length === 0 ? (
-                        <div className="py-20 text-center">
-                            <p className="text-xs text-[#86868b] font-bold uppercase tracking-wide">Nenhuma ferramenta localizada com os filtros atuais.</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs border-collapse">
-                                <thead>
-                                <tr className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider text-[8px] font-bold select-none">
-                                    <th className="pb-3 pl-2 w-28">ID Código</th>
-                                    <th className="pb-3">Descrição da Ferramenta</th>
-                                    <th className="pb-3 text-center w-36">Status</th>
-                                    <th className="pb-3 text-right pr-2 w-28">Ação</th>
-                                </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#f5f5f7]">
-                                {ferramentasFiltradas.map(f => (
-                                    <tr key={f.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                                        <td className="py-3.5 pl-2 font-mono font-bold text-xs text-[#ff9500] tracking-wider">
-                                            {f.id}
-                                        </td>
-                                        <td className="py-3.5 font-bold text-[#1d1d1f] uppercase tracking-tight text-xs max-w-xs truncate">
-                                            {f.nome}
-                                        </td>
-                                        <td className="py-3.5 text-center">
-                                            <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block text-center min-w-[90px] ${
-                                                f.status === 'disponivel'
-                                                    ? 'bg-[#34c759]/5 text-[#248a3d] border border-[#34c759]/10'
-                                                    : 'bg-[#ff9500]/5 text-[#ff9500] border border-[#ff9500]/10'
+                {/* CRIAÇÃO DA GRADE PAGINADA */}
+                {carregando ? (
+                    <div className="text-center py-24 flex flex-col items-center justify-center gap-2 text-[#86868b]">
+                        <div className="w-4 h-4 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-[9px] uppercase font-bold tracking-wider font-mono">Processando catálogo denso...</span>
+                    </div>
+                ) : ferramentasFiltradas.length === 0 ? (
+                    <div className="py-24 text-center bg-white border border-[#e5e5ea] rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.005)]">
+                        <p className="text-xs text-[#86868b] font-bold uppercase tracking-wide">Nenhum ativo localizado.</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                            {ferramentasPaginadas.map(f => (
+                                <div
+                                    key={f.id}
+                                    className="bg-white border border-[#e5e5ea] rounded-xl overflow-hidden flex flex-col justify-between shadow-[0_1px_2px_rgba(0,0,0,0.002)] hover:border-[#b4b4b9] transition-colors"
+                                >
+                                    {/* REQUADRO FIXO DA FOTO */}
+                                    <div
+                                        className="relative bg-[#f5f5f7] w-full border-b border-[#e5e5ea] flex items-center justify-center overflow-hidden group/img"
+                                        style={{ aspectRatio: '4/3' }}
+                                    >
+                                        {f.foto_url ? (
+                                            <>
+                                                <img
+                                                    src={f.foto_url}
+                                                    alt={f.nome}
+                                                    className="w-full h-full object-cover transition-transform duration-200 group-hover/img:scale-105"
+                                                />
+                                                <div
+                                                    onClick={() => setModalImagem(f.foto_url)}
+                                                    className="absolute inset-0 bg-black/10 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white transition-opacity cursor-zoom-in text-sm select-none"
+                                                >
+                                                    🔍
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="text-xl opacity-20 select-none">📷</div>
+                                        )}
+
+                                        <div className="absolute top-1.5 right-1.5 select-none">
+                                            <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm ${
+                                                f.status === 'disponivel' ? 'bg-[#34c759] text-white' : 'bg-[#ff9500] text-white'
                                             }`}>
-                                                {f.status === 'disponivel' ? '● Em Bancada' : '⚙️ Em Uso'}
+                                                {f.status === 'disponivel' ? 'OK' : 'USO'}
                                             </span>
-                                        </td>
-                                        <td className="py-3.5 text-right pr-2">
+                                        </div>
+                                    </div>
+
+                                    {/* METADADOS */}
+                                    <div className="p-3 flex-1 flex flex-col justify-between gap-2.5">
+                                        <div className="space-y-0.5">
+                                            <div className="text-[8px] font-mono font-bold text-[#ff9500] tracking-wider uppercase">
+                                                #{f.id}
+                                            </div>
+                                            <h3 className="text-[11px] font-bold text-[#1d1d1f] uppercase tracking-tight line-clamp-2 min-h-[28px] leading-tight" title={f.nome}>
+                                                {f.nome}
+                                            </h3>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-1.5 border-t border-[#f5f5f7] pt-2 shrink-0">
+                                            <label className={`text-[8px] py-1 rounded font-bold uppercase tracking-wider border cursor-pointer transition-colors text-center select-none ${
+                                                uploadingId === f.id
+                                                    ? 'bg-[#f5f5f7] text-[#b4b4b9] border-[#e5e5ea] cursor-wait'
+                                                    : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border-[#e5e5ea]'
+                                            }`}>
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png"
+                                                    className="hidden"
+                                                    disabled={uploadingId !== null}
+                                                    onChange={(e) => handleUploadFoto(f.id, e)}
+                                                />
+                                                {uploadingId === f.id ? 'Salva...' : f.foto_url ? 'Mudar' : 'Foto'}
+                                            </label>
+
                                             <button
                                                 onClick={() => {
-                                                    // Seta a pesquisa estrita para este item e dispara a janela de impressão
                                                     setPesquisa(f.id);
                                                     setTimeout(() => window.print(), 100);
                                                 }}
-                                                className="text-[9px] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] px-2.5 py-1 rounded font-bold uppercase tracking-wider border border-[#e5e5ea] transition-colors"
+                                                className="text-[8px] bg-[#1d1d1f] hover:bg-black text-white py-1 rounded font-bold uppercase tracking-wider transition-colors text-center"
                                             >
                                                 Etiqueta
                                             </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    )}
-                </section>
+
+                        {/* SELETOR DE PÁGINAS MINIMALISTA (SETINHAS) */}
+                        <div className="flex items-center justify-center gap-4 border-t border-[#e5e5ea] pt-6 mt-2 select-none">
+                            <button
+                                onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
+                                disabled={paginaAtual === 1}
+                                className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] disabled:opacity-30 disabled:hover:border-[#e5e5ea] px-3 py-1.5 rounded-lg text-xs font-bold text-[#1d1d1f] transition-colors cursor-pointer disabled:cursor-not-allowed"
+                            >
+                                ◀ Anterior
+                            </button>
+
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#86868b]">
+                                Página <strong className="text-[#1d1d1f]">{paginaAtual}</strong> de <strong className="text-[#1d1d1f]">{totalPaginas}</strong>
+                            </span>
+
+                            <button
+                                onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}
+                                disabled={paginaAtual === totalPaginas}
+                                className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] disabled:opacity-30 disabled:hover:border-[#e5e5ea] px-3 py-1.5 rounded-lg text-xs font-bold text-[#1d1d1f] transition-colors cursor-pointer disabled:cursor-not-allowed"
+                            >
+                                Próxima ▶
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
 
-            {/* AREA EXCLUSIVA DE IMPRESSÃO: Renderiza uma malha de etiquetas perfeita para o pátio */}
+            {/* MODAL LIGHTBOX */}
+            {modalImagem && (
+                <div
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={() => setModalImagem(null)}
+                >
+                    <div className="bg-white p-2 rounded-xl max-w-sm w-full relative shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <img src={modalImagem} alt="Visualização" className="w-full h-auto rounded-lg object-contain max-h-[60vh]" />
+                        <button
+                            onClick={() => setModalImagem(null)}
+                            className="mt-2.5 w-full py-1.5 bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors"
+                        >
+                            Fechar Visualização
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ÁREA EXCLUSIVA DE IMPRESSÃO (Imprime todos os filtrados na paginação) */}
             <div className="hidden print:block w-full">
                 <div className="grid grid-cols-2 gap-6 p-4">
                     {ferramentasFiltradas.map(f => (
-                        <div
-                            key={f.id}
-                            className="border-2 border-black p-4 rounded-xl flex flex-col items-center justify-center text-center bg-white break-inside-avoid shadow-none"
-                            style={{ minHeight: '160px', pageBreakInside: 'avoid' }}
-                        >
-                            {/* Nome da ferramenta quebrando linha de forma elegante sem esmagar */}
+                        <div key={f.id} className="border-2 border-black p-4 rounded-xl flex flex-col items-center justify-center text-center bg-white break-inside-avoid" style={{ minHeight: '160px', pageBreakInside: 'avoid' }}>
                             <h2 className="text-xs font-black uppercase text-black tracking-tight mb-2 max-w-[240px] leading-tight break-words">
                                 {f.nome}
                             </h2>
-
-                            {/* Componente Barcode configurado com barras espessas para evitar leitura junta */}
-                            <div className="flex items-center justify-center overflow-visible">
-                                <Barcode
-                                    value={f.id}
-                                    format="CODE128"
-                                    width={2.2}       // Define barras mais grossas e espaçadas
-                                    height={55}       // Altura ideal para leitura ágil do laser
-                                    displayValue={true} // Exibe o número de 4 dígitos logo abaixo das barras
-                                    font="monospace"
-                                    fontSize={12}
-                                    textMargin={4}
-                                    background="#ffffff"
-                                    lineColor="#000000"
-                                />
+                            <div className="flex items-center justify-center">
+                                <Barcode value={f.id} format="CODE128" width={2.2} height={55} displayValue={true} font="monospace" fontSize={12} textMargin={4} background="#ffffff" lineColor="#000000" />
                             </div>
-
-                            <p className="text-[7px] font-bold text-black uppercase tracking-widest mt-2">
-                                GR ALMOXARIFADO CENTRAL
-                            </p>
+                            <p className="text-[7px] font-bold text-black uppercase tracking-widest mt-2">GR ALMOXARIFADO CENTRAL</p>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* RODAPÉ DO MONITOR */}
-            <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none print:hidden">
+            <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-4 mt-6 flex flex-col sm:flex-row items-center justify-between text-[7px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left print:hidden select-none">
                 <div>GR Autopeças &amp; Serviços</div>
                 <div className="font-mono text-[#b4b4b9]">Almoxarifado Central v3.2</div>
             </footer>
