@@ -44,17 +44,18 @@ export default function LoginPage() {
     setCarregando(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
-      if (error) {
+      if (authError) {
         setMensagemErro(
-            error.message.includes('Invalid login credentials')
+            authError.message.includes('Invalid login credentials')
                 ? 'E-mail ou senha incorretos.'
-                : error.message
+                : authError.message
         );
+        setCarregando(false);
       } else {
         // Dispara a transição suave anti-flashbang antes de redirecionar
         setLoginSucesso(true);
@@ -67,8 +68,7 @@ export default function LoginPage() {
     } catch (err) {
       console.error(err);
       setMensagemErro('Erro ao conectar com o servidor.');
-    } finally {
-      if (!error) setCarregando(false);
+      setCarregando(false);
     }
   };
 
@@ -104,11 +104,11 @@ export default function LoginPage() {
                     animationName: 'loading'
                   }} />
                   <style jsx global>{`
-                  @keyframes loading {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(200%); }
-                  }
-                `}</style>
+                    @keyframes loading {
+                      0% { transform: translateX(-100%); }
+                      100% { transform: translateX(200%); }
+                    }
+                  `}</style>
                 </div>
               </div>
 
