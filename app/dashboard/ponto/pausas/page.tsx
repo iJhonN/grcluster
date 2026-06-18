@@ -26,7 +26,8 @@ export default function GestaoLancamentosManuaisPage() {
     const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
     const [historicoRecente, setHistoricoRecente] = useState<LancamentoGeral[]>([]);
 
-    // Estados do Formulário
+    // Estados do Formulário e Busca
+    const [buscaFuncionario, setBuscaFuncionario] = useState('');
     const [funcionarioId, setFuncionarioId] = useState('');
     const [minutosAjuste, setMinutosAjuste] = useState('');
     const [tipoLancamento, setTipoLancamento] = useState('pausa'); // 'pausa', 'extra_diurna', 'extra_noturna'
@@ -112,6 +113,29 @@ export default function GestaoLancamentosManuaisPage() {
         carregarDados();
     }, []);
 
+    // Filtro preditivo de funcionários em tempo real
+    const funcionariosFiltrados = useMemo(() => {
+        const termo = buscaFuncionario.toLowerCase().trim();
+        if (!termo) return funcionarios;
+        return funcionarios.filter(f =>
+            f.nome.toLowerCase().includes(termo) ||
+            f.sobrenome.toLowerCase().includes(termo) ||
+            f.cargo.toLowerCase().includes(termo)
+        );
+    }, [funcionarios, buscaFuncionario]);
+
+    // Atualiza automaticamente a seleção se o funcionário atual sumir do filtro
+    useEffect(() => {
+        if (funcionariosFiltrados.length > 0) {
+            const aindaExiste = funcionariosFiltrados.some(f => f.id === funcionarioId);
+            if (!aindaExiste) {
+                setFuncionarioId(funcionariosFiltrados[0].id);
+            }
+        } else {
+            setFuncionarioId('');
+        }
+    }, [funcionariosFiltrados, funcionarioId]);
+
     const pausasFiltradas = useMemo(() => {
         return historicoRecente.filter(item => item.tipo === 'Pausa').slice(0, 10);
     }, [historicoRecente]);
@@ -176,6 +200,7 @@ export default function GestaoLancamentosManuaisPage() {
             setStatusFeed({ tipo: 'sucesso', texto: `Lançamento de ${minutosAjuste} min gravado com sucesso para ${nomeCompleto}.` });
             setMinutosAjuste('');
             setObservacao('');
+            setBuscaFuncionario('');
             carregarDados();
 
         } catch (err) {
@@ -216,22 +241,40 @@ export default function GestaoLancamentosManuaisPage() {
                     <form onSubmit={handleProcessarLancamento} className="bg-white border border-[#e5e5ea] p-5 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] space-y-4">
                         <h3 className="text-xs font-bold text-[#86868b] uppercase tracking-wider border-b border-[#f5f5f7] pb-3 select-none">Novo Registro</h3>
 
-                        <div className="space-y-1">
-                            <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Colaborador</label>
-                            <div className="relative">
-                                <select
-                                    value={funcionarioId}
-                                    onChange={e => setFuncionarioId(e.target.value)}
-                                    className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] pl-3 pr-8 py-2.5 rounded-lg text-xs font-bold uppercase outline-none text-[#1d1d1f] cursor-pointer appearance-none transition-colors"
-                                >
-                                    {funcionarios.map(f => (
-                                        <option key={f.id} value={f.id}>{f.nome} {f.sobrenome} ({f.cargo})</option>
-                                    ))}
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] pointer-events-none">
-                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                    </svg>
+                        {/* BUSCA RÁPIDA E SELEÇÃO */}
+                        <div className="space-y-2">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Filtrar Colaborador</label>
+                                <input
+                                    type="text"
+                                    placeholder="Digite o nome ou cargo..."
+                                    value={buscaFuncionario}
+                                    onChange={e => setBuscaFuncionario(e.target.value)}
+                                    className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg text-xs font-medium outline-none text-[#1d1d1f] transition-colors placeholder-[#b4b4b9]"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <div className="relative">
+                                    <select
+                                        value={funcionarioId}
+                                        onChange={e => setFuncionarioId(e.target.value)}
+                                        className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] pl-3 pr-8 py-2.5 rounded-lg text-xs font-bold uppercase outline-none text-[#1d1d1f] cursor-pointer appearance-none transition-colors"
+                                        required
+                                    >
+                                        {funcionariosFiltradas.length === 0 ? (
+                                            <option value="">Nenhum resultado encontrado</option>
+                                        ) : (
+                                            funcionariosFiltrados.map(f => (
+                                                <option key={f.id} value={f.id}>{f.nome} {f.sobrenome} ({f.cargo})</option>
+                                            ))
+                                        )}
+                                    </select>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] pointer-events-none">
+                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -283,7 +326,7 @@ export default function GestaoLancamentosManuaisPage() {
 
                         <button
                             type="submit"
-                            disabled={enviando}
+                            disabled={enviando || funcionariosFiltrados.length === 0}
                             className="w-full bg-[#1d1d1f] active:bg-black text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
                         >
                             {enviando ? "Gravando..." : "Confirmar Lançamento"}
