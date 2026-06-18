@@ -75,15 +75,13 @@ export default function DashboardPage() {
     const podeVerRetiradaFerramentas = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS'];
     const podeVerHubFerramentas = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS'];
     const podeVerFrota = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS'];
-    const podeVerFechamento = ['ADMIN', 'GERENTE'];
-    const podeVerFuncionarios = ['ADMIN', 'GERENTE'];
     const podeVerRH = ['ADMIN', 'GERENTE'];
     const podeVerEstoque = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS', 'ESTOQUE'];
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased flex flex-col lg:flex-row w-full selection:bg-black/5">
 
-            {/* BARRA DE TOPO COMPACTA (MOBILE ONLY - ALINHADA NA HORIZONTAL) */}
+            {/* BARRA DE TOPO COMPACTA (MOBILE ONLY) */}
             <div className="w-full bg-white border-b border-[#e5e5ea] flex lg:hidden items-center justify-between px-4 py-3 z-20 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-7 h-7 bg-[#1d1d1f] rounded-md flex items-center justify-center text-white font-bold text-xs select-none shrink-0">
@@ -130,61 +128,46 @@ export default function DashboardPage() {
                 </div>
             </aside>
 
-            {/* CONTEÚDO PRINCIPAL (WORKSPACE RENDER) */}
+            {/* CONTEÚDO PRINCIPAL */}
             <section className="flex-1 p-4 sm:p-6 md:p-10 max-w-[1400px] flex flex-col gap-4 sm:gap-6 w-full z-10 overflow-y-auto">
 
-                {/* HEADLINE DISCRETA */}
                 <div className="space-y-0.5 pl-1">
                     <span className="text-[9px] font-bold uppercase tracking-widest text-[#86868b]">Gestão de Ativos</span>
                     <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight text-[#1d1d1f]">Módulos Operacionais</h1>
                 </div>
 
-                {/* GRID INTEGRADO DE PLACAS PURAS */}
+                {/* GRID ORDENADO E CORRIGIDO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 w-full">
 
-                    {/* ⏱️ CONTROLE DE PONTO */}
+                    {/* 1. ⏱️ CONTROLE DE PONTO (DESTAQUE HIGH-CONTRAST INVERTIDO) */}
                     {podeVerPonto.includes(userRole) && (
-                        <Link href="/dashboard/ponto" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                        <Link href="/dashboard/ponto" className="bg-[#1d1d1f] border border-black p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-xl text-white">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">⏱️</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#bf5af2] bg-[#bf5af2]/5 px-2 py-0.5 rounded">Frequência</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-white bg-white/10 px-2 py-0.5 rounded">Totem</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Controle de Ponto</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Batidas, banco de horas e justificativas.</p>
+                                <h3 className="text-xs font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity">Controle de Ponto</h3>
+                                <p className="text-[11px] text-[#aeae23] mt-1 font-medium font-mono tracking-wide animate-pulse">● REGISTRO OBRIGATÓRIO</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* 🛠️ RETIRADA DE FERRAMENTAS */}
+                    {/* 2. 🛠️ RETIRADA DE FERRAMENTAS (DESTAQUE OPERACIONAL) */}
                     {podeVerRetiradaFerramentas.includes(userRole) && (
-                        <Link href="/dashboard/ferramentas/retirada" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                        <Link href="/dashboard/ferramentas/retirada" className="bg-white border-2 border-[#1d1d1f] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">🛠️</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/5 px-2 py-0.5 rounded">Ativos</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/10 px-2 py-0.5 rounded font-black">Fluxo</span>
                             </div>
                             <div className="mt-4 leading-snug">
                                 <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Retirada de Ferramenta</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Cautelas de ferramentas por operador.</p>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Cautelas e devolução rápida de ativos.</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* 📦 ESTOQUE & COMPRAS */}
-                    {podeVerEstoque.includes(userRole) && (
-                        <Link href="/dashboard/estoque" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                            <div className="flex items-center justify-between w-full">
-                                <span className="text-base">📦</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff9500] bg-[#ff9500]/5 px-2 py-0.5 rounded">Suprimentos</span>
-                            </div>
-                            <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Estoque &amp; Compras</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Inventário e fluxo triplo de cotações.</p>
-                            </div>
-                        </Link>
-                    )}
-
-                    {/* ⚙️ INVENTÁRIO GERAL DE FERRAMENTAS */}
+                    {/* 3. ⚙️ INVENTÁRIO GERAL DE FERRAMENTAS */}
                     {podeVerHubFerramentas.includes(userRole) && (
                         <Link href="/dashboard/ferramentas" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
@@ -198,12 +181,12 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 🚚 FROTAS & LOGÍSTICA */}
+                    {/* 4. 🚚 FROTAS & LOGÍSTICA */}
                     {podeVerFrota.includes(userRole) && (
                         <Link href="/dashboard/frota" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">🚚</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#5856d6] bg-[#5856d6]/5 px-2 py-0.5 rounded">Frota</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#5856d6] bg-[#5856d6]/5 px-2 py-0.5 rounded">Logística</span>
                             </div>
                             <div className="mt-4 leading-snug">
                                 <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Frotas &amp; Rotas</h3>
@@ -212,35 +195,21 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 📊 APURAÇÃO CONTÁBIL */}
-                    {podeVerFechamento.includes(userRole) && (
-                        <Link href="/dashboard/fechamento" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                    {/* 5. 📦 ESTOQUE & COMPRAS */}
+                    {podeVerEstoque.includes(userRole) && (
+                        <Link href="/dashboard/estoque" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
-                                <span className="text-base">📊</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#af52de] bg-[#af52de]/5 px-2 py-0.5 rounded">Finanças</span>
+                                <span className="text-base">📦</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff9500] bg-[#ff9500]/5 px-2 py-0.5 rounded">Almoxarifado</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Fechamento</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Apuração contábil e fechamento de folha.</p>
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Estoque &amp; Compras</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Inventário e fluxo triplo de cotações.</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* 👥 BASE DE FUNCIONÁRIOS */}
-                    {podeVerFuncionarios.includes(userRole) && (
-                        <Link href="/dashboard/funcionarios" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                            <div className="flex items-center justify-between w-full">
-                                <span className="text-base">👥</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#52525b] bg-[#52525b]/5 px-2 py-0.5 rounded">Equipe</span>
-                            </div>
-                            <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Funcionários</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Controle cadastral e crachás ópticos.</p>
-                            </div>
-                        </Link>
-                    )}
-
-                    {/* 💼 DIRETORIA / RH */}
+                    {/* 6. 💼 DIRETORIA / RH */}
                     {podeVerRH.includes(userRole) && (
                         <Link href="/dashboard/rh" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">

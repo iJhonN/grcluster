@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mensagemErro, setMensagemErro] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const [loginSucesso, setLoginSucesso] = useState(false); // Estado anti-flashbang
 
   // Estado para controlar a tela de apresentação da logo inicial
   const [introCarregando, setIntroCarregando] = useState(true);
@@ -55,19 +56,28 @@ export default function LoginPage() {
                 : error.message
         );
       } else {
-        router.push('/dashboard');
-        router.refresh();
+        // Dispara a transição suave anti-flashbang antes de redirecionar
+        setLoginSucesso(true);
+
+        setTimeout(() => {
+          router.push('/dashboard');
+          router.refresh();
+        }, 600); // Janela perfeita para a transição do CSS terminar
       }
     } catch (err) {
       console.error(err);
       setMensagemErro('Erro ao conectar com o servidor.');
     } finally {
-      setCarregando(false);
+      if (!error) setCarregando(false);
     }
   };
 
   return (
-      <main className="relative min-h-screen bg-[#030303] flex items-center justify-center p-6 font-sans overflow-hidden antialiased w-full">
+      <main
+          className={`relative min-h-screen flex items-center justify-center p-6 font-sans overflow-hidden antialiased w-full transition-all duration-700 ease-out ${
+              loginSucesso ? 'bg-[#f5f5f7]' : 'bg-[#030303]'
+          }`}
+      >
 
         {/* ── SPALSH SCREEN / TELA DE INTRO CARREGANDO ── */}
         {introCarregando && (
@@ -76,13 +86,11 @@ export default function LoginPage() {
                     esconderIntro ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
             >
-              {/* Espaçador superior para manter o grid equilibrado */}
               <div className="w-10 h-10 opacity-0" />
 
               {/* ELEMENTO CENTRAL: LOGO NOVA */}
               <div className="flex flex-col items-center gap-6">
                 <div className="relative w-44 h-44 sm:w-52 sm:h-52 animate-pulse">
-                  {/* Brilho laranja de fundo atrás da sua logo */}
                   <div className="absolute inset-4 bg-orange-500/20 rounded-full blur-3xl scale-110" />
                   <img
                       src="/grlogo720.png"
@@ -117,7 +125,7 @@ export default function LoginPage() {
         )}
 
         {/* ── FUNDO TECNOLÓGICO DO LOGIN ── */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className={`absolute inset-0 z-0 pointer-events-none transition-opacity duration-500 ${loginSucesso ? 'opacity-0' : 'opacity-100'}`}>
           <div
               className="absolute inset-0 opacity-[0.025]"
               style={{
@@ -134,7 +142,7 @@ export default function LoginPage() {
         </div>
 
         {/* ── CARD DE LOGIN PRINCIPAL ── */}
-        <div className="relative w-full max-w-sm z-10">
+        <div className={`relative w-full max-w-sm z-10 transition-all duration-500 transform ${loginSucesso ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
           <div className="absolute -inset-px rounded-[44px] bg-gradient-to-b from-orange-500/10 to-transparent blur-sm" />
 
           <div className="relative w-full bg-[#09090b]/90 border border-white/[0.06] rounded-[40px] shadow-2xl backdrop-blur-2xl overflow-hidden">
