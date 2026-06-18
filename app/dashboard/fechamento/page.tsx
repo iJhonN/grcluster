@@ -3,6 +3,8 @@ import { useState, useEffect, Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
+export const dynamic = 'force-dynamic';
+
 interface Funcionario {
     id: string;
     nome: string;
@@ -49,6 +51,9 @@ interface DiaCompetencia {
     mes: number;
     ano: number;
     label: string;
+    diaSemanaLabel: string;
+    isFimDeSemana: boolean;
+    isDomingo: boolean;
 }
 
 function ConteudoRelatorio() {
@@ -98,6 +103,8 @@ function ConteudoRelatorio() {
 
     const diasDoCiclo = useMemo((): DiaCompetencia[] => {
         const listaDias: DiaCompetencia[] = [];
+        const labelsSemana = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
         let mesAnterior = mesSelecionado - 1;
         let anoAnterior = anoSelecionado;
         if (mesAnterior === 0) {
@@ -108,10 +115,31 @@ function ConteudoRelatorio() {
         const totalDiasMesAnterior = new Date(anoAnterior, mesAnterior, 0).getDate();
 
         for (let d = 16; d <= totalDiasMesAnterior; d++) {
-            listaDias.push({ dia: d, mes: mesAnterior, ano: anoAnterior, label: `${String(d).padStart(2, '0')}/${String(mesAnterior).padStart(2, '0')}` });
+            const dataObjeto = new Date(anoAnterior, mesAnterior - 1, d);
+            const numDiaSemana = dataObjeto.getDay();
+            listaDias.push({
+                dia: d,
+                mes: mesAnterior,
+                ano: anoAnterior,
+                label: `${String(d).padStart(2, '0')}/${String(mesAnterior).padStart(2, '0')}`,
+                diaSemanaLabel: labelsSemana[numDiaSemana],
+                isFimDeSemana: numDiaSemana === 0 || numDiaSemana === 6,
+                isDomingo: numDiaSemana === 0
+            });
         }
+
         for (let d = 1; d <= 15; d++) {
-            listaDias.push({ dia: d, mes: mesSelecionado, ano: anoSelecionado, label: `${String(d).padStart(2, '0')}/${String(mesSelecionado).padStart(2, '0')}` });
+            const dataObjeto = new Date(anoSelecionado, mesSelecionado - 1, d);
+            const numDiaSemana = dataObjeto.getDay();
+            listaDias.push({
+                dia: d,
+                mes: mesSelecionado,
+                ano: anoSelecionado,
+                label: `${String(d).padStart(2, '0')}/${String(mesSelecionado).padStart(2, '0')}`,
+                diaSemanaLabel: labelsSemana[numDiaSemana],
+                isFimDeSemana: numDiaSemana === 0 || numDiaSemana === 6,
+                isDomingo: numDiaSemana === 0
+            });
         }
         return listaDias;
     }, [mesSelecionado, anoSelecionado]);
@@ -121,6 +149,7 @@ function ConteudoRelatorio() {
             [chave: string]: {
                 pontos: RegistroPonto[];
                 minutosPausa: number;
+                textoAjuste: string;
                 emergenciaSaida: string;
                 emergenciaRetorno: string;
                 emergenciaDuracao: string;
@@ -137,7 +166,7 @@ function ConteudoRelatorio() {
             const dLocal = new Date(new Date(p.data_registro).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${p.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
             mapa[chave].pontos.push(p);
 
             if (p.observacao === 'Atraso') {
@@ -150,9 +179,12 @@ function ConteudoRelatorio() {
             const dLocal = new Date(new Date(p.data).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${p.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+
             if (p.tipo === 'pausa') {
                 mapa[chave].minutosPausa += Number(p.minutos_ajuste || 0);
+            } else if (p.tipo === 'feriado' || p.tipo === 'folga') {
+                mapa[chave].textoAjuste = String(p.observacao || '').toUpperCase();
             }
         });
 
@@ -161,7 +193,7 @@ function ConteudoRelatorio() {
             const dLocal = new Date(new Date(s.horario_saida).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${s.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
 
             const formataHora = (isoString: string | null) => {
                 if (!isoString) return 'Ab.';
@@ -190,7 +222,7 @@ function ConteudoRelatorio() {
             const [ano, mes, dia] = m.data_referencia.split('-').map(Number);
             const chave = `${m.funcionario_id}-${ano}-${mes}-${dia}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
             mapa[chave].extraManualDiurna += Number(m.minutos_diurnos || 0);
             mapa[chave].extraManualNoturna += Number(m.minutos_noturnos || 0);
         });
@@ -209,7 +241,8 @@ function ConteudoRelatorio() {
         const retornoBase = {
             entrada: '---', saidaAlmoço: '---', voltaAlmoço: '---', saidaFinal: '---',
             totalPausa: '---', emSaida: '---', emRetorno: '---', emDuracao: '---',
-            justificativa: '', extraDiurnaMinutos: 0, extraNoturnaMinutos: 0, minutosEmergenciaAcumuladoDia: 0, minutosPausaPurosDia: 0, temAtraso: false
+            justificativa: '', extraDiurnaMinutos: 0, extraNoturnaMinutos: 0, minutosEmergenciaAcumuladoDia: 0, minutosPausaPurosDia: 0, temAtraso: false,
+            textoAjuste: ''
         };
 
         if (!dadosDoDia) return retornoBase;
@@ -259,7 +292,8 @@ function ConteudoRelatorio() {
             extraNoturnaMinutos: extraNoturnaCalculada + dadosDoDia.extraManualNoturna,
             minutosEmergenciaAcumuladoDia: dadosDoDia.emergenciaMinutosTotais,
             minutosPausaPurosDia: dadosDoDia.minutosPausa,
-            temAtraso: dadosDoDia.temAtraso
+            temAtraso: dadosDoDia.temAtraso,
+            textoAjuste: dadosDoDia.textoAjuste
         };
     };
 
@@ -341,10 +375,10 @@ function ConteudoRelatorio() {
                                 </div>
 
                                 <div className="w-full overflow-x-auto print:overflow-visible">
-                                    <table className="w-full text-left text-xs print:text-[9px] border-collapse table-auto print:table-fixed min-w-[900px] print:min-w-0">
+                                    <table className="w-full text-left text-xs print:text-[9px] border-collapse table-auto print:table-fixed min-w-[950px] print:min-w-0">
                                         <thead>
                                         <tr className="border-b border-slate-300 text-slate-800 uppercase font-black text-[10px] print:text-[7.5px] tracking-wider bg-slate-100">
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 w-[50px] print:w-[32px] min-w-[50px] print:min-w-0">Data</th>
+                                            <th className="py-2 px-2 print:py-1 print:px-0.5 w-[85px] print:w-[58px] min-w-[85px] print:min-w-0">Data</th>
                                             <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] min-w-[60px] print:min-w-0">Entrada</th>
                                             <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] min-w-[60px] print:min-w-0">Sai Alm</th>
                                             <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] min-w-[60px] print:min-w-0">Vol Alm</th>
@@ -369,17 +403,34 @@ function ConteudoRelatorio() {
                                             acumuladoEmergencia += jornada.minutosEmergenciaAcumuladoDia;
                                             acumuladoPausas += jornada.minutosPausaPurosDia;
 
+                                            // Identifica se possui feriado ou folga cadastrada na linha
+                                            const possuiExcecaoAmarela = jornada.textoAjuste && (jornada.textoAjuste.includes("FOLGA") || jornada.textoAjuste !== "");
+
                                             return (
                                                 <tr
                                                     key={idx}
                                                     className={`border-b border-slate-100 transition-colors text-xs print:text-[9px] ${
                                                         jornada.temAtraso
                                                             ? 'bg-red-50/70 border-l-4 border-l-red-500 font-medium hover:bg-red-100/60 print:bg-slate-100 print:border-l-0'
-                                                            : 'hover:bg-slate-50'
+                                                            : possuiExcecaoAmarela
+                                                                ? 'bg-yellow-50 hover:bg-yellow-100/80 font-semibold print:bg-yellow-100/50' // <-- ADICIONADO: Amarelo estratégico para Folgas/Feriados
+                                                                : itemDia.isFimDeSemana
+                                                                    ? 'bg-slate-100/70 font-medium hover:bg-slate-200/50 print:bg-slate-100'
+                                                                    : 'hover:bg-slate-50'
                                                     }`}
                                                 >
-                                                    <td className={`py-2 px-2 print:py-0.5 print:px-0.5 font-mono font-black ${jornada.temAtraso ? 'text-red-700 print:text-black print:font-black' : 'text-black'}`}>
-                                                        {itemDia.label}
+                                                    <td className={`py-2 px-2 print:py-0.5 print:px-0.5 font-mono font-black whitespace-nowrap ${
+                                                        jornada.temAtraso
+                                                            ? 'text-red-700 print:text-black print:font-black'
+                                                            : possuiExcecaoAmarela
+                                                                ? 'text-amber-800' // Escurece o texto do dia amarelado para melhor leitura
+                                                                : itemDia.isDomingo
+                                                                    ? 'text-blue-700'
+                                                                    : itemDia.isFimDeSemana
+                                                                        ? 'text-emerald-600'
+                                                                        : 'text-black'
+                                                    }`}>
+                                                        {itemDia.label} <span className="font-sans font-bold text-[10px] print:text-[8px] opacity-75">[{itemDia.diaSemanaLabel}]</span>
                                                     </td>
                                                     <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center text-slate-700">{jornada.entrada}</td>
                                                     <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center text-slate-600">{jornada.saidaAlmoço}</td>
@@ -395,7 +446,13 @@ function ConteudoRelatorio() {
                                                     </td>
 
                                                     <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center font-black text-orange-600 bg-orange-500/[0.02] border-l border-slate-100">{jornada.totalPausa}</td>
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-1 border-l border-dashed border-slate-200"></td>
+
+                                                    {/* CÉLULA DE AJUSTES COLORIDA DINAMICAMENTE DE ACORDO COM O REGISTRO */}
+                                                    <td className={`py-2 px-2 print:py-0.5 print:px-1 border-l border-dashed border-slate-200 text-center font-mono font-black text-[9px] uppercase tracking-tight whitespace-nowrap ${
+                                                        possuiExcecaoAmarela ? 'text-amber-700 font-black' : 'text-[#007aff]'
+                                                    }`}>
+                                                        {jornada.textoAjuste || ''}
+                                                    </td>
                                                 </tr>
                                             );
                                         })}

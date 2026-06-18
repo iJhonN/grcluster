@@ -17,6 +17,12 @@ export default function HubRHPage() {
             rota: "/dashboard/funcionarios"
         },
         {
+            titulo: "Folgas & Feriados",
+            descricao: "Lançamento em massa de feriados no calendário e dispensas/escalas de folga individuais.",
+            icone: "📅",
+            rota: "/dashboard/rh/folgas"
+        },
+        {
             titulo: "Controle de Atestados",
             descricao: "Lançamento e auditoria de justificativas médicas, dispensas e afastamentos legais.",
             icone: "📄",
@@ -86,7 +92,8 @@ export default function HubRHPage() {
                     <h2 className="text-[9px] font-bold uppercase tracking-wider text-[#007aff] pl-0.5">
                         I. Diretoria &amp; Administração
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 w-full">
+                    {/* Grid responsivo atualizado para comportar dinamicamente os cards de gestão */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 w-full">
                         {acoesDiretas.map((o, idx) => (
                             <Link
                                 key={idx}
@@ -105,7 +112,7 @@ export default function HubRHPage() {
                                     <h3 className="text-xs font-bold uppercase tracking-wide text-[#1d1d1f] group-hover:text-[#007aff] transition-colors">
                                         {o.titulo}
                                     </h3>
-                                    <p className="text-[11px] text-[#86868b] font-medium leading-normal">
+                                    <p className="text-[11px] text-[#86868b] font-medium leading-normal line-clamp-3">
                                         {o.descricao}
                                     </p>
                                 </div>
