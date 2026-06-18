@@ -165,7 +165,6 @@ export default function GestaoLancamentosManuaisPage() {
                         funcionario_id: funcionarioId,
                         nome_completo: nomeCompleto,
                         data_referencia: dataHojeApenasChave,
-                        // CORRIGIDO AQUI: minutesInt alterado para minutosInt para sanar a quebra do build
                         minutos_diurnos: tipoLancamento === 'extra_diurna' ? minutosInt : 0,
                         minutos_noturnos: tipoLancamento === 'extra_noturna' ? minutosInt : 0,
                         observacao: observacao.trim(),
@@ -276,7 +275,7 @@ export default function GestaoLancamentosManuaisPage() {
                             <textarea
                                 placeholder="Descreva os motivos técnicos do ajuste..."
                                 value={observacao}
-                                onChange={e => setObservation(e.target.value)}
+                                onChange={e => setObservacao(e.target.value)}
                                 className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] p-3 rounded-lg text-xs font-medium outline-none text-[#1d1d1f] h-24 resize-none transition-colors"
                                 required
                             />
