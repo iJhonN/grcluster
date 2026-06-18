@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
+export const dynamic = 'force-dynamic';
+
 interface Movimentacao {
     id: string;
     ferramenta_id: string;
@@ -46,7 +48,6 @@ export default function HistoricoFerramentasPage() {
         carregarHistorico();
     }, []);
 
-    // Filtros rápidos executados em memória no seu Mac Air
     const movimentacoesFiltradas = useMemo(() => {
         const termo = pesquisa.toLowerCase().trim();
         return movimentacoes.filter(m => {
@@ -65,41 +66,26 @@ export default function HistoricoFerramentasPage() {
         });
     }, [movimentacoes, pesquisa, filtroMovimentacao]);
 
-    // Contadores analíticos para o topo do histórico
     const relatorioRapido = useMemo(() => {
         const pendentes = movimentacoes.filter(m => m.status_movimentacao === 'aberto').length;
-        const concluídas = movimentacoes.filter(m => m.status_movimentacao === 'devolvido').length;
-        return { pendentes, concluídas, total: movimentacoes.length };
+        const concluidas = movimentacoes.filter(m => m.status_movimentacao === 'devolvido').length;
+        return { pendentes, concluidas, total: movimentacoes.length };
     }, [movimentacoes]);
 
     return (
-        <main className="relative min-h-screen bg-[#030303] text-white p-4 sm:p-6 md:p-10 font-sans overflow-hidden antialiased flex flex-col justify-between w-full">
+        <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased flex flex-col justify-between w-full selection:bg-black/5">
 
-            {/* GRID BACKGROUND */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-                <div
-                    className="absolute inset-0 opacity-[0.012]"
-                    style={{
-                        backgroundImage: `linear-gradient(to right, #f97316 1px, transparent 1px), linear-gradient(to bottom, #f97316 1px, transparent 1px)`,
-                        backgroundSize: '50px 50px',
-                    }}
-                />
-            </div>
-
-            <div className="relative z-10 w-full flex-1 flex flex-col gap-8 max-w-[1400px] mx-auto">
+            <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col gap-6 sm:gap-8">
 
                 {/* CABEÇALHO */}
-                <header className="w-full flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-white/[0.04] pb-6 px-2">
-                    <div>
-                        <Link href="/dashboard" className="text-orange-500 font-black text-[9px] uppercase tracking-[4px] mb-1.5 block hover:opacity-70 transition-all">
+                <header className="w-full flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-[#e5e5ea] pb-6 pl-1">
+                    <div className="space-y-1">
+                        <Link href="/dashboard" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block">
                             ← Menu Principal
                         </Link>
-                        <h1 className="text-2xl sm:text-3xl font-black uppercase italic tracking-tighter text-white leading-none">
-                            Histórico e <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400">Auditoria de Cautelas</span>
+                        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f]">
+                            Histórico e Auditoria de Cautelas
                         </h1>
-                        <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1.5 font-bold">
-                            Rastreabilidade completa de retiradas, devoluções e posse de ferramentas em tempo real
-                        </p>
                     </div>
 
                     {/* CONTROLADORES DE BUSCA */}
@@ -109,119 +95,101 @@ export default function HistoricoFerramentasPage() {
                             placeholder="Buscar ferramenta, colaborador ou IDs..."
                             value={pesquisa}
                             onChange={(e) => setPesquisa(e.target.value)}
-                            className="bg-black border border-white/[0.06] focus:border-orange-500/40 px-4 py-2.5 rounded-xl text-white text-xs font-bold outline-none w-full sm:w-72 uppercase transition-all"
+                            className="bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3.5 py-2 rounded-xl text-[#1d1d1f] text-xs font-medium outline-none w-full sm:w-64 uppercase transition-colors placeholder-[#b4b4b9]"
                         />
 
-                        <div className="flex items-center bg-black border border-white/[0.06] p-1 rounded-xl gap-1">
-                            <button
-                                onClick={() => setFiltroMovimentacao('todos')}
-                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                                    filtroMovimentacao === 'todos' ? 'bg-orange-600 text-black' : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                                Tudo
-                            </button>
-                            <button
-                                onClick={() => setFiltroMovimentacao('aberto')}
-                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                                    filtroMovimentacao === 'aberto' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                                Pendente (Em Uso)
-                            </button>
-                            <button
-                                onClick={() => setFiltroMovimentacao('devolvido')}
-                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                                    filtroMovimentacao === 'devolvido' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                                Entregue
-                            </button>
-                        </div>
+                        <select
+                            value={filtroMovimentacao}
+                            onChange={(e) => setFiltroMovimentacao(e.target.value)}
+                            className="bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-xl text-xs font-semibold outline-none text-[#1d1d1f] transition-colors cursor-pointer"
+                        >
+                            <option value="todos">Todas as Cautelas</option>
+                            <option value="aberto">Pendente (Em Uso)</option>
+                            <option value="devolvido">Concluídas / Entregues</option>
+                        </select>
                     </div>
                 </header>
 
                 {/* PLACAR ANALÍTICO DE CAUTELAS */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-2">
-                    <div className="bg-[#09090b]/60 border border-white/[0.04] p-5 rounded-2xl text-center">
-                        <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">Fluxo Total de Operações</p>
-                        <p className="text-2xl font-mono font-black mt-1 text-slate-300">{relatorioRapido.total}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl text-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-[#86868b]">Fluxo Total de Operações</p>
+                        <p className="text-xl font-mono font-black mt-0.5 text-[#1d1d1f]">{relatorioRapido.total}</p>
                     </div>
-                    <div className="bg-[#09090b]/60 border border-white/[0.04] p-5 rounded-2xl text-center">
-                        <p className="text-[9px] font-black uppercase tracking-wider text-amber-500">Ferramentas fora do almoxarifado</p>
-                        <p className="text-2xl font-mono font-black mt-1 text-amber-400">{relatorioRapido.pendentes}</p>
+                    <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl text-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-[#ff9500]">Ferramentas em Uso</p>
+                        <p className="text-xl font-mono font-black mt-0.5 text-[#ff9500]">{relatorioRapido.pendentes}</p>
                     </div>
-                    <div className="bg-[#09090b]/60 border border-white/[0.04] p-5 rounded-2xl text-center">
-                        <p className="text-[9px] font-black uppercase tracking-wider text-emerald-500">Devoluções Concluídas</p>
-                        <p className="text-2xl font-mono font-black mt-1 text-emerald-400">{relatorioRapido.concluídas}</p>
+                    <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl text-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-[#248a3d]">Devoluções Concluídas</p>
+                        <p className="text-xl font-mono font-black mt-0.5 text-[#248a3d]">{relatorioRapido.concluidas}</p>
                     </div>
                 </div>
 
                 {/* LISTAGEM DOS REGISTROS */}
-                <div className="relative bg-[#09090b]/80 border border-white/[0.06] rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl mx-2 min-h-[400px]">
-                    <div className="absolute top-0 left-[5%] right-[5%] h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
-
+                <div className="bg-white border border-[#e5e5ea] rounded-2xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] min-h-[400px] overflow-hidden">
                     {carregando ? (
-                        <div className="text-center py-32 text-[9px] uppercase font-black text-slate-500 tracking-[4px] animate-pulse">
-                            Buscando log de transações...
+                        <div className="text-center py-24 flex flex-col items-center justify-center gap-2 text-[#86868b]">
+                            <div className="w-5 h-5 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-[10px] uppercase font-bold tracking-wider font-mono">Buscando histórico...</span>
                         </div>
                     ) : movimentacoesFiltradas.length === 0 ? (
-                        <div className="py-32 text-center">
-                            <p className="text-xs text-slate-600 font-bold uppercase tracking-wider">Nenhum registro de movimentação encontrado.</p>
+                        <div className="py-20 text-center">
+                            <p className="text-xs text-[#86868b] font-bold uppercase tracking-wide">Nenhum registro de movimentação encontrado.</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
-                                <tr className="border-b border-white/[0.04] text-slate-500 uppercase tracking-wider text-[8px] font-black pb-3">
-                                    <th className="pb-3 pl-4">Ferramenta</th>
+                                <tr className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider text-[8px] font-bold select-none">
+                                    <th className="pb-3 pl-2">Ferramenta</th>
                                     <th className="pb-3">Responsável</th>
                                     <th className="pb-3 text-center">Data Retirada</th>
                                     <th className="pb-3 text-center">Data Devolução</th>
-                                    <th className="pb-3 text-right pr-4">Situação</th>
+                                    <th className="pb-3 text-right pr-2">Situação</th>
                                 </tr>
                                 </thead>
-                                <tbody className="divide-y divide-white/[0.01]">
+                                <tbody className="divide-y divide-[#f5f5f7]">
                                 {movimentacoesFiltradas.map(m => (
-                                    <tr key={m.id} className="hover:bg-white/[0.01] transition-colors group">
-                                        <td className="py-4 pl-4">
-                                            <p className="font-black text-slate-200 uppercase tracking-tight text-xs leading-none">
+                                    <tr key={m.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                                        <td className="py-3.5 pl-2">
+                                            <p className="font-bold text-[#1d1d1f] uppercase tracking-tight text-xs leading-none">
                                                 {m.ferramentas?.nome || 'Ferramenta Desconhecida'}
                                             </p>
-                                            <span className="text-[9px] font-mono font-black text-orange-500 tracking-wider mt-1 block">
-                                                    ID: {m.ferramenta_id}
-                                                </span>
+                                            <span className="text-[9px] font-mono font-bold text-[#ff9500] tracking-wider mt-1 block">
+                                                ID: {m.ferramenta_id}
+                                            </span>
                                         </td>
-                                        <td className="py-4">
-                                            <p className="font-bold text-slate-300 uppercase text-[11px] tracking-wide leading-none">
+                                        <td className="py-3.5">
+                                            <p className="font-semibold text-[#1d1d1f] uppercase text-[11px] tracking-wide leading-none">
                                                 {m.funcionarios ? `${m.funcionarios.nome} ${m.funcionarios.sobrenome}` : 'N/A'}
                                             </p>
-                                            <span className="text-[8px] font-mono text-slate-600 mt-1 block">
-                                                    Registro: {m.funcionario_id}
-                                                </span>
+                                            <span className="text-[9px] font-mono font-semibold text-[#86868b] mt-1 block">
+                                                Registro: {m.funcionario_id}
+                                            </span>
                                         </td>
-                                        <td className="py-4 text-center font-mono text-[10px] text-slate-400">
+                                        <td className="py-3.5 text-center font-mono text-[10px] text-[#86868b] font-semibold">
                                             {new Date(m.data_retirada).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </td>
-                                        <td className="py-4 text-center font-mono text-[10px]">
+                                        <td className="py-3.5 text-center font-mono text-[10px] font-semibold">
                                             {m.data_devolucao ? (
-                                                <span className="text-slate-400">
-                                                        {new Date(m.data_devolucao).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
+                                                <span className="text-[#86868b]">
+                                                    {new Date(m.data_devolucao).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                </span>
                                             ) : (
-                                                <span className="text-amber-500 font-sans text-[8px] font-black uppercase tracking-widest animate-pulse bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10">
-                                                        Em Uso
-                                                    </span>
+                                                <span className="text-[#ff3b30] text-[8px] font-bold uppercase tracking-wider animate-pulse bg-[#ff3b30]/5 px-2 py-0.5 rounded border border-[#ff3b30]/10">
+                                                    Em Uso
+                                                </span>
                                             )}
                                         </td>
-                                        <td className="py-4 text-right pr-4">
-                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md ${
-                                                    m.status_movimentacao === 'aberto'
-                                                        ? 'bg-amber-500/5 text-amber-400 border border-amber-500/10'
-                                                        : 'bg-emerald-500/5 text-emerald-400 border border-emerald-500/10'
-                                                }`}>
-                                                    {m.status_movimentacao === 'aberto' ? 'Pendente' : 'Concluído'}
-                                                </span>
+                                        <td className="py-3.5 text-right pr-2">
+                                            <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                                                m.status_movimentacao === 'aberto'
+                                                    ? 'bg-[#ff9500]/5 text-[#ff9500] border border-[#ff9500]/10'
+                                                    : 'bg-[#34c759]/5 text-[#248a3d] border border-[#34c759]/10'
+                                            }`}>
+                                                {m.status_movimentacao === 'aberto' ? 'Pendente' : 'Concluído'}
+                                            </span>
                                         </td>
                                     </tr>
                                 ))}
@@ -233,9 +201,9 @@ export default function HistoricoFerramentasPage() {
             </div>
 
             {/* RODAPÉ */}
-            <footer className="w-full border-t border-white/[0.02] pt-6 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-700 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left max-w-[1400px] mx-auto">
-                <div>GR Autopeças & Serviços</div>
-                <div className="font-mono text-slate-800">Módulo Histórico Geral v3.2</div>
+            <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
+                <div>GR Autopeças &amp; Serviços</div>
+                <div className="font-mono text-[#b4b4b9]">Almoxarifado Central v3.2</div>
             </footer>
         </main>
     );

@@ -51,11 +51,18 @@ function ConteudoHorasExtras() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    const formatarMinutosParaHoras = (minutosTotais: number, exibirVazio = false): string => {
+        if (minutosTotais === 0) return exibirVazio ? '---' : '0h';
+        const hrs = Math.floor(minutosTotais / 60);
+        const mnts = minutosTotais % 60;
+        if (hrs === 0) return `+${mnts}m`;
+        return mnts === 0 ? `+${hrs}h` : `+${hrs}h ${mnts.toString().padStart(2, '0')}m`;
+    };
+
     useEffect(() => {
         const carregarDados = async () => {
             setCarregando(true);
             try {
-                // Busca funcionários, pontos do totem e os lançamentos manuais em paralelo
                 const [resFunc, resPontos, resManuais] = await Promise.all([
                     supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome'),
                     supabase.from('pontos').select('id, funcionario_id, data_registro, hora_formatada, tipo_batida'),
@@ -91,7 +98,6 @@ function ConteudoHorasExtras() {
         return listaDias;
     }, [mesSelecionado, anoSelecionado]);
 
-    // Agrupa pontos na memória por funcionário e por dia
     const mapaPontos = useMemo(() => {
         const mapa: { [chave: string]: RegistroPonto[] } = {};
         pontos.forEach(p => {
@@ -107,12 +113,10 @@ function ConteudoHorasExtras() {
         return mapa;
     }, [pontos]);
 
-    // Indexa as horas extras manuais na memória para busca instantânea O(1) por data_referencia
     const mapaManuais = useMemo(() => {
         const mapa: { [chave: string]: { diurnos: number; noturnos: number } } = {};
         extrasManuais.forEach(m => {
             if (!m.data_referencia) return;
-            // A data_referencia já vem salva do banco como 'YYYY-MM-DD'
             const [ano, mes, dia] = m.data_referencia.split('-').map(Number);
             const chave = `${m.funcionario_id}-${ano}-${mes}-${dia}`;
 
@@ -123,7 +127,6 @@ function ConteudoHorasExtras() {
         return mapa;
     }, [extrasManuais]);
 
-    // MESTRE DO CÁLCULO UNIFICADO: Une cálculo automático e lançamentos manuais da gerência
     const calcularExtrasTotaisDoDia = (funcionarioId: string, itemDia: DiaCompetencia) => {
         const chave = `${funcionarioId}-${itemDia.ano}-${itemDia.mes}-${itemDia.dia}`;
         const pts = mapaPontos[chave] || [];
@@ -132,7 +135,6 @@ function ConteudoHorasExtras() {
         let extraDiurnaCalculada = 0;
         let extraNoturnaCalculada = 0;
 
-        // 1. SE HOUVER 4 BATIDAS, CALCULA O AUTOMÁTICO DO TOTEM
         if (pts.length >= 4) {
             const converteParaMinutos = (hhmm: string) => {
                 const [h, m] = hhmm.split(':').map(Number);
@@ -152,7 +154,7 @@ function ConteudoHorasExtras() {
 
             if (totalTrabalhadoNoDia > jornadaPadraoMinutos) {
                 let minutosExtrasRestantes = totalTrabalhadoNoDia - jornadaPadraoMinutos;
-                const limiteNoite = 18 * 60; // 18:00h
+                const limiteNoite = 18 * 60;
 
                 if (saidaFim > limiteNoite) {
                     const excedenteNoite = saidaFim - limiteNoite;
@@ -163,167 +165,173 @@ function ConteudoHorasExtras() {
             }
         }
 
-        // 2. SOMA COM OS LANÇAMENTOS MANUAIS (Se existirem para esse dia)
         const diurnaFinal = extraDiurnaCalculada + (manualDoDia ? manualDoDia.diurnos : 0);
         const noturnaFinal = extraNoturnaCalculada + (manualDoDia ? manualDoDia.noturnos : 0);
 
         return { diurna: diurnaFinal, noturna: noturnaFinal };
     };
 
-    // Consolida e soma todas as horas extras do mês por funcionário para exibição rápida
     const resumoFuncionariosComExtras = useMemo(() => {
-        return funcionarios.filter(func => {
-            const termo = pesquisa.toLowerCase().trim();
-            if (!termo) return true;
-            const nomeCompleto = `${func.nome} ${func.sobrenome}`.toLowerCase();
-            return nomeCompleto.includes(termo) || String(func.id).includes(termo);
-        }).map(func => {
-            let totalDiurna = 0;
-            let totalNoturna = 0;
+        return funcionarios
+            .filter(func => {
+                const termo = pesquisa.toLowerCase().trim();
+                if (!termo) return true;
+                const nomeCompleto = `${func.nome} ${func.sobrenome}`.toLowerCase();
+                return nomeCompleto.includes(termo) || String(func.id).includes(termo);
+            })
+            .map(func => {
+                let totalDiurna = 0;
+                let totalNoturna = 0;
 
-            diasDoCiclo.forEach(itemDia => {
-                const extras = calcularExtrasTotaisDoDia(func.id, itemDia);
-                totalDiurna += extras.diurna;
-                totalNoturna += extras.noturna;
-            });
+                diasDoCiclo.forEach(itemDia => {
+                    const extras = calcularExtrasTotaisDoDia(func.id, itemDia);
+                    totalDiurna += extras.diurna;
+                    totalNoturna += extras.noturna;
+                });
 
-            const formatarMinutos = (min: number) => {
-                if (min === 0) return '---';
-                const hrs = Math.floor(min / 60);
-                const mnts = min % 60;
-                return `${hrs}h ${mnts.toString().padStart(2, '0')}m`;
-            };
-
-            return {
-                ...func,
-                diurnaFormatada: formatarMinutos(totalDiurna),
-                noturnaFormatada: formatarMinutos(totalNoturna),
-                temExtras: totalDiurna > 0 || totalNoturna > 0
-            };
-        });
+                return {
+                    ...func,
+                    totalDiurnaMinutos: totalDiurna,
+                    totalNoturnaMinutos: totalNoturna,
+                    diurnaFormatada: formatarMinutosParaHoras(totalDiurna, true),
+                    noturnaFormatada: formatarMinutosParaHoras(totalNoturna, true),
+                    temExtras: totalDiurna > 0 || totalNoturna > 0
+                };
+            })
+            .filter(func => func.temExtras);
     }, [funcionarios, diasDoCiclo, mapaPontos, mapaManuais, pesquisa]);
 
     return (
-        <main className="min-h-screen bg-black text-white p-4 font-sans print:bg-white print:text-black">
+        <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-black/5 print:bg-white print:text-black print:p-0">
 
-            {/* PAINEL ADMINISTRATIVO */}
-            <header className="max-w-6xl mx-auto mb-6 bg-slate-900/40 p-5 rounded-[25px] border border-white/5 print:hidden">
+            {/* PAINEL ADMINISTRATIVO CRISTALINO */}
+            <header className="max-w-5xl mx-auto mb-6 bg-white border border-[#e5e5ea] p-4 sm:p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] print:hidden">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                    <div>
-                        <Link href="/dashboard" className="text-orange-500 font-black text-[10px] uppercase tracking-[4px] mb-1 block hover:opacity-70 transition-all">← Dashboard</Link>
-                        <h1 className="text-2xl font-black uppercase italic text-white leading-none">Banco de <span className="text-orange-500">Horas Extras</span></h1>
+                    <div className="space-y-1 pl-1">
+                        <Link href="/dashboard" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block">
+                            ← Módulos Operacionais
+                        </Link>
+                        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f]">
+                            Banco de Horas Extras
+                        </h1>
                     </div>
+
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
                         <input
                             type="text"
                             placeholder="Buscar por colaborador..."
                             value={pesquisa}
                             onChange={(e) => setPesquisa(e.target.value)}
-                            className="bg-black border border-white/10 px-4 py-2 rounded-xl font-bold text-white text-sm outline-none focus:border-orange-500 w-full sm:w-64"
+                            className="bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3.5 py-2 rounded-lg font-medium text-[#1d1d1f] text-xs outline-none transition-colors w-full sm:w-56 placeholder-[#b4b4b9] uppercase"
                         />
                         <select
                             value={mesSelecionado}
                             onChange={(e) => setMesSelecionado(Number(e.target.value))}
-                            className="bg-black border border-white/10 px-3 py-2 rounded-xl font-bold text-white text-sm outline-none cursor-pointer"
+                            className="bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg font-semibold text-[#1d1d1f] text-xs outline-none transition-colors cursor-pointer w-full sm:w-auto"
                         >
                             {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                                 <option key={m} value={m}>Ciclo até 15/{String(m).padStart(2, '0')}</option>
                             ))}
                         </select>
-                        <button onClick={() => window.print()} className="bg-orange-600 px-5 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-orange-500 transition-all">
-                            🖨️ Imprimir Balanço
+                        <button
+                            onClick={() => window.print()}
+                            className="bg-[#1d1d1f] active:bg-black text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors w-full sm:w-auto"
+                        >
+                            🖨️ Imprimir
                         </button>
                     </div>
                 </div>
             </header>
 
             {/* LISTAGEM DE ACUMULADOS MENSAL */}
-            <section className="max-w-5xl mx-auto flex flex-col gap-6">
+            <section className="max-w-5xl mx-auto flex flex-col gap-6 print:gap-0">
                 {carregando ? (
-                    <div className="text-center py-20 animate-pulse font-black uppercase text-slate-800 tracking-[5px]">Calculando Banco de Horas...</div>
+                    <div className="py-20 flex flex-col items-center justify-center gap-2 text-[#86868b]">
+                        <div className="w-5 h-5 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-[10px] uppercase font-bold tracking-wider font-mono">Consolidando Auditoria...</span>
+                    </div>
                 ) : resumoFuncionariosComExtras.length === 0 ? (
-                    <div className="text-center py-20 border border-dashed border-white/10 rounded-[30px] text-slate-500 font-bold text-sm">
-                        Nenhum funcionário localizado.
+                    <div className="text-center py-16 bg-white border border-[#e5e5ea] rounded-2xl text-[#86868b] font-semibold text-xs uppercase tracking-wide">
+                        Nenhum colaborador com horas extras neste ciclo.
                     </div>
                 ) : (
-                    resumoFuncionariosComExtras.map((func) => (
-                        <div key={func.id} className="bg-white text-black p-6 rounded-[30px] border border-slate-200 print:break-inside-avoid print:page-break-after-always">
+                    resumoFuncionariosComExtras.map((func, index) => (
+                        <div key={func.id}>
+                            {/* LINHA DIVISÓRIA PRETA ISOLADA: Aparece apenas entre os funcionários na impressão */}
+                            {index > 0 && (
+                                <div className="hidden print:block border-b-2 border-black my-8" />
+                            )}
 
-                            {/* CABEÇALHO INDIVIDUAL */}
-                            <div className="flex justify-between items-start border-b-2 border-black pb-3 mb-4">
-                                <div>
-                                    <h3 className="text-base font-black uppercase italic leading-tight text-black">{func.nome} {func.sobrenome}</h3>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase font-mono">{func.cargo} • ID: {func.id}</p>
+                            {/* Bloco do funcionário mantido original e limpo */}
+                            <div className="bg-white border border-[#e5e5ea] p-5 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] print:border-none print:shadow-none print:p-0 print:break-inside-avoid">
+
+                                {/* CABEÇALHO INDIVIDUAL APPLE-STYLE */}
+                                <div className="flex flex-col sm:flex-row justify-between items-start border-b border-[#f5f5f7] pb-4 mb-4 gap-2 sm:gap-0">
+                                    <div className="leading-tight">
+                                        <h3 className="text-sm sm:text-base font-bold tracking-tight text-[#1d1d1f] uppercase">{func.nome} {func.sobrenome}</h3>
+                                        <p className="text-[10px] font-mono font-bold text-[#86868b] uppercase tracking-wide mt-0.5">{func.cargo} • ID: {func.id}</p>
+                                    </div>
+                                    <div className="text-left sm:text-right">
+                                        <p className="text-[9px] font-bold text-[#86868b] uppercase tracking-wider">Período de Competência</p>
+                                        <p className="font-mono font-bold text-[#1d1d1f] text-xs mt-0.5">16/{String(mesSelecionado === 1 ? 12 : mesSelecionado - 1).padStart(2, '0')} a 15/{String(mesSelecionado).padStart(2, '0')}/{anoSelecionado}</p>
+                                    </div>
                                 </div>
-                                <div className="text-right text-xs">
-                                    <p className="font-black text-slate-800 uppercase tracking-wide">Competência</p>
-                                    <p className="font-mono font-bold text-orange-600">16/{String(mesSelecionado === 1 ? 12 : mesSelecionado - 1).padStart(2, '0')} a 15/{String(mesSelecionado).padStart(2, '0')}/{anoSelecionado}</p>
+
+                                {/* QUADRO DE RESUMO ACUMULADO */}
+                                <div className="grid grid-cols-2 gap-4 mb-5 bg-[#f5f5f7] p-4 rounded-xl print:bg-[#f5f5f7]">
+                                    <div className="text-center border-r border-[#e5e5ea]">
+                                        <p className="text-[9px] font-bold text-[#86868b] uppercase tracking-wider">Total Extra Diurna</p>
+                                        <p className="text-base font-mono font-black text-[#248a3d] mt-0.5">{func.diurnaFormatada}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[9px] font-bold text-[#86868b] uppercase tracking-wider">Total Extra Noturna</p>
+                                        <p className="text-base font-mono font-black text-[#5856d6] mt-0.5">{func.noturnaFormatada}</p>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* QUADRO DE RESUMO ACUMULADO */}
-                            <div className="grid grid-cols-2 gap-4 mb-6 bg-slate-50 p-4 rounded-2xl print:bg-slate-100">
-                                <div className="text-center border-r border-slate-200">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Total Extra Diurna</p>
-                                    <p className="text-base font-mono font-black text-black mt-0.5">{func.diurnaFormatada}</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider text-orange-600">Total Extra Noturna (pós-18:00)</p>
-                                    <p className="text-base font-mono font-black text-orange-600 mt-0.5">{func.noturnaFormatada}</p>
-                                </div>
-                            </div>
-
-                            {/* DETALHAMENTO DIA A DIA */}
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-[11px] border-collapse">
-                                    <thead>
-                                    <tr className="border-b border-slate-300 text-slate-800 uppercase font-black text-[9px] tracking-wider bg-slate-100">
-                                        <th className="py-1 px-2 w-16">Data</th>
-                                        <th className="py-1 px-2 text-center w-16">Entrada</th>
-                                        <th className="py-1 px-2 text-center w-16">Saída Alm</th>
-                                        <th className="py-1 px-2 text-center w-16">Volta Alm</th>
-                                        <th className="py-1 px-2 text-center w-16">Saída Fim</th>
-                                        <th className="py-1 px-2 text-center w-24">Extra Diurna</th>
-                                        <th className="py-1 px-2 text-center w-24 text-orange-600">Extra Noturna</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {diasDoCiclo.map((itemDia, idx) => {
-                                        const extras = calcularExtrasTotaisDoDia(func.id, itemDia);
-                                        const chave = `${func.id}-${itemDia.ano}-${itemDia.mes}-${itemDia.dia}`;
-                                        const pts = mapaPontos[chave] || [];
-
-                                        // Se não houver extras automáticas nem manuais, oculta o dia para enxugar o relatório
-                                        if (extras.diurna === 0 && extras.noturna === 0) return null;
-
-                                        return (
-                                            <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
-                                                <td className="py-1 px-2 font-mono font-black text-black">{itemDia.label}</td>
-                                                <td className="py-1 px-2 font-mono text-center text-slate-600">{pts[0]?.hora_formatada || '---'}</td>
-                                                <td className="py-1 px-2 font-mono text-center text-slate-600">{pts[1]?.hora_formatada || '---'}</td>
-                                                <td className="py-1 px-2 font-mono text-center text-slate-600">{pts[2]?.hora_formatada || '---'}</td>
-                                                <td className="py-1 px-2 font-mono text-center text-slate-600">{pts[3]?.hora_formatada || '---'}</td>
-                                                <td className="py-1 px-2 font-mono text-center font-bold text-emerald-600">
-                                                    {extras.diurna > 0 ? `+${extras.diurna} min` : '---'}
-                                                </td>
-                                                <td className="py-1 px-2 font-mono text-center font-black text-orange-600">
-                                                    {extras.noturna > 0 ? `+${extras.noturna} min` : '---'}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                    {/* Caso o funcionário não tenha feito nenhuma extra no mês */}
-                                    {!func.temExtras && (
-                                        <tr>
-                                            <td colSpan={7} className="py-4 text-center text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                                                Nenhuma hora extra gerada neste ciclo.
-                                            </td>
+                                {/* DETALHAMENTO DIA A DIA RESPONSIVO */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                        <thead>
+                                        <tr className="border-b border-[#e5e5ea] text-[#86868b] uppercase font-bold text-[8px] tracking-wider bg-[#f5f5f7]/50 select-none">
+                                            <th className="py-2 px-2 w-16">Data</th>
+                                            <th className="py-2 px-2 text-center w-16">Entrada</th>
+                                            <th className="py-2 px-2 text-center w-16">Saída</th>
+                                            <th className="py-2 px-2 text-center w-16">Volta</th>
+                                            <th className="py-2 px-2 text-center w-16">Término</th>
+                                            <th className="py-2 px-2 text-center w-24">Extra Diurna</th>
+                                            <th className="py-2 px-2 text-center w-24">Extra Noturna</th>
                                         </tr>
-                                    )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#f5f5f7]">
+                                        {diasDoCiclo.map((itemDia, idx) => {
+                                            const extras = calcularExtrasTotaisDoDia(func.id, itemDia);
+                                            const chave = `${func.id}-${itemDia.ano}-${itemDia.mes}-${itemDia.dia}`;
+                                            const pts = mapaPontos[chave] || [];
 
+                                            if (extras.diurna === 0 && extras.noturna === 0) return null;
+
+                                            return (
+                                                <tr key={idx} className="hover:bg-[#f5f5f7]/30 transition-colors">
+                                                    <td className="py-2.5 px-2 font-mono font-bold text-[#1d1d1f]">{itemDia.label}</td>
+                                                    <td className="py-2.5 px-2 font-mono text-center text-slate-500">{pts[0]?.hora_formatada || '---'}</td>
+                                                    <td className="py-2.5 px-2 font-mono text-center text-slate-500">{pts[1]?.hora_formatada || '---'}</td>
+                                                    <td className="py-2.5 px-2 font-mono text-center text-slate-500">{pts[2]?.hora_formatada || '---'}</td>
+                                                    <td className="py-2.5 px-2 font-mono text-center text-slate-500">{pts[3]?.hora_formatada || '---'}</td>
+                                                    <td className="py-2.5 px-2 font-mono text-center font-bold text-[#248a3d]">
+                                                        {extras.diurna > 0 ? formatarMinutosParaHoras(extras.diurna) : '---'}
+                                                    </td>
+                                                    <td className="py-2.5 px-2 font-mono text-center font-bold text-[#5856d6]">
+                                                        {extras.noturna > 0 ? formatarMinutosParaHoras(extras.noturna) : '---'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                            </div>
                         </div>
                     ))
                 )}

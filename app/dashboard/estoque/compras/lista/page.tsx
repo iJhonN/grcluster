@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
@@ -29,6 +29,7 @@ export default function PlanilhaGlobalComprasPage() {
     const [carregando, setCarregando] = useState(true);
     const [busca, setBusca] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('TODOS');
+    const [atualizandoId, setAtualizandoId] = useState<string | null>(null);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,105 +69,122 @@ export default function PlanilhaGlobalComprasPage() {
         }
     }
 
+    // ALTERAÇÃO DE STATUS EM TEMPO REAL INLINE
+    const handleAlterarStatus = async (id: string, novoStatus: ItemCompra['status']) => {
+        setAtualizandoId(id);
+        try {
+            const { error } = await supabase
+                .from('estoque_compras')
+                .update({ status: novoStatus })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Atualiza o estado local para evitar re-render completo desnecessário
+            setItens(prev => prev.map(item => item.id === id ? { ...item, status: novoStatus } : item));
+        } catch (err) {
+            console.error("Erro ao atualizar status do item:", err);
+            alert("Não foi possível atualizar o status. Verifique a conexão.");
+        } finally {
+            setAtualizandoId(null);
+        }
+    };
+
     useEffect(() => {
         carregarPlanilhaMensal(mesSelecionado);
     }, [mesSelecionado]);
 
-    // FILTRAGEM COMBINADA (Busca Textual por Nome/Refs + Filtro de Status)
-    const itensFiltrados = itens.filter(item => {
-        const matchesStatus = filtroStatus === 'TODOS' || item.status === filtroStatus;
+    const itensFiltrados = useMemo(() => {
+        const termo = busca.toLowerCase().trim();
+        return itens.filter(item => {
+            const matchesStatus = filtroStatus === 'TODOS' || item.status === filtroStatus;
+            const matchesBusca =
+                item.nome_peca.toLowerCase().includes(termo) ||
+                item.referencia_1.toLowerCase().includes(termo) ||
+                (item.referencia_2 && item.referencia_2.toLowerCase().includes(termo)) ||
+                (item.referencia_3 && item.referencia_3.toLowerCase().includes(termo)) ||
+                (item.fornecedor && item.fornecedor.toLowerCase().includes(termo));
 
-        const termo = busca.toLowerCase();
-        const matchesBusca =
-            item.nome_peca.toLowerCase().includes(termo) ||
-            item.referencia_1.toLowerCase().includes(termo) ||
-            (item.referencia_2 && item.referencia_2.toLowerCase().includes(termo)) ||
-            (item.referencia_3 && item.referencia_3.toLowerCase().includes(termo)) ||
-            (item.fornecedor && item.fornecedor.toLowerCase().includes(termo));
+            return matchesStatus && matchesBusca;
+        });
+    }, [itens, busca, filtroStatus]);
 
-        return matchesStatus && matchesBusca;
-    });
-
-    // Indicadores financeiros calculados dinamicamente em cima do que foi filtrado na tabela
-    const investimentoTotal = itensFiltrados.reduce((acc, current) => acc + (current.valor * current.quantidade), 0);
+    const investimentoTotal = useMemo(() => {
+        return itensFiltrados.reduce((acc, current) => acc + (current.valor * current.quantidade), 0);
+    }, [itensFiltrados]);
 
     return (
-        <main className="relative min-h-screen bg-[#030303] text-[#f1f3f7] p-4 sm:p-6 md:p-10 font-sans overflow-hidden antialiased flex flex-col justify-between w-full">
+        <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-black/5 flex flex-col justify-between w-full">
 
-            {/* GRID BACKGROUND METÁLICO LUXO */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 opacity-[0.012]" style={{ backgroundImage: `linear-gradient(to right, #dfbb6c 1px, transparent 1px), linear-gradient(to bottom, #dfbb6c 1px, transparent 1px)`, backgroundSize: '45px 40px' }} />
-            </div>
+            <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col gap-6">
 
-            <div className="relative z-10 w-full flex-1 flex flex-col gap-6 max-w-[1400px] mx-auto">
-
-                {/* HEADER */}
-                <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-white/[0.04] pb-6 px-2">
-                    <div>
-                        <Link href="/dashboard/estoque/compras" className="text-[#dfbb6c] font-black text-[9px] uppercase tracking-[4px] mb-2 block hover:opacity-80 transition-all">
-                            ← Retornar ao Hub de Compras
+                {/* CABEÇALHO */}
+                <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#e5e5ea] pb-6 pl-1">
+                    <div className="space-y-1">
+                        <Link href="/dashboard/estoque/compras" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block">
+                            ← Hub de Compras
                         </Link>
-                        <h1 className="text-2xl sm:text-3xl font-black uppercase italic tracking-tight text-white leading-none">
-                            PLANILHA AUDITORIA <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#dfbb6c] via-[#f7e0a3] to-white">GLOBAL DE COMPRAS</span>
+                        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f]">
+                            Planilha Auditoria Global de Compras
                         </h1>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-1.5 font-bold font-mono">
-                            VISÃO DE ABAS MENSAIS • BALANÇO DE ENTRADAS E STATUS DE IMPORTAÇÃO
+                        <p className="text-[10px] text-[#86868b] font-medium uppercase tracking-wide">
+                            Visão de Abas Mensais • Balanço de Entradas e Status de Importação
                         </p>
                     </div>
                 </header>
 
-                {/* CONTROLES DE FILTRAGEM, BUSCA E SUMMARY DE PREÇOS */}
-                <div className="bg-[#09090b]/90 border border-white/[0.06] p-6 rounded-2xl grid grid-cols-1 lg:grid-cols-4 gap-4 items-center mx-2">
+                {/* CONTROLES DE FILTRAGEM, BUSCA E SUMMARY */}
+                <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl grid grid-cols-1 lg:grid-cols-4 gap-4 items-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
 
-                    {/* BUSCA AVANÇADA POR CÓDIGOS OU DESCRITIVO */}
+                    {/* BUSCA AVANÇADA */}
                     <div className="lg:col-span-2 space-y-1">
-                        <span className="block text-[8px] font-black uppercase text-slate-500 tracking-wider font-mono">Pesquisa rápida</span>
+                        <span className="block text-[9px] font-bold uppercase text-[#86868b] tracking-wider">Pesquisa rápida</span>
                         <input
                             type="text"
-                            placeholder="🔍 FILTRAR POR NOME, REF 1, REF 2, REF 3 OU FORNECEDOR..."
+                            placeholder="Filtrar por nome, referências ou fornecedor..."
                             value={busca}
                             onChange={e => setBusca(e.target.value)}
-                            className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/40 px-4 py-2.5 rounded-xl outline-none text-white font-mono text-xs tracking-wider placeholder-slate-700 uppercase"
+                            className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-medium uppercase placeholder-[#b4b4b9] transition-colors"
                         />
                     </div>
 
-                    {/* FILTRO DE STATUS DA ETAPA */}
+                    {/* FILTRO DE STATUS DA TABELA */}
                     <div className="space-y-1">
-                        <span className="block text-[8px] font-black uppercase text-slate-500 tracking-wider font-mono">Filtrar Categoria</span>
+                        <span className="block text-[9px] font-bold uppercase text-[#86868b] tracking-wider">Filtrar Categoria</span>
                         <select
                             value={filtroStatus}
                             onChange={e => setFiltroStatus(e.target.value)}
-                            className="w-full bg-black border border-white/[0.06] focus:border-[#dfbb6c]/40 px-4 py-2.5 rounded-xl outline-none text-slate-300 font-bold text-xs uppercase cursor-pointer"
+                            className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] font-semibold text-xs uppercase cursor-pointer transition-colors"
                         >
-                            <option value="TODOS">📋 EXIBIR TODOS OS STATUS</option>
-                            <option value="PENDENTE">⏳ STATUS: PENDENTE</option>
-                            <option value="EM_ANALISE">⚖️ STATUS: EM ANÁLISE</option>
-                            <option value="COMPRADO">💳 STATUS: COMPRADO</option>
-                            <option value="EM_TRANSITO">🚚 STATUS: EM TRÂNSITO</option>
-                            <option value="CONCLUIDO">📦 STATUS: ENTREGUE</option>
+                            <option value="TODOS">📋 Exibir Todos os Status</option>
+                            <option value="PENDENTE">⏳ Status: Pendente</option>
+                            <option value="EM_ANALISE">⚖️ Status: Em Análise</option>
+                            <option value="COMPRADO">💳 Status: Comprado</option>
+                            <option value="EM_TRANSITO">🚚 Status: Em Trânsito</option>
+                            <option value="CONCLUIDO">📦 Status: Entregue</option>
                         </select>
                     </div>
 
-                    {/* ACUMULADO MONETÁRIO FILTRADO */}
-                    <div className="bg-black/40 border border-white/[0.03] p-3.5 rounded-xl flex flex-col justify-center text-right font-mono">
-                        <span className="text-[7px] font-black uppercase text-slate-500 tracking-wider font-sans">Aporte Total na Grade Atual</span>
-                        <span className="text-sm font-black text-[#dfbb6c] mt-0.5">
+                    {/* ACUMULADO MONETÁRIO */}
+                    <div className="bg-[#f5f5f7] border border-[#e5e5ea] p-2.5 rounded-lg flex flex-col justify-center text-right">
+                        <span className="text-[8px] font-bold uppercase text-[#86868b] tracking-wider">Aporte na Grade Atual</span>
+                        <span className="text-sm font-bold text-[#1d1d1f] font-mono mt-0.5">
                             {investimentoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
                     </div>
                 </div>
 
                 {/* TIMELINE DE ABAS DOS MESES */}
-                <div className="w-full overflow-x-auto pb-1 border-b border-white/[0.02]">
-                    <div className="flex gap-1.5 min-w-max px-2">
+                <div className="w-full overflow-x-auto pb-1 border-b border-[#e5e5ea]">
+                    <div className="flex gap-1.5 min-w-max pl-0.5">
                         {mesesDoAno.map(mes => (
                             <button
                                 key={mes.id}
                                 onClick={() => setMesSelecionado(mes.id)}
-                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border ${
+                                className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border ${
                                     mesSelecionado === mes.id
-                                        ? 'bg-[#dfbb6c] text-black border-[#dfbb6c] font-black shadow-md'
-                                        : 'bg-[#09090b] border-white/[0.04] text-slate-500 hover:text-white'
+                                        ? 'bg-[#1d1d1f] border-[#1d1d1f] text-white shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
+                                        : 'bg-white border-[#e5e5ea] text-[#86868b] hover:text-[#1d1d1f]'
                                 }`}
                             >
                                 {mes.label}
@@ -175,91 +193,103 @@ export default function PlanilhaGlobalComprasPage() {
                     </div>
                 </div>
 
-                {/* TABELA PLANILHADA MACRO */}
-                <div className="relative bg-[#09090b]/80 border border-white/[0.06] rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl overflow-hidden min-h-[450px] mx-2">
-                    <div className="absolute top-0 left-[5%] right-[5%] h-px bg-gradient-to-r from-transparent via-[#dfbb6c]/20 to-transparent" />
-
+                {/* TABELA PLANILHADA COM SELECTION GERENCIAL */}
+                <div className="bg-white border border-[#e5e5ea] rounded-2xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] overflow-hidden min-h-[450px]">
                     {carregando ? (
-                        <div className="text-center py-32 text-[9px] uppercase font-black text-slate-500 tracking-[4px] animate-pulse font-mono">
-                            Estruturando planilha analítica de compras...
+                        <div className="text-center py-28 flex flex-col items-center justify-center gap-2 text-[#86868b]">
+                            <div className="w-5 h-5 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-[10px] uppercase font-bold tracking-wider font-mono">Estruturando planilha...</span>
                         </div>
                     ) : itensFiltrados.length === 0 ? (
-                        <div className="py-32 text-center">
-                            <p className="text-xs text-slate-600 font-bold uppercase tracking-wider">Nenhum registro localizado para os filtros aplicados.</p>
+                        <div className="py-24 text-center">
+                            <p className="text-xs text-[#86868b] font-bold uppercase tracking-wide">Nenhum registro localizado para os filtros aplicados.</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto max-h-[550px] pr-1">
+                        <div className="overflow-x-auto max-h-[550px]">
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
-                                <tr className="border-b border-white/[0.04] text-slate-500 uppercase tracking-wider text-[8px] font-black pb-3 select-none">
-                                    <th className="pb-3 pl-2">Peça Solicitada</th>
-                                    <th className="pb-3 text-center">Qtd.</th>
-                                    <th className="pb-3 text-center">Crossover de Referências</th>
-                                    <th className="pb-3 text-center">Fornecedor Ganhador</th>
-                                    <th className="pb-3 text-center">Prazo Médio</th>
-                                    <th className="pb-3 text-center">Valor Total</th>
-                                    <th className="pb-3 text-right pr-2">Status Central</th>
+                                <tr className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider text-[8px] font-bold select-none pb-3">
+                                    <th className="pb-3 pl-1">Peça Solicitada</th>
+                                    <th className="pb-3 text-center w-16">Qtd.</th>
+                                    <th className="pb-3 text-center max-w-[220px]">Referências (Catálogo)</th>
+                                    <th className="pb-3 text-center">Fornecedor</th>
+                                    <th className="pb-3 text-center w-20">Prazo</th>
+                                    <th className="pb-3 text-center w-28">Valor Total</th>
+                                    <th className="pb-3 text-right pr-1 w-36">Status Central (Alterar)</th>
                                 </tr>
                                 </thead>
-                                <tbody className="divide-y divide-white/[0.015]">
-                                {itensFiltrados.map((item) => (
-                                    <tr key={item.id} className="hover:bg-white/[0.01] transition-colors group">
+                                <tbody className="divide-y divide-[#f5f5f7]">
+                                {itensFiltrados.map((item) => {
+                                    const estaAtualizando = atualizandoId === item.id;
+                                    return (
+                                        <tr key={item.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
 
-                                        {/* Descrição Peça */}
-                                        <td className="py-4 pl-2">
-                                            <div className="font-bold text-white uppercase text-[11px] group-hover:text-[#dfbb6c] transition-colors">{item.nome_peca}</div>
-                                            <div className="text-[8px] text-slate-600 uppercase font-mono mt-0.5">Cod. Registro: #{item.id}</div>
-                                        </td>
+                                            {/* Descrição Peça */}
+                                            <td className="py-3.5 pl-1">
+                                                <div className="font-bold text-[#1d1d1f] uppercase text-xs">{item.nome_peca}</div>
+                                                <div className="text-[9px] font-mono font-medium text-[#86868b] mt-0.5">ID REGISTRO: #{item.id}</div>
+                                            </td>
 
-                                        {/* Quantidade */}
-                                        <td className="py-4 text-center font-mono font-black text-white text-[11px]">
-                                            {item.quantidade} un
-                                        </td>
+                                            {/* Quantidade */}
+                                            <td className="py-3.5 text-center font-mono font-black text-[#1d1d1f] text-xs">
+                                                {item.quantidade}
+                                            </td>
 
-                                        {/* Bloco das 3 referências unificadas na célula */}
-                                        <td className="py-4 text-center font-mono text-[9px] text-slate-400 space-y-0.5 max-w-[200px] truncate">
-                                            <div className="bg-white/[0.02] border border-white/[0.04] px-1.5 py-0.5 rounded text-slate-200 inline-block text-[8px] mr-1 uppercase">1: {item.referencia_1}</div>
-                                            {item.referencia_2 && <div className="bg-white/[0.01] border border-white/[0.02] px-1.5 py-0.5 rounded text-slate-500 inline-block text-[8px] mr-1 uppercase">2: {item.referencia_2}</div>}
-                                            {item.referencia_3 && <div className="bg-white/[0.01] border border-white/[0.02] px-1.5 py-0.5 rounded text-slate-500 inline-block text-[8px] uppercase">3: {item.referencia_3}</div>}
-                                        </td>
+                                            {/* Bloco de Referências */}
+                                            <td className="py-3.5 text-center font-mono text-[9px] text-[#86868b] space-y-1 max-w-[220px]">
+                                                <div className="bg-[#f5f5f7] border border-[#e5e5ea] px-1.5 py-0.5 rounded text-[#1d1d1f] inline-block text-[8px] uppercase font-bold mr-1">1: {item.referencia_1}</div>
+                                                {item.referencia_2 && <div className="bg-[#f5f5f7]/60 border border-[#e5e5ea] px-1.5 py-0.5 rounded text-[#86868b] inline-block text-[8px] uppercase mr-1">2: {item.referencia_2}</div>}
+                                                {item.referencia_3 && <div className="bg-[#f5f5f7]/60 border border-[#e5e5ea] px-1.5 py-0.5 rounded text-[#86868b] inline-block text-[8px] uppercase">3: {item.referencia_3}</div>}
+                                            </td>
 
-                                        {/* Fornecedor */}
-                                        <td className="py-4 text-center uppercase font-bold text-slate-400 text-[10px] max-w-[180px] truncate">
-                                            {item.fornecedor ? item.fornecedor : <span className="text-slate-700 italic text-[9px]">Aguardando Orçamento</span>}
-                                        </td>
+                                            {/* Fornecedor */}
+                                            <td className="py-3.5 text-center uppercase font-bold text-[#86868b] text-[10px] max-w-[150px] truncate">
+                                                {item.fornecedor ? item.fornecedor : <span className="text-[#b4b4b9] font-normal italic text-[9px]">Aguardando Orçamento</span>}
+                                            </td>
 
-                                        {/* Prazo */}
-                                        <td className="py-4 text-center uppercase font-mono text-slate-500 text-[10px]">
-                                            {item.prazo_entrega ? item.prazo_entrega : <span className="text-slate-800 font-sans">--</span>}
-                                        </td>
+                                            {/* Prazo */}
+                                            <td className="py-3.5 text-center uppercase font-mono text-[#86868b] text-[10px] font-semibold">
+                                                {item.prazo_entrega ? item.prazo_entrega : <span className="text-[#b4b4b9] font-sans font-normal">--</span>}
+                                            </td>
 
-                                        {/* Valor Acumulado */}
-                                        <td className="py-4 text-center font-mono font-black text-[#dfbb6c] text-[11px]">
-                                            {item.valor > 0 ? (
-                                                <div>{(item.valor * item.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
-                                            ) : (
-                                                <span className="text-slate-700 font-sans font-bold text-[9px]">R$ 0,00</span>
-                                            )}
-                                        </td>
+                                            {/* Valor Acumulado */}
+                                            <td className="py-3.5 text-center font-mono font-bold text-[#1d1d1f] text-xs">
+                                                {item.valor > 0 ? (
+                                                    (item.valor * item.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                                                ) : (
+                                                    <span className="text-[#b4b4b9] font-sans font-normal text-[10px]">R$ 0,00</span>
+                                                )}
+                                            </td>
 
-                                        {/* Status Unificado Badge */}
-                                        <td className="py-4 text-right pr-2">
-                                                <span className={`text-[8px] font-mono font-black px-2 py-0.5 rounded border uppercase tracking-widest ${
-                                                    item.status === 'CONCLUIDO' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                                        item.status === 'EM_TRANSITO' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                                                            item.status === 'COMPRADO' ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' :
-                                                                item.status === 'EM_ANALISE' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
-                                                                    'bg-red-500/10 border-red-500/20 text-red-400'
-                                                }`}>
-                                                    {item.status === 'CONCLUIDO' ? '📦 ENTREGUE' :
-                                                        item.status === 'EM_TRANSITO' ? '🚚 EM TRÂNSITO' :
-                                                            item.status === 'COMPRADO' ? '💳 COMPRADO' :
-                                                                item.status === 'EM_ANALISE' ? '⚖️ EM ANÁLISE' : '⏳ PENDENTE'}
-                                                </span>
-                                        </td>
+                                            {/* Status Badge Alterável Inline */}
+                                            <td className="py-3.5 text-right pr-1 relative">
+                                                <div className="inline-block relative min-w-[110px]">
+                                                    <select
+                                                        value={item.status}
+                                                        disabled={estaAtualizando}
+                                                        onChange={e => handleAlterarStatus(item.id, e.target.value as any)}
+                                                        className={`w-full appearance-none rounded border px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-center cursor-pointer outline-none transition-all ${
+                                                            estaAtualizando ? 'opacity-40' : ''
+                                                        } ${
+                                                            item.status === 'CONCLUIDO' ? 'bg-[#34c759]/5 border-[#34c759]/20 text-[#248a3d]' :
+                                                                item.status === 'EM_TRANSITO' ? 'bg-[#007aff]/5 border-[#007aff]/20 text-[#007aff]' :
+                                                                    item.status === 'COMPRADO' ? 'bg-[#af52de]/5 border-[#af52de]/20 text-[#af52de]' :
+                                                                        item.status === 'EM_ANALISE' ? 'bg-[#ff9500]/5 border-[#ff9500]/20 text-[#ff9500]' :
+                                                                            'bg-[#ff3b30]/5 border-[#ff3b30]/20 text-[#ff3b30]'
+                                                        }`}
+                                                    >
+                                                        <option value="PENDENTE">⏳ Pendente</option>
+                                                        <option value="EM_ANALISE">⚖️ Em Análise</option>
+                                                        <option value="COMPRADO">💳 Comprado</option>
+                                                        <option value="EM_TRANSITO">🚚 Em Trânsito</option>
+                                                        <option value="CONCLUIDO">📦 Entregue</option>
+                                                    </select>
+                                                </div>
+                                            </td>
 
-                                    </tr>
-                                ))}
+                                        </tr>
+                                    );
+                                })}
                                 </tbody>
                             </table>
                         </div>
@@ -268,9 +298,9 @@ export default function PlanilhaGlobalComprasPage() {
             </div>
 
             {/* FOOTER */}
-            <footer className="w-full border-t border-white/[0.02] pt-6 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-700 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left max-w-[1400px] mx-auto px-2">
+            <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
                 <div>GR Autopeças &amp; Logística Corporativa</div>
-                <div className="font-mono text-slate-800">PROCUREMENT MACRO PLANILHA v2.0</div>
+                <div className="font-mono text-[#b4b4b9]">Procurement Macro Planilha v2.0</div>
             </footer>
         </main>
     );

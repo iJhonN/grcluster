@@ -17,7 +17,6 @@ export default function PontoEmergenciaPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Passo 1: Valida o ID do crachá e checa se é Saída ou Retorno
     const verificarFuncionario = async (e: React.FormEvent) => {
         e.preventDefault();
         const idLimpo = funcionarioId.trim().toUpperCase();
@@ -27,7 +26,6 @@ export default function PontoEmergenciaPage() {
         setStatusFeed({ tipo: '', texto: '' });
 
         try {
-            // Busca o funcionário ativo
             const { data: func, error: funcErr } = await supabase
                 .from('funcionarios')
                 .select('id, nome, sobrenome, cargo')
@@ -40,7 +38,6 @@ export default function PontoEmergenciaPage() {
 
             setFuncionarioDados(func);
 
-            // Verifica se este funcionário já possui uma saída de emergência aberta (sem horário de retorno)
             const { data: saidaAberta, error: saidaErr } = await supabase
                 .from('saidas_emergencia')
                 .select('*')
@@ -50,7 +47,6 @@ export default function PontoEmergenciaPage() {
                 .maybeSingle();
 
             if (saidaAberta) {
-                // FLUXO DE RETORNO: Se já tem saída aberta, registra o retorno imediatamente
                 const { error: updateErr } = await supabase
                     .from('saidas_emergencia')
                     .update({ horario_retorno: new Date().toISOString() })
@@ -64,7 +60,6 @@ export default function PontoEmergenciaPage() {
                 });
                 resetarFormulario();
             } else {
-                // FLUXO DE SAÍDA: Avança para a tela de justificativa
                 setEtapa('justificativa');
             }
 
@@ -76,7 +71,6 @@ export default function PontoEmergenciaPage() {
         }
     };
 
-    // Passo 2: Confirma a saída gravando a justificativa obrigatória
     const confirmarSaida = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!justificativa.trim()) {
@@ -122,49 +116,49 @@ export default function PontoEmergenciaPage() {
     };
 
     return (
-        <main className="min-h-screen bg-[#07080a] text-white flex items-center justify-center p-4 font-sans antialiased">
-            <div className="w-full max-w-md bg-[#0e1117] border border-white/[0.04] rounded-[40px] p-8 shadow-2xl relative overflow-hidden">
+        <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center p-4 font-sans antialiased selection:bg-black/5">
 
-                {/* Linha de Design Superior */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-600 via-amber-500 to-transparent"></div>
+            {/* CARD BRANCO EXECUTIVO INTEGRADO */}
+            <div className="w-full max-w-sm bg-white border border-[#e5e5ea] rounded-2xl p-6 sm:p-8 shadow-[0_1px_5px_rgba(0,0,0,0.02)] relative overflow-visible transition-all">
 
-                <div className="text-center mb-8">
-                    <span className="text-orange-500 font-black text-[9px] uppercase tracking-[4px] bg-orange-500/5 px-3 py-1 rounded-full border border-orange-500/10">
+                {/* CABEÇALHO DO PAINEL DE EXCEÇÃO */}
+                <div className="text-center mb-6 space-y-1">
+                    <span className="inline-block text-[8px] font-bold uppercase tracking-wider text-[#ff3b30] bg-[#ff3b30]/5 px-2.5 py-0.5 rounded border border-[#ff3b30]/10 select-none">
                         Módulo de Exceção
                     </span>
-                    <h1 className="text-2xl font-black uppercase italic tracking-tight mt-3">
-                        Saída / Retorno <span className="text-orange-500">Extra</span>
+                    <h1 className="text-lg font-bold tracking-tight text-[#1d1d1f] pt-1">
+                        Saída / Retorno Extra
                     </h1>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1 font-bold">
-                        GR CLUSTER CONTROLER
+                    <p className="text-[9px] font-mono font-bold text-[#86868b] tracking-wider uppercase">
+                        GR SYSTEM CORE
                     </p>
                 </div>
 
-                {/* FEEDBACK FEED */}
+                {/* BANNER DINÂMICO DE FEEDBACK */}
                 {statusFeed.texto && (
-                    <div className={`mb-6 p-4 rounded-2xl text-center text-xs font-black uppercase tracking-wide border ${
+                    <div className={`mb-5 p-3.5 rounded-xl text-center text-[11px] font-bold border transition-all ${
                         statusFeed.tipo === 'sucesso'
-                            ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400'
-                            : 'bg-red-500/5 border-red-500/20 text-red-400'
+                            ? 'bg-[#34c759]/5 border-[#34c759]/20 text-[#248a3d]'
+                            : 'bg-[#ff3b30]/5 border-[#ff3b30]/20 text-[#ff3b30]'
                     }`}>
-                        {statusFeed.tipo === 'sucesso' ? '✅' : '⚠️'} {statusFeed.texto}
+                        {statusFeed.texto}
                     </div>
                 )}
 
                 {/* ETAPA 1: LEITURA DO CRACHÁ */}
                 {etapa === 'identificacao' && (
-                    <form onSubmit={verificarFuncionario} className="space-y-5">
+                    <form onSubmit={verificarFuncionario} className="space-y-4">
                         <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-2 tracking-widest">
+                            <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">
                                 Identificação do Colaborador
                             </label>
                             <input
                                 type="text"
-                                placeholder="Bipe o crachá ou digite o ID..."
+                                placeholder="Aguardando crachá ou ID..."
                                 value={funcionarioId}
                                 onChange={e => setFuncionarioId(e.target.value)}
                                 disabled={processando}
-                                className="w-full bg-[#07080a] border border-white/[0.05] p-4 rounded-xl outline-none focus:border-orange-500/50 text-orange-400 text-sm font-mono tracking-widest text-center"
+                                className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] p-3 rounded-lg text-xs font-mono font-bold text-center tracking-widest text-[#1d1d1f] outline-none transition-colors uppercase placeholder-[#b4b4b9]"
                                 autoFocus
                                 required
                             />
@@ -173,66 +167,66 @@ export default function PontoEmergenciaPage() {
                         <button
                             type="submit"
                             disabled={processando || !funcionarioId.trim()}
-                            className="w-full bg-white text-black hover:bg-slate-200 py-3.5 rounded-xl font-black text-xs uppercase tracking-[2px] disabled:opacity-30 transition-all pt-4"
+                            className="w-full bg-[#1d1d1f] active:bg-black text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
                         >
                             {processando ? "Verificando..." : "Confirmar Identidade →"}
                         </button>
                     </form>
                 )}
 
-                {/* ETAPA 2: JUSTIFICATIVA DE SAÍDA */}
+                {/* ETAPA 2: JUSTIFICATIVA OBRIGATÓRIA */}
                 {etapa === 'justificativa' && funcionarioDados && (
-                    <form onSubmit={confirmarSaida} className="space-y-5">
-                        <div className="bg-[#07080a] border border-white/[0.03] p-4 rounded-2xl">
-                            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Colaborador Identificado:</p>
-                            <h3 className="text-sm font-black text-white uppercase italic mt-0.5">
+                    <form onSubmit={confirmarSaida} className="space-y-4">
+                        <div className="bg-[#f5f5f7] border border-[#e5e5ea] p-3.5 rounded-xl space-y-0.5">
+                            <p className="text-[9px] font-bold text-[#86868b] uppercase tracking-wider">Colaborador Identificado:</p>
+                            <h3 className="text-xs font-bold text-[#1d1d1f] uppercase tracking-tight">
                                 {funcionarioDados.nome} {funcionarioDados.sobrenome}
                             </h3>
-                            <p className="text-[10px] text-orange-500 font-mono font-bold uppercase tracking-wide mt-0.5">
+                            <p className="text-[9px] font-mono font-bold text-[#ff9500] uppercase tracking-wide">
                                 {funcionarioDados.cargo}
                             </p>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-2 tracking-widest">
+                            <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">
                                 Motivo / Justificativa da Saída
                             </label>
                             <textarea
-                                placeholder="Ex: Ida ao banco, consulta médica rápida, retirada de autopeça externa..."
+                                placeholder="Descreva formalmente o motivo da saída..."
                                 value={justificativa}
                                 onChange={e => setJustificativa(e.target.value)}
                                 disabled={processando}
                                 rows={3}
-                                className="w-full bg-[#07080a] border border-white/[0.05] p-4 rounded-xl outline-none focus:border-orange-500/50 text-white text-xs font-medium resize-none placeholder-slate-600"
+                                className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] p-3 rounded-lg text-xs font-medium text-[#1d1d1f] outline-none transition-colors resize-none placeholder-[#b4b4b9]"
                                 required
                             />
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                             <button
                                 type="button"
                                 onClick={() => {
                                     setEtapa('identificacao');
                                     setFuncionarioDados(null);
                                 }}
-                                className="w-1/3 bg-white/[0.02] border border-white/[0.08] text-slate-400 py-3.5 rounded-xl font-black text-xs uppercase tracking-wider hover:text-white transition-colors"
+                                className="w-1/3 bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors"
                             >
-                                Cancelar
+                                Voltar
                             </button>
                             <button
                                 type="submit"
                                 disabled={processando || !justificativa.trim()}
-                                className="w-2/3 bg-gradient-to-r from-orange-600 to-orange-500 text-black py-3.5 rounded-xl font-black text-xs uppercase tracking-[2px] disabled:opacity-30 transition-all pt-4"
+                                className="w-2/3 bg-[#ff3b30] active:bg-[#d63026] text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
                             >
-                                {processando ? "Registrando..." : "Registrar Saída 🗓️"}
+                                {processando ? "Salvando..." : "Registrar Saída"}
                             </button>
                         </div>
                     </form>
                 )}
 
-                {/* VOLTAR PRO PANEL */}
-                <div className="mt-8 text-center border-t border-white/[0.02] pt-4">
-                    <Link href="/dashboard" className="text-[10px] text-slate-600 font-bold uppercase tracking-widest hover:text-orange-500 transition-colors">
+                {/* LINK RETORNO */}
+                <div className="mt-6 text-center border-t border-[#e5e5ea] pt-4">
+                    <Link href="/dashboard" className="text-[9px] text-[#86868b] font-bold uppercase tracking-wider hover:text-[#1d1d1f] transition-colors">
                         ← Voltar ao Terminal Principal
                     </Link>
                 </div>

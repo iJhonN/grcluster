@@ -7,7 +7,7 @@ import { createBrowserClient } from '@supabase/ssr';
 export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
-    const [userName, setUserName] = useState('Carregando...');
+    const [userName, setUserName] = useState('Sincronizando...');
     const [userRole, setUserRole] = useState('...');
     const [carregando, setCarregando] = useState(true);
     const router = useRouter();
@@ -23,7 +23,6 @@ export default function DashboardPage() {
         async function buscarSessao() {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
-
                 if (!user) {
                     if (ativo) router.push('/');
                     return;
@@ -40,7 +39,7 @@ export default function DashboardPage() {
                         setUserName(perfil.nome);
                         setUserRole(perfil.cargo.toUpperCase());
                     } else {
-                        setUserName(user.email?.split('@')[0] || 'Usuário');
+                        setUserName(user.email?.split('@')[0] || 'Operador');
                         setUserRole('MECANICO');
                     }
                     setCarregando(false);
@@ -52,10 +51,7 @@ export default function DashboardPage() {
         }
 
         buscarSessao();
-
-        return () => {
-            ativo = false;
-        };
+        return () => { ativo = false; };
     }, [router, supabase]);
 
     const handleLogout = async () => {
@@ -66,16 +62,15 @@ export default function DashboardPage() {
 
     if (carregando) {
         return (
-            <main className="min-h-screen bg-[#030303] flex items-center justify-center font-sans">
+            <main className="min-h-screen bg-[#f5f5f7] flex items-center justify-center font-sans">
                 <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Iniciando GR Cluster...</p>
+                    <div className="w-5 h-5 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-[10px] text-[#86868b] uppercase tracking-widest font-semibold font-mono">GR SYSTEM</span>
                 </div>
             </main>
         );
     }
 
-    // ─── MATRIZ DE ACESSOS REQUISITADA PELO JHON (CORRIGIDA) ───
     const podeVerPonto = ['ADMIN', 'GERENTE', 'TECNICO', 'GESTORDEFROTAS'];
     const podeVerRetiradaFerramentas = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS'];
     const podeVerHubFerramentas = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS'];
@@ -83,164 +78,184 @@ export default function DashboardPage() {
     const podeVerFechamento = ['ADMIN', 'GERENTE'];
     const podeVerFuncionarios = ['ADMIN', 'GERENTE'];
     const podeVerRH = ['ADMIN', 'GERENTE'];
-    // ESTOQUE adicionado com acesso exclusivo a este módulo na interface
     const podeVerEstoque = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS', 'ESTOQUE'];
 
     return (
-        <main className="relative min-h-screen bg-[#030303] text-white p-4 sm:p-6 md:p-8 font-sans overflow-hidden antialiased flex flex-col justify-between gap-10 w-full">
+        <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased flex flex-col lg:flex-row w-full selection:bg-black/5">
 
-            {/* FUNDO VISUAL */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-                <div
-                    className="absolute inset-0 opacity-[0.015]"
-                    style={{
-                        backgroundImage: `linear-gradient(to right, #f97316 1px, transparent 1px), linear-gradient(to bottom, #f97316 1px, transparent 1px)`,
-                        backgroundSize: '60px 60px',
-                    }}
-                />
-            </div>
-
-            {/* HEADER */}
-            <header className="relative z-10 w-full flex items-center justify-between border-b border-white/[0.04] pb-6 px-2 md:px-4">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-b from-orange-400 to-orange-600 border border-orange-400/20 rounded-xl flex items-center justify-center font-black italic text-black text-lg shadow-lg select-none">
+            {/* BARRA DE TOPO COMPACTA (MOBILE ONLY - ALINHADA NA HORIZONTAL) */}
+            <div className="w-full bg-white border-b border-[#e5e5ea] flex lg:hidden items-center justify-between px-4 py-3 z-20 shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 bg-[#1d1d1f] rounded-md flex items-center justify-center text-white font-bold text-xs select-none shrink-0">
                         GR
                     </div>
-                    <div>
-                        <h1 className="text-xl font-black uppercase italic tracking-tight leading-none">
-                            GR <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">Cluster</span>
-                        </h1>
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider mt-1.5 font-bold">
-                            Operador: {userName} • <span className="text-orange-400/90 tracking-widest font-mono">[{userRole}]</span>
-                        </p>
+                    <div className="leading-tight min-w-0">
+                        <h2 className="text-xs font-bold text-[#1d1d1f] truncate">{userName}</h2>
+                        <p className="text-[9px] font-mono font-bold text-[#86868b] truncate mt-0.5">[{userRole}]</p>
                     </div>
                 </div>
-
                 <button
                     onClick={handleLogout}
-                    className="bg-white/[0.02] border border-white/[0.05] hover:border-red-500/20 hover:text-red-400 text-slate-400 font-black text-[9px] uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all active:scale-95"
+                    className="bg-[#f5f5f7] active:bg-[#e8e8ed] text-[#1d1d1f] text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md transition-colors shrink-0"
                 >
                     Sair
                 </button>
-            </header>
+            </div>
 
-            {/* CORPO DE SEÇÕES OPERACIONAIS */}
-            <section className="relative z-10 w-full flex-1 flex flex-col justify-center my-auto space-y-10 px-2 md:px-4">
+            {/* BARRA LATERAL FIXA DE CONTROLE (DESKTOP MAC ONLY) */}
+            <aside className="hidden lg:flex w-[280px] bg-white border-r border-[#e5e5ea] flex-col justify-between p-6 shrink-0 z-20">
+                <div className="space-y-8 w-full">
+                    <div className="flex items-center gap-3 border-b border-[#f5f5f7] pb-5">
+                        <div className="w-8 h-8 bg-[#1d1d1f] rounded-lg flex items-center justify-center text-white font-bold text-xs select-none">
+                            GR
+                        </div>
+                        <div className="min-w-0 leading-tight">
+                            <h2 className="text-xs font-bold text-[#1d1d1f] tracking-tight truncate">{userName}</h2>
+                            <p className="text-[9px] font-mono font-bold text-[#86868b] tracking-wider mt-0.5">[{userRole}]</p>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-[#86868b]">Ambiente</span>
+                        <h3 className="text-sm font-bold tracking-tight text-[#1d1d1f]">GR Cluster</h3>
+                        <p className="text-[11px] text-[#86868b] leading-normal font-medium">Painel unificado para monitoramento de frotas, almoxarifado e pátio.</p>
+                    </div>
+                </div>
+                <div className="pt-4 flex items-center justify-between w-full">
+                    <button
+                        onClick={handleLogout}
+                        className="bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-[10px] font-bold uppercase tracking-wider px-4 py-2 rounded-lg transition-all active:scale-95 text-center w-full"
+                    >
+                        Encerrar Sessão
+                    </button>
+                </div>
+            </aside>
 
-                <div className="text-left space-y-1.5">
-                    <span className="text-orange-500 font-black text-[8px] uppercase tracking-[4px] bg-orange-500/5 px-3 py-1 rounded-full border border-orange-500/10 select-none">
-                        Matriz de Acessos Ativa
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-black uppercase italic tracking-tight">Painel de <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">Operações</span></h2>
-                    <p className="text-xs text-slate-500 font-medium">Visualização customizada baseada nas suas atribuições de segurança de dados</p>
+            {/* CONTEÚDO PRINCIPAL (WORKSPACE RENDER) */}
+            <section className="flex-1 p-4 sm:p-6 md:p-10 max-w-[1400px] flex flex-col gap-4 sm:gap-6 w-full z-10 overflow-y-auto">
+
+                {/* HEADLINE DISCRETA */}
+                <div className="space-y-0.5 pl-1">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#86868b]">Gestão de Ativos</span>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight text-[#1d1d1f]">Módulos Operacionais</h1>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 w-full">
+                {/* GRID INTEGRADO DE PLACAS PURAS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 w-full">
 
-                    {/* ⏱️ CARD PONTO (LARGURA DUPLA) */}
+                    {/* ⏱️ CONTROLE DE PONTO */}
                     {podeVerPonto.includes(userRole) && (
-                        <Link href="/dashboard/ponto" className="bg-[#09090b]/90 border border-orange-500/30 hover:border-orange-500/70 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px] sm:col-span-2">
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/[0.06] rounded-full blur-2xl transition-all" />
-                            <div className="flex items-center justify-between">
-                                <div className="w-11 h-11 bg-orange-500/20 border border-orange-500/30 rounded-xl flex items-center justify-center text-orange-400 text-lg font-black group-hover:bg-orange-500 group-hover:text-black transition-all">⏱️</div>
-                                <span className="text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-md">Obrigatório</span>
+                        <Link href="/dashboard/ponto" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">⏱️</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#bf5af2] bg-[#bf5af2]/5 px-2 py-0.5 rounded">Frequência</span>
                             </div>
-                            <div className="mt-4">
-                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 text-orange-400">Controle de Ponto</h3>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Acesso a batidas, pausas, controle de horas extras, monitoramento de atrasos e saídas emergenciais.</p>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Controle de Ponto</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Batidas, banco de horas e justificativas.</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* 🛠️ CARD RETIRADA FERRAMENTAS (LARGURA DUPLA) */}
+                    {/* 🛠️ RETIRADA DE FERRAMENTAS */}
                     {podeVerRetiradaFerramentas.includes(userRole) && (
-                        <Link href="/dashboard/ferramentas/retirada" className="bg-[#09090b]/90 border border-emerald-500/30 hover:border-emerald-500/70 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px] sm:col-span-2">
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/[0.06] rounded-full blur-2xl transition-all" />
-                            <div className="flex items-center justify-between">
-                                <div className="w-11 h-11 bg-emerald-500/20 border border-emerald-500/30 rounded-xl flex items-center justify-center text-emerald-400 text-lg font-black group-hover:bg-emerald-500 group-hover:text-black transition-all">🛠️</div>
-                                <span className="text-[7px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md">Almoxarifado</span>
+                        <Link href="/dashboard/ferramentas/retirada" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">🛠️</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/5 px-2 py-0.5 rounded">Ativos</span>
                             </div>
-                            <div className="mt-4">
-                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 text-emerald-400">Retirada de Ferramenta</h3>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Controle patrimonial de chaves, scanners e equipamentos industriais vinculados ao ID do mecânico.</p>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Retirada de Ferramenta</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Cautelas de ferramentas por operador.</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* 📦 CARD BALANÇO DE ESTOQUE */}
+                    {/* 📦 ESTOQUE & COMPRAS */}
                     {podeVerEstoque.includes(userRole) && (
-                        <Link href="/dashboard/estoque" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-orange-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
-                            <div className="w-11 h-11 bg-orange-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-orange-400 text-lg font-black mb-4 group-hover:bg-orange-600 group-hover:text-white transition-all">📦</div>
-                            <div>
-                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 group-hover:text-orange-400 transition-colors">Estoque</h3>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Módulo de contagem direta de peças, endereçamento e inventário rápido.</p>
+                        <Link href="/dashboard/estoque" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">📦</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff9500] bg-[#ff9500]/5 px-2 py-0.5 rounded">Suprimentos</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Estoque &amp; Compras</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Inventário e fluxo triplo de cotações.</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* ⚙️ HUB FERRAMENTAS (Retirada e devolução) */}
+                    {/* ⚙️ INVENTÁRIO GERAL DE FERRAMENTAS */}
                     {podeVerHubFerramentas.includes(userRole) && (
-                        <Link href="/dashboard/ferramentas" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-blue-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
-                            <div className="w-11 h-11 bg-blue-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-blue-400 text-lg font-black mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">⚙️</div>
-                            <div>
-                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 group-hover:text-blue-400 transition-colors">Ferramentas</h3>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Inventário geral de ferramentas da oficina e histórico de devoluções.</p>
+                        <Link href="/dashboard/ferramentas" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">⚙️</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">Oficina</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Ferramentas</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Carga patrimonial e histórico geral.</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* 🚚 HUB FROTAS */}
+                    {/* 🚚 FROTAS & LOGÍSTICA */}
                     {podeVerFrota.includes(userRole) && (
-                        <Link href="/dashboard/frota" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-indigo-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
-                            <div className="w-11 h-11 bg-indigo-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-indigo-400 text-lg font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all">🚚</div>
-                            <div>
-                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 group-hover:text-indigo-400 transition-colors">Frotas & Rotas</h3>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Módulo de monitoramento de viagens, motoristas, combustível e auditoria.</p>
+                        <Link href="/dashboard/frota" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">🚚</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#5856d6] bg-[#5856d6]/5 px-2 py-0.5 rounded">Frota</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Frotas &amp; Rotas</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Controle de viagens e combustíveis.</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* 📊 FECHAMENTO CONTÁBIL */}
+                    {/* 📊 APURAÇÃO CONTÁBIL */}
                     {podeVerFechamento.includes(userRole) && (
-                        <Link href="/dashboard/fechamento" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-purple-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
-                            <div className="w-11 h-11 bg-purple-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-purple-400 text-lg font-black mb-4 group-hover:bg-purple-600 group-hover:text-white transition-all">📊</div>
-                            <div>
-                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 group-hover:text-purple-400 transition-colors">Fechamento</h3>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Apuração contábil e auditoria mensal de horas da folha de pátio.</p>
+                        <Link href="/dashboard/fechamento" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">📊</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#af52de] bg-[#af52de]/5 px-2 py-0.5 rounded">Finanças</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Fechamento</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Apuração contábil e fechamento de folha.</p>
                             </div>
                         </Link>
                     )}
 
                     {/* 👥 BASE DE FUNCIONÁRIOS */}
                     {podeVerFuncionarios.includes(userRole) && (
-                        <Link href="/dashboard/funcionarios" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-amber-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
-                            <div className="w-11 h-11 bg-amber-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-amber-400 text-lg font-black mb-4 group-hover:bg-amber-600 group-hover:text-white transition-all">👥</div>
-                            <div>
-                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 group-hover:text-amber-400 transition-colors">Funcionários</h3>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Controle cadastral corporativo e crachás ópticos nativos.</p>
+                        <Link href="/dashboard/funcionarios" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">👥</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#52525b] bg-[#52525b]/5 px-2 py-0.5 rounded">Equipe</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Funcionários</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Controle cadastral e crachás ópticos.</p>
                             </div>
                         </Link>
                     )}
 
-                    {/* 💼 DIRETORIA / RECURSOS HUMANOS */}
+                    {/* 💼 DIRETORIA / RH */}
                     {podeVerRH.includes(userRole) && (
-                        <Link href="/dashboard/rh" className="bg-[#09090b]/80 border border-white/[0.06] hover:border-pink-500/40 p-6 rounded-[28px] text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[200px]">
-                            <div className="w-11 h-11 bg-pink-500/10 border border-white/[0.04] rounded-xl flex items-center justify-center text-pink-400 text-lg font-black mb-4 group-hover:bg-pink-600 group-hover:text-white transition-all">💼</div>
-                            <div>
-                                <h3 className="text-base font-black uppercase italic tracking-tight mb-1 group-hover:text-pink-400 transition-colors">Gestão de RH</h3>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">Admissões confidenciais, termos legais e documentação interna da gerência.</p>
+                        <Link href="/dashboard/rh" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">💼</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff2d55] bg-[#ff2d55]/5 px-2 py-0.5 rounded">Direção</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Gestão de RH</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Contratos admissionais e termos legais.</p>
                             </div>
                         </Link>
                     )}
 
                 </div>
             </section>
-
-            {/* RODAPÉ */}
-            <footer className="relative z-10 w-full border-t border-white/[0.02] pt-6 flex flex-col sm:flex-row items-center justify-between text-[9px] text-slate-600 uppercase font-bold tracking-widest gap-4 text-center sm:text-left px-2 md:px-4">
-                <div>GR Autopeças & Serviços</div>
-                <div className="font-mono text-slate-700">Módulo De DASHBOARD</div>
-            </footer>
         </main>
     );
 }

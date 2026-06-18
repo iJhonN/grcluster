@@ -22,9 +22,8 @@ export default function GestaoAtrasosPage() {
     // Estados de ação do Gerente
     const [pontoSelecionadoId, setPontoSelecionadoId] = useState<number | null>(null);
     const [textoJustificativa, setTextoJustificativa] = useState('');
-    const [enviando, setEnviando] = useState(false);
+    const [processando, setProcessando] = useState(false);
 
-    // REFERÊNCIA PARA MANIPULAÇÃO DO SCROLL AUTOMÁTICO
     const formularioRef = useRef<HTMLDivElement>(null);
 
     const supabase = createBrowserClient(
@@ -53,7 +52,7 @@ export default function GestaoAtrasosPage() {
         carregarDados();
     }, []);
 
-    // FILTRO INTELIGENTE: Identifica os atrasos com base na coluna observacao gravada pelo Totem
+    // FILTRO EXPANDIDO: Mapeia todos os atrasos, inclusive os já justificados
     const atrasosComputados = useMemo((): PontoAtrasado[] => {
         return pontos.filter(p => {
             const obs = p.observacao ? p.observacao.toLowerCase().trim() : '';
@@ -73,11 +72,12 @@ export default function GestaoAtrasosPage() {
         });
     }, [pontos, justificativas]);
 
-    // Função para acionar o scroll e setar o ID selecionado
-    const handleIniciarJustificativa = (id: number) => {
+    const handleIniciarAjuste = (id: number) => {
         setPontoSelecionadoId(id);
+        const jaJustificado = atrasosComputados.find(a => a.id === id);
+        // Se já tiver texto anterior, popula o campo para visualização/edição
+        setTextoJustificativa(jaJustificado?.texto_justificativa || '');
 
-        // Timeout pequeno de 50ms para dar tempo do DOM renderizar o formulário antes de mover a tela
         setTimeout(() => {
             formularioRef.current?.scrollIntoView({
                 behavior: 'smooth',
@@ -90,10 +90,15 @@ export default function GestaoAtrasosPage() {
         e.preventDefault();
         if (!pontoSelecionadoId || !textoJustificativa.trim()) return;
 
-        setEnviando(true);
+        setProcessando(true);
         const pontoAlvo = atrasosComputados.find(a => a.id === pontoSelecionadoId);
 
         try {
+            // Se já for justificado, deleta a antiga para inserir a nova atualizada por segurança
+            if (pontoAlvo?.justificado) {
+                await supabase.from('justificativas_atraso').delete().eq('ponto_id', pontoSelecionadoId);
+            }
+
             const { error } = await supabase
                 .from('justificativas_atraso')
                 .insert([{
@@ -106,65 +111,133 @@ export default function GestaoAtrasosPage() {
 
             setTextoJustificativa('');
             setPontoSelecionadoId(null);
-            carregarDados(); // Recarrega as tabelas no ecrã para atualizar os estados
+            carregarDados();
         } catch (err) {
             console.error(err);
         } finally {
-            setEnviando(false);
+            setProcessando(false);
         }
     };
 
+    const handleRemoverAtraso = async () => {
+        if (!pontoSelecionadoId) return;
+        if (!confirm("Confirmar a alteração deste ponto para Jornada Normal? O destaque de atraso será limpo da folha de fechamento.")) return;
+
+        setProcessando(true);
+        try {
+            // Remove qualquer justificativa de atraso guardada já que o ponto virou normal
+            await supabase.from('justificativas_atraso').delete().eq('ponto_id', pontoSelecionadoId);
+
+            const { error } = await supabase
+                .from('pontos')
+                .update({ observacao: 'Jornada Normal' })
+                .eq('id', pontoSelecionadoId);
+
+            if (error) throw error;
+
+            setPontoSelecionadoId(null);
+            setTextoJustificativa('');
+            carregarDados();
+        } catch (err) {
+            console.error("Erro ao alterar status do atraso:", err);
+        } finally {
+            setProcessando(false);
+        }
+    };
+
+    const handleExcluirPonto = async () => {
+        if (!pontoSelecionadoId) return;
+        if (!confirm("AVISO: Tem certeza que deseja EXCLUIR permanentemente esta batida de ponto do banco de dados?")) return;
+
+        setProcessando(true);
+        try {
+            await supabase.from('justificativas_atraso').delete().eq('ponto_id', pontoSelecionadoId);
+
+            const { error } = await supabase
+                .from('pontos')
+                .delete()
+                .eq('id', pontoSelecionadoId);
+
+            if (error) throw error;
+
+            setPontoSelecionadoId(null);
+            setTextoJustificativa('');
+            carregarDados();
+        } catch (err) {
+            console.error("Erro ao deletar registro de ponto:", err);
+        } finally {
+            setProcessando(false);
+        }
+    };
+
+    const pontoSelecionadoDados = useMemo(() => {
+        return atrasosComputados.find(a => a.id === pontoSelecionadoId);
+    }, [pontoSelecionadoId, atrasosComputados]);
+
     return (
-        <main className="min-h-screen bg-[#07080a] text-white p-6 md:p-10 font-sans antialiased">
+        <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-black/5">
             <div className="w-full max-w-6xl mx-auto space-y-6">
 
-                <header className="border-b border-white/[0.04] pb-6">
-                    <Link href="/dashboard" className="text-orange-500 font-black text-[10px] uppercase tracking-[4px] mb-1 block hover:opacity-70 transition-all">← Dashboard</Link>
-                    <h1 className="text-2xl font-black uppercase italic tracking-tight">Tratamento de <span className="text-orange-500">Atrasos</span></h1>
-                    <p className="text-xs text-slate-500 mt-1">Aplique justificativas oficiais para entradas fora do horário regulamentar</p>
+                {/* HEADER */}
+                <header className="space-y-1.5 pl-1">
+                    <Link href="/dashboard" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block">
+                        ← Módulos Operacionais
+                    </Link>
+                    <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f]">
+                        Tratamento de Atrasos
+                    </h1>
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
                     {/* TABELA DE ATRASOS ENCONTRADOS */}
-                    <div className="lg:col-span-2 bg-[#0e1117] border border-white/[0.04] p-6 rounded-[28px] shadow-xl">
-                        <h3 className="text-sm font-black uppercase tracking-wider text-slate-400 mb-4">Ocorrências de Atraso Detectadas</h3>
+                    <div className="lg:col-span-2 bg-white border border-[#e5e5ea] p-5 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                        <h3 className="text-xs font-bold text-[#86868b] uppercase tracking-wider border-b border-[#f5f5f7] pb-3 mb-4">Ocorrências de Atraso Detectadas</h3>
 
                         {carregando ? (
-                            <div className="py-12 text-center animate-pulse text-xs font-black uppercase tracking-widest text-slate-600">Mapeando Linhas de Ponto...</div>
+                            <div className="py-14 flex flex-col items-center justify-center gap-2 text-[#86868b]">
+                                <div className="w-4 h-4 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
+                                <span className="text-[9px] font-mono uppercase font-bold tracking-wider">Mapeando Linhas...</span>
+                            </div>
                         ) : atrasosComputados.length === 0 ? (
-                            <p className="text-xs text-slate-600 py-12 text-center font-bold uppercase tracking-wider">Nenhum atraso sem tratamento encontrado.</p>
+                            <p className="text-xs text-[#86868b] py-14 text-center font-semibold uppercase tracking-wide">Nenhum atraso localizado no ciclo.</p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-xs border-collapse">
                                     <thead>
-                                    <tr className="border-b border-white/[0.03] text-slate-500 uppercase tracking-wider text-[9px] font-black">
-                                        <th className="pb-3 pl-2">Data</th>
+                                    <tr className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider text-[8px] font-bold select-none">
+                                        <th className="pb-3 pl-1 w-24">Data</th>
                                         <th className="pb-3">Colaborador</th>
-                                        <th className="pb-3 text-center">Horário</th>
-                                        <th className="pb-3 text-right pr-2">Ação / Status</th>
+                                        <th className="pb-3 text-center w-20">Horário</th>
+                                        <th className="pb-3 text-right pr-1 w-28">Ação / Status</th>
                                     </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/[0.02]">
+                                    <tbody className="divide-y divide-[#f5f5f7]">
                                     {atrasosComputados.map(atraso => {
                                         const dataF = new Date(atraso.data_registro).toLocaleDateString('pt-BR');
+                                        const selecionado = pontoSelecionadoId === atraso.id;
                                         return (
-                                            <tr key={atraso.id} className="hover:bg-white/[0.01] transition-colors">
-                                                <td className="py-4 font-mono font-bold text-slate-400 pl-2">{dataF}</td>
-                                                <td className="py-4 font-bold text-slate-200">
+                                            <tr key={atraso.id} className={`transition-colors ${selecionado ? 'bg-[#f5f5f7]' : 'hover:bg-[#f5f5f7]/50'}`}>
+                                                <td className="py-3.5 font-mono font-bold text-[#86868b] pl-1">{dataF}</td>
+                                                <td className="py-3.5 font-bold text-[#1d1d1f]">
                                                     {atraso.nome_completo}
-                                                    <span className="text-[10px] text-slate-500 font-mono block">ID: {atraso.funcionario_id}</span>
+                                                    <span className="text-[9px] text-[#86868b] font-mono block font-medium mt-0.5">ID: {atraso.funcionario_id}</span>
                                                 </td>
-                                                <td className="py-4 text-center font-mono font-black text-red-400">{atraso.hora_formatada}</td>
-                                                <td className="py-4 text-right pr-2">
+                                                <td className="py-3.5 text-center font-mono font-black text-[#ff3b30]">{atraso.hora_formatada}</td>
+                                                <td className="py-3.5 text-right pr-1">
                                                     {atraso.justificado ? (
-                                                        <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-md font-black uppercase tracking-wider">Justificado</span>
+                                                        <button
+                                                            onClick={() => handleIniciarAjuste(atraso.id)}
+                                                            className="text-[9px] bg-[#34c759]/10 hover:bg-[#34c759]/20 text-[#248a3d] px-2.5 py-1 rounded font-bold uppercase tracking-wider transition-colors"
+                                                        >
+                                                            Justificado
+                                                        </button>
                                                     ) : (
                                                         <button
-                                                            onClick={() => handleIniciarJustificativa(atraso.id)}
-                                                            className="text-[10px] bg-orange-500 hover:bg-orange-600 text-black px-3 py-1 rounded-md font-black uppercase tracking-wider transition-all"
+                                                            onClick={() => handleIniciarAjuste(atraso.id)}
+                                                            className="text-[9px] bg-[#1d1d1f] hover:bg-black text-white px-2.5 py-1 rounded font-bold uppercase tracking-wider transition-colors"
                                                         >
-                                                            Justificar
+                                                            Tratar
                                                         </button>
                                                     )}
                                                 </td>
@@ -177,53 +250,83 @@ export default function GestaoAtrasosPage() {
                         )}
                     </div>
 
-                    {/* CAIXA DE INSERÇÃO DE JUSTIFICATIVA - RECEBE A REF */}
-                    <div ref={formularioRef} className="bg-[#0e1117] border border-white/[0.04] p-6 rounded-[28px] shadow-xl scroll-mt-6">
-                        <h3 className="text-sm font-black uppercase tracking-wider text-slate-400 mb-4">Aplicar Justificativa</h3>
+                    {/* CAIXA DINÂMICA DE TRATAMENTO */}
+                    <div ref={formularioRef} className="bg-white border border-[#e5e5ea] p-5 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] scroll-mt-6">
+                        <h3 className="text-xs font-bold text-[#86868b] uppercase tracking-wider border-b border-[#f5f5f7] pb-3 mb-4">Ações de Ajuste</h3>
 
-                        {pontoSelecionadoId ? (
-                            <form onSubmit={handleSalvarJustificativa} className="space-y-4">
-                                <div className="p-4 bg-white/[0.01] border border-white/[0.03] rounded-xl">
-                                    <p className="text-[10px] font-black uppercase text-slate-500">Colaborador Selecionado</p>
-                                    <p className="text-xs font-black text-orange-400 mt-1">
-                                        {atrasosComputados.find(a => a.id === pontoSelecionadoId)?.nome_completo}
+                        {pontoSelecionadoId && pontoSelecionadoDados ? (
+                            <div className="space-y-4">
+                                <div className="p-3 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl space-y-0.5">
+                                    <p className="text-[8px] font-bold uppercase text-[#86868b] tracking-wider">
+                                        {pontoSelecionadoDados.justificado ? "📋 Registro Já Justificado" : "📌 Registro Selecionado"}
                                     </p>
-                                    <p className="text-[11px] font-mono font-bold text-slate-300 mt-0.5">
-                                        Batida efetuada às {atrasosComputados.find(a => a.id === pontoSelecionadoId)?.hora_formatada}
+                                    <p className="text-xs font-bold text-[#1d1d1f]">
+                                        {pontoSelecionadoDados.nome_completo}
+                                    </p>
+                                    <p className="text-[9px] font-mono font-bold text-[#ff3b30] uppercase tracking-wide">
+                                        Atraso registrado às {pontoSelecionadoDados.hora_formatada}
                                     </p>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Motivo do Atraso</label>
-                                    <textarea
-                                        placeholder="Ex: Apresentou atestado médico / Problemas mecânicos no veículo / Esqueceu o crachá na entrada..."
-                                        value={textoJustificativa}
-                                        onChange={e => setTextoJustificativa(e.target.value)}
-                                        className="w-full bg-[#07080a] border border-white/[0.05] p-3 rounded-xl outline-none focus:border-orange-500/50 text-white text-xs h-32 resize-none font-medium"
-                                        required
-                                    />
-                                </div>
+                                {/* FORMULÁRIO DE JUSTIFICATIVA */}
+                                <form onSubmit={handleSalvarJustificativa} className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">
+                                            {pontoSelecionadoDados.justificado ? "Modificar Texto da Justificativa" : "Motivo / Justificativa"}
+                                        </label>
+                                        <textarea
+                                            placeholder="Ex: Apresentou atestado médico, problemas mecânicos..."
+                                            value={textoJustificativa}
+                                            onChange={e => setTextoJustificativa(e.target.value)}
+                                            className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] p-2.5 rounded-lg text-xs font-medium outline-none text-[#1d1d1f] h-24 resize-none transition-colors placeholder-[#b4b4b9]"
+                                            required
+                                            disabled={processando}
+                                        />
+                                    </div>
 
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPontoSelecionadoId(null)}
-                                        className="w-1/3 bg-white/[0.02] border border-white/[0.05] py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-slate-400"
-                                    >
-                                        Voltar
-                                    </button>
                                     <button
                                         type="submit"
-                                        disabled={enviando}
-                                        className="w-2/3 bg-orange-500 hover:bg-orange-600 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-black transition-all"
+                                        disabled={processando || !textoJustificativa.trim()}
+                                        className="w-full bg-[#1d1d1f] active:bg-black text-white py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
                                     >
-                                        {enviando ? "A guardar..." : "Gravar Justificativa"}
+                                        {processando ? "Gravando..." : pontoSelecionadoDados.justificado ? "Atualizar Justificativa" : "Gravar Justificativa"}
+                                    </button>
+                                </form>
+
+                                <div className="border-t border-[#e5e5ea] pt-3 space-y-2">
+                                    <p className="text-[8px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Opções Avançadas</p>
+
+                                    {/* SE CLICAR AQUI, DO PONTO JUSTIFICADO OU NÃO, CRIA O STATUS NORMAL NO SUPABASE */}
+                                    <button
+                                        type="button"
+                                        onClick={handleRemoverAtraso}
+                                        disabled={processando}
+                                        className="w-full bg-[#34c759]/5 border border-[#34c759]/20 text-[#248a3d] hover:bg-[#34c759]/10 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
+                                    >
+                                        Definir como Jornada Normal
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleExcluirPonto}
+                                        disabled={processando}
+                                        className="w-full bg-[#ff3b30]/5 border border-[#ff3b30]/20 text-[#ff3b30] hover:bg-[#ff3b30]/10 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
+                                    >
+                                        Excluir Batida do Banco
                                     </button>
                                 </div>
-                            </form>
+
+                                <button
+                                    type="button"
+                                    onClick={() => { setPontoSelecionadoId(null); setTextoJustificativa(''); }}
+                                    className="w-full text-center text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] pt-1 block"
+                                >
+                                    Cancelar Operação
+                                </button>
+                            </div>
                         ) : (
-                            <div className="text-center py-16 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                                Clique no botão "Justificar" ao lado de um ponto para abrir o formulário.
+                            <div className="text-center py-14 text-[#86868b] text-xs font-semibold uppercase tracking-wide">
+                                Selecione uma ocorrência (Tratar ou Justificado) para abrir as ferramentas de ajuste.
                             </div>
                         )}
                     </div>

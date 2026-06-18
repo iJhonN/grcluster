@@ -117,7 +117,6 @@ export default function TotemPontoPage() {
                 texto: `Ponto registrado! Bom trabalho, ${func.nome}. (${horaFormatada})`
             });
 
-            // Zera o estado do input e libera para o próximo bipe em 3 segundos
             setTimeout(() => {
                 handleLimpar();
             }, 3000);
@@ -131,116 +130,86 @@ export default function TotemPontoPage() {
     };
 
     return (
-        <main className="relative min-h-screen bg-[#030303] flex items-center justify-center p-6 font-sans overflow-hidden antialiased">
+        <main className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 font-sans antialiased w-full selection:bg-black/5">
 
-            {/* ── FUNDO TECNOLÓGICO DO LOGIN ── */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-                {/* Grid sutil */}
-                <div
-                    className="absolute inset-0 opacity-[0.025]"
-                    style={{
-                        backgroundImage: `linear-gradient(to right, #f97316 1px, transparent 1px), linear-gradient(to bottom, #f97316 1px, transparent 1px)`,
-                        backgroundSize: '50px 50px',
-                    }}
-                />
-                {/* Glow central */}
-                <div
-                    className="absolute inset-0"
-                    style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 100%, rgba(234,88,12,0.07), transparent)' }}
-                />
-                {/* Glows periféricos */}
-                <div className="absolute -top-60 -left-60 w-[500px] h-[500px] bg-orange-600/[0.06] rounded-full blur-[140px]" />
-                <div className="absolute -bottom-60 -right-60 w-[400px] h-[400px] bg-orange-500/[0.04] rounded-full blur-[120px]" />
-            </div>
+            {/* CARD DO TOTEM - PLACA BRANCA PREMIUM INTEGRADA */}
+            <div className="w-full max-w-sm bg-white border border-[#e5e5ea] rounded-2xl shadow-[0_1px_5px_rgba(0,0,0,0.02)] overflow-hidden transition-all relative">
 
-            {/* ── CARD PRINCIPAL DO TOTEM ── */}
-            <div className="relative w-full max-w-sm z-10">
+                {/* Botão de Retorno Compacto no Topo */}
+                <Link
+                    href="/dashboard"
+                    className="absolute top-4 left-5 text-[10px] font-bold uppercase text-[#86868b] tracking-wider hover:text-[#1d1d1f] transition-colors z-20"
+                >
+                    ← Dashboard
+                </Link>
 
-                {/* Brilho sutil atrás do card */}
-                <div className="absolute -inset-px rounded-[44px] bg-gradient-to-b from-orange-500/10 to-transparent blur-sm" />
+                <div className="p-6 sm:p-8 pt-12">
 
-                <div className="relative w-full bg-[#09090b]/90 border border-white/[0.06] rounded-[40px] shadow-2xl backdrop-blur-2xl overflow-hidden">
-
-                    {/* Linha de acabamento topo */}
-                    <div className="absolute top-0 left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
-
-                    {/* Botão de Voltar para o Dashboard */}
-                    <Link
-                        href="/dashboard"
-                        className="absolute top-6 left-8 text-[8px] font-black uppercase text-slate-500 tracking-[3px] hover:text-orange-400 transition-colors z-20 flex items-center gap-1"
-                    >
-                        ← Dashboard
-                    </Link>
-
-                    <div className="p-8 sm:p-10 pt-14">
-
-                        {/* ── CABEÇALHO DO PAINEL ── */}
-                        <div className="text-center mb-8">
-                            <span className="text-orange-500 font-black text-[8px] uppercase tracking-[4px] bg-orange-500/5 px-3 py-1 rounded-full border border-orange-500/10 select-none">
-                                Terminal Biométrico Optico
-                            </span>
-                            <h1 className="text-2xl font-black uppercase italic tracking-tighter text-white mt-3 leading-none">
-                                Totem de <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">Ponto</span>
-                            </h1>
-                            <p className="text-[9px] text-slate-600 uppercase tracking-[4px] font-bold mt-1.5">
-                                GR Cluster Controller
-                            </p>
-                        </div>
-
-                        {/* ── FEEDBACK DO STATUS DO REGISTRO ── */}
-                        {statusEnvio.texto && (
-                            <div className={`mb-6 flex items-start gap-2.5 p-4 rounded-2xl border ${
-                                statusEnvio.tipo === 'sucesso'
-                                    ? 'bg-emerald-500/[0.06] border-emerald-500/20 text-emerald-400'
-                                    : 'bg-red-500/[0.06] border-red-500/20 text-red-400'
-                            }`}>
-                                <div className="text-xs shrink-0">{statusEnvio.tipo === 'sucesso' ? '✅' : '⚠️'}</div>
-                                <p className="text-[10px] font-black uppercase tracking-wide leading-relaxed">
-                                    {statusEnvio.texto}
-                                </p>
-                            </div>
-                        )}
-
-                        {/* ── INTERFACE DO LEITOR ÓPTICO ── */}
-                        <form onSubmit={handleVerificarERegistrarPonto} className="space-y-4">
-                            <div className="w-full bg-black/40 border border-white/[0.05] rounded-3xl p-6 text-center border-dashed relative overflow-hidden flex flex-col items-center justify-center gap-4 group transition-all duration-300">
-
-                                {/* Efeito de scanner laser piscando ao fundo */}
-                                <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent top-1/2 -translate-y-1/2 animate-bounce pointer-events-none" />
-
-                                <div className="relative z-10 w-12 h-12 rounded-2xl bg-orange-500/5 border border-orange-500/20 flex items-center justify-center text-orange-400 text-lg font-black group-hover:scale-105 transition-transform">
-                                    💳
-                                </div>
-
-                                <div className="relative z-10">
-                                    <p className="text-xs font-black uppercase tracking-[2px] text-slate-300">Aproxime o Crachá</p>
-                                    <p className="text-[8px] font-bold text-slate-600 uppercase tracking-[3px] mt-1">O escaneamento está ativo</p>
-                                </div>
-
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="Aguardando código..."
-                                    value={idCracha}
-                                    onChange={e => setIdCracha(e.target.value)}
-                                    className="relative z-10 w-full bg-[#030303]/80 border border-white/[0.05] focus:border-orange-500/30 text-center px-4 py-3 rounded-xl text-xs font-mono tracking-[4px] text-orange-400 font-bold outline-none placeholder-slate-800 disabled:opacity-40 uppercase"
-                                    autoFocus
-                                    disabled={carregando}
-                                />
-                            </div>
-                        </form>
-
-                    </div>
-
-                    {/* ── RODAPÉ DO CARD ── */}
-                    <div className="border-t border-white/[0.04] px-10 py-4 flex items-center justify-center bg-black/20">
-                        <p className="text-[8px] uppercase tracking-[3px] text-slate-700 font-bold">
-                            GR Cluster · Felinto Tech Control
+                    {/* CABEÇALHO DO PAINEL */}
+                    <div className="text-center mb-6 space-y-1">
+                        <span className="inline-block text-[8px] font-bold uppercase tracking-wider text-[#86868b] bg-[#f5f5f7] px-2.5 py-0.5 rounded">
+                            Módulo de Validação Óptica
+                        </span>
+                        <h1 className="text-lg font-bold tracking-tight text-[#1d1d1f] pt-1">
+                            Totem de Ponto
+                        </h1>
+                        <p className="text-[9px] font-mono font-bold text-[#86868b] tracking-wider uppercase">
+                            GR SYSTEM CORE
                         </p>
                     </div>
 
+                    {/* FEEDBACK ANALÍTICO DE REQUISIÇÃO */}
+                    {statusEnvio.texto && (
+                        <div className={`mb-5 flex items-start gap-2.5 p-4 rounded-xl border text-[11px] font-medium leading-normal ${
+                            statusEnvio.tipo === 'sucesso'
+                                ? 'bg-[#34c759]/5 border-[#34c759]/20 text-[#248a3d]'
+                                : 'bg-[#ff3b30]/5 border-[#ff3b30]/20 text-[#ff3b30]'
+                        }`}>
+                            <div className="shrink-0 text-xs">{statusEnvio.tipo === 'sucesso' ? '🔹' : '🔸'}</div>
+                            <p className="tracking-tight uppercase text-[10px] font-bold">{statusEnvio.texto}</p>
+                        </div>
+                    )}
+
+                    {/* INTERFACE DO ESCANER INVISÍVEL */}
+                    <form onSubmit={handleVerificarERegistrarPonto} className="space-y-4">
+                        <div className="w-full bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl p-6 text-center relative flex flex-col items-center justify-center gap-3 transition-colors">
+
+                            {/* Linha discreta simulando laser óptico fixo */}
+                            <div className="absolute inset-x-0 h-px bg-[#1d1d1f]/5 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+                            <div className="relative z-10 w-9 h-9 bg-white border border-[#e5e5ea] rounded-lg flex items-center justify-center text-sm shadow-[0_1px_2px_rgba(0,0,0,0.01)] select-none">
+                                💳
+                            </div>
+
+                            <div className="relative z-10 space-y-0.5">
+                                <p className="text-xs font-bold tracking-tight text-[#1d1d1f]">Leitor Óptico Ativo</p>
+                                <p className="text-[9px] font-medium text-[#86868b]">Aproxime a tag de barras ou digite o registro</p>
+                            </div>
+
+                            {/* Input focado de forma contínua */}
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                autoComplete="off"
+                                placeholder="Aguardando crachá..."
+                                value={idCracha}
+                                onChange={e => setIdCracha(e.target.value)}
+                                className="relative z-10 w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] text-center px-3 py-2.5 rounded-lg text-xs font-mono tracking-widest text-[#1d1d1f] font-bold outline-none placeholder-[#b4b4b9] disabled:opacity-40 uppercase transition-colors"
+                                autoFocus
+                                disabled={carregando}
+                            />
+                        </div>
+                    </form>
+
                 </div>
+
+                {/* RODAPÉ DO COMPONENTE */}
+                <div className="border-t border-[#e5e5ea] px-6 py-3 flex items-center justify-center bg-[#f5f5f7]/50">
+                    <p className="text-[9px] font-mono font-bold tracking-wider text-[#86868b] uppercase">
+                        CLUSTER TERMINAL V3.0
+                    </p>
+                </div>
+
             </div>
         </main>
     );
