@@ -164,7 +164,7 @@ export default function GestaoLancamentosManuaisPage() {
 
         const funcSelecionado = funcionarios.find(f => f.id === funcionarioId);
         const nomeCompleto = funcSelecionado ? `${funcSelecionado.nome} ${funcSelecionado.sobrenome}` : 'Colaborador';
-        const minutosInt = parseInt(minutosAjuste);
+        const minutesInt = parseInt(minutosAjuste);
         const dataHojeCompleta = new Date().toISOString();
         const dataHojeApenasChave = dataHojeCompleta.split('T')[0];
 
@@ -176,7 +176,7 @@ export default function GestaoLancamentosManuaisPage() {
                         funcionario_id: funcionarioId,
                         nome: nomeCompleto,
                         data: dataHojeCompleta,
-                        minutos_ajuste: minutosInt,
+                        minutos_ajuste: minutesInt,
                         tipo: 'pausa',
                         observacao: observacao.trim(),
                         origem: 'admin'
@@ -189,8 +189,8 @@ export default function GestaoLancamentosManuaisPage() {
                         funcionario_id: funcionarioId,
                         nome_completo: nomeCompleto,
                         data_referencia: dataHojeApenasChave,
-                        minutos_diurnos: tipoLancamento === 'extra_diurna' ? minutosInt : 0,
-                        minutos_noturnos: tipoLancamento === 'extra_noturna' ? minutosInt : 0,
+                        minutos_diurnos: tipoLancamento === 'extra_diurna' ? minutesInt : 0,
+                        minutos_noturnos: tipoLancamento === 'extra_noturna' ? minutesInt : 0,
                         observacao: observacao.trim(),
                         origem: 'admin'
                     }]);
@@ -262,7 +262,8 @@ export default function GestaoLancamentosManuaisPage() {
                                         className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] pl-3 pr-8 py-2.5 rounded-lg text-xs font-bold uppercase outline-none text-[#1d1d1f] cursor-pointer appearance-none transition-colors"
                                         required
                                     >
-                                        {funcionariosFiltradas.length === 0 ? (
+                                        {/* CORRIGIDO AQUI: Alterado de funcionariosFiltradas para funcionariosFiltrados */}
+                                        {funcionariosFiltrados.length === 0 ? (
                                             <option value="">Nenhum resultado encontrado</option>
                                         ) : (
                                             funcionariosFiltrados.map(f => (
@@ -364,7 +365,7 @@ export default function GestaoLancamentosManuaisPage() {
                                                 <td className="py-3.5 font-mono font-bold text-[#86868b] pl-1">{new Date(item.data).toLocaleDateString('pt-BR')}</td>
                                                 <td className="py-3.5 font-bold text-[#1d1d1f] relative overflow-visible">
                                                     <div
-                                                        onClick={() => alternarFixarJustificativa(chaveUnica)}
+                                                        onClick={() => Math.max(0, alternarFixarJustificativa(chaveUnica))}
                                                         className="cursor-pointer hover:text-[#ff9500] transition-colors flex items-center gap-1 select-none"
                                                     >
                                                         <span>{item.nome}</span>
@@ -428,7 +429,7 @@ export default function GestaoLancamentosManuaisPage() {
                                                 <td className="py-3.5 font-mono font-bold text-[#86868b] pl-1">{new Date(item.data).toLocaleDateString('pt-BR')}</td>
                                                 <td className="py-3.5 font-bold text-[#1d1d1f] relative overflow-visible">
                                                     <div
-                                                        onClick={() => alternarFixarJustificativa(chaveUnica)}
+                                                        onClick={() => Math.max(0, alternarFixarJustificativa(chaveUnica))}
                                                         className="cursor-pointer hover:text-[#007aff] transition-colors flex items-center gap-1 select-none"
                                                     >
                                                         <span>{item.nome}</span>
