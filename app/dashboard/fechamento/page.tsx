@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
@@ -84,7 +84,7 @@ function ConteudoRelatorio() {
                     supabase.from('pontos').select('id, funcionario_id, data_registro, hora_formatada, tipo_batida, observacao'),
                     supabase.from('pausas').select('id, funcionario_id, data, minutos_ajuste, tipo, observacao'),
                     supabase.from('saidas_emergencia').select('id, funcionario_id, horario_saida, horario_retorno, justificativa'),
-                    supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutos_diurnos, minutos_noturnos')
+                    supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutes_diurnos, minutes_noturnos')
                 ]);
 
                 if (resFunc.data) setFuncionarios(resFunc.data);
@@ -183,7 +183,8 @@ function ConteudoRelatorio() {
 
             if (p.tipo === 'pausa') {
                 mapa[chave].minutosPausa += Number(p.minutos_ajuste || 0);
-            } else if (p.tipo === 'feriado' || p.tipo === 'folga') {
+            } else if (p.tipo === 'feriado' || p.tipo === 'folga' || p.tipo === 'justificativa') {
+                // AJUSTADO AQUI: Mapeia o texto de justificativa de horário também
                 mapa[chave].textoAjuste = String(p.observacao || '').toUpperCase();
             }
         });
@@ -403,8 +404,8 @@ function ConteudoRelatorio() {
                                             acumuladoEmergencia += jornada.minutosEmergenciaAcumuladoDia;
                                             acumuladoPausas += jornada.minutosPausaPurosDia;
 
-                                            // Identifica se possui feriado ou folga cadastrada na linha
-                                            const possuiExcecaoAmarela = jornada.textoAjuste && (jornada.textoAjuste.includes("FOLGA") || jornada.textoAjuste !== "");
+                                            // AJUSTADO AQUI: Agora identifica qualquer observação (Folga, Feriado ou Justificativa de Horário)
+                                            const possuiExcecaoAmarela = !!jornada.textoAjuste;
 
                                             return (
                                                 <tr
@@ -413,7 +414,7 @@ function ConteudoRelatorio() {
                                                         jornada.temAtraso
                                                             ? 'bg-red-50/70 border-l-4 border-l-red-500 font-medium hover:bg-red-100/60 print:bg-slate-100 print:border-l-0'
                                                             : possuiExcecaoAmarela
-                                                                ? 'bg-yellow-50 hover:bg-yellow-100/80 font-semibold print:bg-yellow-100/50' // <-- ADICIONADO: Amarelo estratégico para Folgas/Feriados
+                                                                ? 'bg-yellow-50 hover:bg-yellow-100/80 font-semibold print:bg-yellow-100/50' // Amarelo estratégico ativado para qualquer exceção
                                                                 : itemDia.isFimDeSemana
                                                                     ? 'bg-slate-100/70 font-medium hover:bg-slate-200/50 print:bg-slate-100'
                                                                     : 'hover:bg-slate-50'
@@ -423,7 +424,7 @@ function ConteudoRelatorio() {
                                                         jornada.temAtraso
                                                             ? 'text-red-700 print:text-black print:font-black'
                                                             : possuiExcecaoAmarela
-                                                                ? 'text-amber-800' // Escurece o texto do dia amarelado para melhor leitura
+                                                                ? 'text-amber-800' // Destaca o texto da data em tom âmbar/escuro se houver exceção
                                                                 : itemDia.isDomingo
                                                                     ? 'text-blue-700'
                                                                     : itemDia.isFimDeSemana
@@ -447,7 +448,7 @@ function ConteudoRelatorio() {
 
                                                     <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center font-black text-orange-600 bg-orange-500/[0.02] border-l border-slate-100">{jornada.totalPausa}</td>
 
-                                                    {/* CÉLULA DE AJUSTES COLORIDA DINAMICAMENTE DE ACORDO COM O REGISTRO */}
+                                                    {/* CÉLULA DE AJUSTES COLORIDA EM TOM ESCURO DE AMARELO SE FOR EXCEÇÃO */}
                                                     <td className={`py-2 px-2 print:py-0.5 print:px-1 border-l border-dashed border-slate-200 text-center font-mono font-black text-[9px] uppercase tracking-tight whitespace-nowrap ${
                                                         possuiExcecaoAmarela ? 'text-amber-700 font-black' : 'text-[#007aff]'
                                                     }`}>
