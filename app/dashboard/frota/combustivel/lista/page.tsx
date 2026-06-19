@@ -109,7 +109,7 @@ export default function ListaAbastecimentosPage() {
         }
     };
 
-    // Filtro dinâmico em memória no Mac Air
+    // Filtro dinâmico em memória
     const abastecimentosFiltrados = useMemo(() => {
         const termo = pesquisa.toLowerCase().trim();
         return abastecimentos.filter(a => {
@@ -253,7 +253,7 @@ export default function ListaAbastecimentosPage() {
             {cupomParaEditar && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <form
-                        onSubmit={handleIncrementalEdit || handleOriginalEdit || handleAtualizarAbastecimento}
+                        onSubmit={handleAtualizarAbastecimento}
                         className="bg-[#1a1f29] border border-white/[0.08] p-6 rounded-[28px] max-w-md w-full space-y-4 shadow-2xl"
                     >
                         <div className="border-b border-white/[0.04] pb-3">
