@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
+export const dynamic = 'force-dynamic';
+
 interface Abastecimento {
     id: string;
     litragem: number;
@@ -17,6 +19,12 @@ export default function ListaAbastecimentosPage() {
     const [abastecimentos, setAbastecimentos] = useState<Abastecimento[]>([]);
     const [carregando, setCarregando] = useState(true);
     const [pesquisa, setPesquisa] = useState('');
+
+    // Estados de Modais e Controle Operacional
+    const [cupomParaEditar, setCupomParaEditar] = useState<Abastecimento | null>(null);
+    const [cupomParaDeletar, setCupomParaDeletar] = useState<Abastecimento | null>(null);
+    const [codigoConfirmacao, setCodigoConfirmacao] = useState('');
+    const [salvando, setSalvando] = useState(false);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,6 +54,60 @@ export default function ListaAbastecimentosPage() {
     useEffect(() => {
         carregarHistorico();
     }, []);
+
+    // Atualização de registro (Salvar Edição do Cupom)
+    const handleAtualizarAbastecimento = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!cupomParaEditar) return;
+
+        setSalvando(true);
+        try {
+            const { error } = await supabase
+                .from('abastecimentos')
+                .update({
+                    litragem: Number(cupomParaEditar.litragem),
+                    km_abastecimento: Number(cupomParaEditar.km_abastecimento),
+                    valor_total: Number(cupomParaEditar.valor_total),
+                    posto_combustivel: cupomParaEditar.posto_combustivel.trim().toUpperCase(),
+                    data_hora: cupomParaEditar.data_hora
+                })
+                .eq('id', cupomParaEditar.id);
+
+            if (error) throw error;
+
+            setAbastecimentos(prev => prev.map(a => a.id === cupomParaEditar.id ? cupomParaEditar : a));
+            setCupomParaEditar(null);
+        } catch (err) {
+            console.error("Erro ao atualizar abastecimento:", err);
+            alert("Erro ao salvar alterações do cupom no banco.");
+        } finally {
+            setSalvando(false);
+        }
+    };
+
+    // Rotina destrutiva segura com código numérico
+    const handleConfirmarExclusao = async () => {
+        if (!cupomParaDeletar || codigoConfirmacao !== '123456') return;
+
+        setSalvando(true);
+        try {
+            const { error } = await supabase
+                .from('abastecimentos')
+                .delete()
+                .eq('id', cupomParaDeletar.id);
+
+            if (error) throw error;
+
+            setAbastecimentos(prev => prev.filter(a => a.id !== cupomParaDeletar.id));
+            setCupomParaDeletar(null);
+            setCodigoConfirmacao('');
+        } catch (err) {
+            console.error("Erro ao remover abastecimento:", err);
+            alert("Falha ao deletar o registro de combustível.");
+        } finally {
+            setSalvando(false);
+        }
+    };
 
     // Filtro dinâmico em memória no Mac Air
     const abastecimentosFiltrados = useMemo(() => {
@@ -110,7 +172,8 @@ export default function ListaAbastecimentosPage() {
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                 <tr className="border-b border-white/[0.04] text-slate-500 uppercase tracking-wider text-[8px] font-black pb-3">
-                                    <th className="pb-3 pl-4">Veículo / Equipamento</th>
+                                    <th className="pb-3 pl-4 w-20">Ações</th>
+                                    <th className="pb-3">Veículo / Equipamento</th>
                                     <th className="pb-3">Posto de Combustível</th>
                                     <th className="pb-3 text-center">Volume (Litros)</th>
                                     <th className="pb-3 text-center">Odômetro (KM)</th>
@@ -121,17 +184,36 @@ export default function ListaAbastecimentosPage() {
                                 </thead>
                                 <tbody className="divide-y divide-white/[0.01]">
                                 {abastecimentosFiltrados.map(a => {
-                                    const precoPorLitro = a.valor_total / a.litragem;
+                                    const precoPorLitro = a.litragem > 0 ? a.valor_total / a.litragem : 0;
                                     return (
                                         <tr key={a.id} className="hover:bg-white/[0.01] transition-colors group">
+                                            {/* COLUNA DE CONTROLES */}
+                                            <td className="py-4 pl-4 select-none">
+                                                <div className="flex gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => setCupomParaEditar(a)}
+                                                        className="bg-black/40 hover:bg-blue-600 border border-white/[0.08] text-white p-1 rounded-md text-[10px] transition-colors"
+                                                        title="Editar Abastecimento"
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setCupomParaDeletar(a)}
+                                                        className="bg-black/40 hover:bg-red-600 border border-white/[0.08] text-white p-1 rounded-md text-[10px] transition-colors"
+                                                        title="Remover Cupom"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </td>
                                             {/* DADOS VEÍCULO */}
-                                            <td className="py-4 pl-4">
+                                            <td className="py-4">
                                                 <p className="font-black text-slate-200 uppercase tracking-tight text-xs">
                                                     {a.veiculos ? `${a.veiculos.fabricante} ${a.veiculos.modelo}` : 'N/A'}
                                                 </p>
                                                 <span className="text-[9px] font-mono font-bold text-blue-400 uppercase tracking-wider block mt-0.5">
-                                                        {a.veiculos?.tem_placa ? `Placa: ${a.veiculos.placa}` : '⚙️ Maquinário'}
-                                                    </span>
+                                                    {a.veiculos?.tem_placa ? `Placa: ${a.veiculos.placa}` : '⚙️ Maquinário'}
+                                                </span>
                                             </td>
                                             {/* POSTO */}
                                             <td className="py-4 font-bold text-slate-300 uppercase text-xs">
@@ -167,9 +249,150 @@ export default function ListaAbastecimentosPage() {
                 </div>
             </div>
 
+            {/* MODAL I: EDIÇÃO DE CUPOM DE COMBUSTÍVEL */}
+            {cupomParaEditar && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <form
+                        onSubmit={handleIncrementalEdit || handleOriginalEdit || handleAtualizarAbastecimento}
+                        className="bg-[#1a1f29] border border-white/[0.08] p-6 rounded-[28px] max-w-md w-full space-y-4 shadow-2xl"
+                    >
+                        <div className="border-b border-white/[0.04] pb-3">
+                            <h3 className="text-sm font-black uppercase tracking-wider text-white">Editar Abastecimento</h3>
+                            <p className="text-[9px] text-slate-400 font-mono uppercase mt-0.5">Ativo: {cupomParaEditar.veiculos ? `${cupomParaEditar.veiculos.fabricante} ${cupomParaEditar.veiculos.modelo}` : 'N/A'}</p>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Posto de Combustível</label>
+                            <input
+                                type="text"
+                                value={cupomParaEditar.posto_combustivel}
+                                onChange={e => setCupomParaEditar({...cupomParaEditar, posto_combustivel: e.target.value})}
+                                className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-bold text-white outline-none uppercase"
+                                required
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Volume (Litros)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={cupomParaEditar.litragem}
+                                    onChange={e => setCupomParaEditar({...cupomParaEditar, litragem: Number(e.target.value)})}
+                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white outline-none"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Valor Total (R$)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={cupomParaEditar.valor_total}
+                                    onChange={e => setCupomParaEditar({...cupomParaEditar, valor_total: Number(e.target.value)})}
+                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white outline-none"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Odômetro (KM)</label>
+                                <input
+                                    type="number"
+                                    value={cupomParaEditar.km_abastecimento}
+                                    onChange={e => setCupomParaEditar({...cupomParaEditar, km_abastecimento: Number(e.target.value)})}
+                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white text-center outline-none"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Data / Hora</label>
+                                <input
+                                    type="datetime-local"
+                                    value={cupomParaEditar.data_hora.substring(0, 16)}
+                                    onChange={e => setCupomParaEditar({...cupomParaEditar, data_hora: e.target.value ? new Date(e.target.value).toISOString() : cupomParaEditar.data_hora})}
+                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white text-center outline-none"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2.5 pt-2 border-t border-white/[0.04] select-none">
+                            <button
+                                type="button"
+                                onClick={() => setCupomParaEditar(null)}
+                                className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={salvando}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40"
+                            >
+                                {salvando ? 'Salvando...' : 'Salvar'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* MODAL II: EXCLUSÃO PROTEGIDA COM SENHA MECÂNICA (1 a 6) */}
+            {cupomParaDeletar && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#151922] border border-red-500/20 p-6 rounded-[28px] max-w-sm w-full space-y-4 shadow-2xl">
+                        <div className="text-center space-y-1">
+                            <span className="text-2xl block select-none">⚠️</span>
+                            <h3 className="text-sm font-black uppercase tracking-wider text-white">Remover Registro de Combustível?</h3>
+                            <p className="text-[11px] text-slate-400 leading-normal font-medium">
+                                Esta ação irá excluir definitivamente o abastecimento de <strong className="text-white font-black">{cupomParaDeletar.litragem} L</strong> no posto <strong className="text-white font-black">{cupomParaDeletar.posto_combustivel}</strong>.
+                            </p>
+                        </div>
+
+                        <div className="space-y-1.5 bg-black/40 border border-white/[0.03] p-3.5 rounded-xl">
+                            <label className="text-[9px] font-black uppercase text-red-400 tracking-wider block text-center">
+                                Para confirmar, digite de 1 até 6:
+                            </label>
+                            <input
+                                type="text"
+                                maxLength={6}
+                                placeholder="Digite 123456..."
+                                value={codigoConfirmacao}
+                                onChange={e => setCodigoConfirmacao(e.target.value)}
+                                className="w-full bg-black border border-white/[0.08] focus:border-red-500 px-3 py-2 rounded-lg text-sm font-mono font-black text-center text-white outline-none tracking-[6px]"
+                            />
+                        </div>
+
+                        <div className="flex gap-2.5 select-none">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setCupomParaDeletar(null);
+                                    setCodigoConfirmacao('');
+                                }}
+                                className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                            >
+                                Abortar
+                            </button>
+                            <button
+                                type="button"
+                                disabled={codigoConfirmacao !== '123456' || salvando}
+                                onClick={handleConfirmarExclusao}
+                                className="flex-1 bg-red-600 disabled:bg-red-950/20 hover:bg-red-700 disabled:text-red-400/40 text-white py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {salvando ? 'Removendo...' : 'Confirmar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* RODAPÉ */}
             <footer className="w-full border-t border-white/[0.02] pt-6 mt-10 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-500 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left max-w-[1400px] mx-auto px-2">
-                <div>GR Autopeças & Distribuição</div>
+                <div>GR Autopeças &amp; Distribuição</div>
                 <div className="font-mono text-slate-600">Fleet Fuel Intelligence v1.0</div>
             </footer>
         </main>
