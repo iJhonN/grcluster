@@ -18,11 +18,12 @@ export default function GestaoFolgasEFeriadosPage() {
     const [enviando, setEnviando] = useState(false);
     const [statusFeed, setStatusFeed] = useState({ tipo: '', texto: '' });
 
-    // Estados para Lançamento Individual (Folga)
+    // Estados para Lançamento Individual (Folga / Justificativa)
+    const [tipoIndividual, setTipoIndividual] = useState('folga'); // 'folga' ou 'justificativa'
     const [buscaFuncionario, setBuscaFuncionario] = useState('');
     const [funcionarioId, setFuncionarioId] = useState('');
-    const [dataFolga, setDataFolga] = useState('');
-    const [obsFolga, setObsFolga] = useState('FOLGA');
+    const [dataIndividual, setDataIndividual] = useState('');
+    const [obsIndividual, setObsIndividual] = useState('FOLGA');
 
     // Estados para Lançamento Coletivo (Feriado)
     const [dataFeriado, setDataFeriado] = useState('');
@@ -52,6 +53,15 @@ export default function GestaoFolgasEFeriadosPage() {
         carregarFuncionarios();
     }, []);
 
+    // Atualiza o texto padrão quando altera o tipo individual para poupar digitação
+    useEffect(() => {
+        if (tipoIndividual === 'folga') {
+            setObsIndividual('FOLGA');
+        } else {
+            setObsIndividual('SAIU ÀS 17:00 - ');
+        }
+    }, [tipoIndividual]);
+
     // Busca preditiva de colaboradores
     const funcionariosFiltrados = useMemo(() => {
         const termo = buscaFuncionario.toLowerCase().trim();
@@ -71,11 +81,11 @@ export default function GestaoFolgasEFeriadosPage() {
         }
     }, [funcionariosFiltrados, funcionarioId]);
 
-    // Submit 1: Lançar Folga Individual
-    const handleLancarFolgaIndividual = async (e: React.FormEvent) => {
+    // Submit 1: Lançar Folga ou Justificativa Individual
+    const handleLancarIndividual = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!funcionarioId || !dataFolga || !obsFolga.trim()) {
-            setStatusFeed({ tipo: 'erro', texto: 'Selecione o colaborador, a data e a justificativa da folga.' });
+        if (!funcionarioId || !dataIndividual || !obsIndividual.trim()) {
+            setStatusFeed({ tipo: 'erro', texto: 'Preencha o colaborador, a data e a justificativa.' });
             return;
         }
 
@@ -91,23 +101,24 @@ export default function GestaoFolgasEFeriadosPage() {
                 .insert([{
                     funcionario_id: funcionarioId,
                     nome: nomeCompleto,
-                    data: `${dataFolga}T12:00:00Z`,
+                    data: `${dataIndividual}T12:00:00Z`,
                     minutos_ajuste: 0,
-                    tipo: 'folga',
-                    observacao: obsFolga.trim().toUpperCase(),
+                    tipo: tipoIndividual, // Salva dinamicamente 'folga' ou 'justificativa'
+                    observacao: obsIndividual.trim().toUpperCase(),
                     origem: 'admin'
                 }]);
 
             if (error) throw error;
 
-            setStatusFeed({ tipo: 'sucesso', texto: `Folga registrada com sucesso para ${nomeCompleto}.` });
+            const labelSucesso = tipoIndividual === 'folga' ? 'Folga' : 'Justificativa';
+            setStatusFeed({ tipo: 'sucesso', texto: `${labelSucesso} registrada com sucesso para ${nomeCompleto}.` });
             setFuncionarioId('');
-            setDataFolga('');
+            setDataIndividual('');
             setBuscaFuncionario('');
-            setObsFolga('FOLGA');
+            setObsIndividual(tipoIndividual === 'folga' ? 'FOLGA' : 'SAIU ÀS 17:00 - ');
         } catch (err) {
             console.error(err);
-            setStatusFeed({ tipo: 'erro', texto: 'Falha ao salvar folga no banco.' });
+            setStatusFeed({ tipo: 'erro', texto: 'Falha ao salvar o registro no banco.' });
         } finally {
             setEnviando(false);
         }
@@ -130,7 +141,6 @@ export default function GestaoFolgasEFeriadosPage() {
         setStatusFeed({ tipo: '', texto: '' });
 
         try {
-            // Cria o array de inserts em lote para todos os funcionários ativos
             const feriadosEmLote = funcionarios.map(f => ({
                 funcionario_id: f.id,
                 nome: `${f.nome} ${f.sobrenome}`,
@@ -183,7 +193,7 @@ export default function GestaoFolgasEFeriadosPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start w-full">
 
-                    {/* BLOCO 1: FERIADO GLOBAL (MUITO MAIS RÁPIDO) */}
+                    {/* BLOCO 1: FERIADO GLOBAL */}
                     <div className="bg-white border border-[#e5e5ea] p-5 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] space-y-4">
                         <div className="border-b border-[#f5f5f7] pb-3 select-none">
                             <span className="text-[9px] font-bold uppercase text-blue-600 tracking-wider">Ação Coletiva</span>
@@ -224,14 +234,26 @@ export default function GestaoFolgasEFeriadosPage() {
                         </form>
                     </div>
 
-                    {/* BLOCO 2: FOLGA ESPECÍFICA (INDIVIDUAL) */}
+                    {/* BLOCO 2: LANÇAMENTO INDIVIDUAL (FOLGA OU JUSTIFICATIVA DE HORÁRIO) */}
                     <div className="bg-white border border-[#e5e5ea] p-5 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] space-y-4">
-                        <div className="border-b border-[#f5f5f7] pb-3 select-none">
-                            <span className="text-[9px] font-bold uppercase text-[#ff9500] tracking-wider">Ação Individual</span>
-                            <h3 className="text-xs font-bold text-[#1d1d1f] uppercase tracking-wider mt-0.5">Lançar Folga Avançada</h3>
+                        <div className="border-b border-[#f5f5f7] pb-3 select-none flex justify-between items-center">
+                            <div>
+                                <span className="text-[9px] font-bold uppercase text-[#ff9500] tracking-wider">Ação Individual</span>
+                                <h3 className="text-xs font-bold text-[#1d1d1f] uppercase tracking-wider mt-0.5">Exceções de Pátio</h3>
+                            </div>
+
+                            {/* Seletor dinâmico de tipo */}
+                            <select
+                                value={tipoIndividual}
+                                onChange={e => setTipoIndividual(e.target.value)}
+                                className="bg-[#f5f5f7] border border-[#e5e5ea] rounded-lg px-2 py-1 text-[10px] font-bold uppercase text-[#1d1d1f] outline-none cursor-pointer"
+                            >
+                                <option value="folga">Folga Regular</option>
+                                <option value="justificativa">Justificativa Horário</option>
+                            </select>
                         </div>
 
-                        <form onSubmit={handleLancarFolgaIndividual} className="space-y-4">
+                        <form onSubmit={handleLancarIndividual} className="space-y-4">
                             <div className="space-y-2">
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Filtrar Colaborador</label>
@@ -268,22 +290,25 @@ export default function GestaoFolgasEFeriadosPage() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Data da Folga</label>
+                                    <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Data do Evento</label>
                                     <input
                                         type="date"
-                                        value={dataFolga}
-                                        onChange={e => setDataFolga(e.target.value)}
+                                        value={dataIndividual}
+                                        onChange={e => setDataIndividual(e.target.value)}
                                         className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2.5 rounded-lg text-xs font-bold outline-none text-[#1d1d1f] transition-colors text-center"
                                         required
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Texto de Exibição</label>
+                                    <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">
+                                        {tipoIndividual === 'folga' ? 'Texto de Exibição' : 'Justificativa de Horário'}
+                                    </label>
                                     <input
                                         type="text"
-                                        value={obsFolga}
-                                        onChange={e => setObsFolga(e.target.value)}
+                                        value={obsIndividual}
+                                        onChange={e => setObsIndividual(e.target.value)}
+                                        placeholder={tipoIndividual === 'folga' ? 'FOLGA' : 'SAIU ÀS 17:00 - MOTIVO'}
                                         className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2.5 rounded-lg text-xs font-bold uppercase outline-none text-[#1d1d1f] transition-colors text-center"
                                         required
                                     />
@@ -295,7 +320,7 @@ export default function GestaoFolgasEFeriadosPage() {
                                 disabled={enviando || !funcionarioId}
                                 className="w-full bg-[#1d1d1f] active:bg-black text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
                             >
-                                {enviando ? "Gravando..." : "Confirmar Folga"}
+                                {enviando ? "Gravando..." : tipoIndividual === 'folga' ? "Confirmar Folga" : "Gravar Justificativa"}
                             </button>
                         </form>
                     </div>
@@ -305,7 +330,7 @@ export default function GestaoFolgasEFeriadosPage() {
 
             <footer className="w-full max-w-6xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
                 <div>GR Autopeças &amp; Serviços</div>
-                <div className="font-mono text-[#b4b4b9]">Calendário de Exceções v1.0</div>
+                <div className="font-mono text-[#b4b4b9]">Calendário de Exceções v1.1</div>
             </footer>
         </main>
     );
