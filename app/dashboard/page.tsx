@@ -77,6 +77,8 @@ export default function DashboardPage() {
     const podeVerFrota = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS'];
     const podeVerRH = ['ADMIN', 'GERENTE'];
     const podeVerEstoque = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS', 'ESTOQUE'];
+    // ADICIONADO AQUI: Permissão explícita para visualização da lista e cadastros de colaboradores
+    const podeVerFuncionarios = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS'];
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased flex flex-col lg:flex-row w-full selection:bg-black/5">
@@ -139,7 +141,7 @@ export default function DashboardPage() {
                 {/* GRID ORDENADO E CORRIGIDO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 w-full">
 
-                    {/* 1. ⏱️ CONTROLE DE PONTO (DESTAQUE HIGH-CONTRAST INVERTIDO) */}
+                    {/* 1. ⏱️ CONTROLE DE PONTO */}
                     {podeVerPonto.includes(userRole) && (
                         <Link href="/dashboard/ponto" className="bg-[#1d1d1f] border border-black p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-xl text-white">
                             <div className="flex items-center justify-between w-full">
@@ -153,7 +155,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 2. 🛠️ RETIRADA DE FERRAMENTAS (DESTAQUE OPERACIONAL) */}
+                    {/* 2. 🛠️ RETIRADA DE FERRAMENTAS */}
                     {podeVerRetiradaFerramentas.includes(userRole) && (
                         <Link href="/dashboard/ferramentas/retirada" className="bg-white border-2 border-[#1d1d1f] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                             <div className="flex items-center justify-between w-full">
@@ -191,6 +193,20 @@ export default function DashboardPage() {
                             <div className="mt-4 leading-snug">
                                 <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Frotas &amp; Rotas</h3>
                                 <p className="text-[11px] text-[#86868b] mt-1 font-medium">Controle de viagens e combustíveis.</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {/* ADICIONADO AQUI: NOVO CARD PARA GERENCIAMENTO DE FUNCIONÁRIOS */}
+                    {podeVerFuncionarios.includes(userRole) && (
+                        <Link href="/dashboard/funcionarios" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">👥</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">Equipe</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Lista de Funcionários</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Cadastro e gerenciamento operacional de pessoal.</p>
                             </div>
                         </Link>
                     )}

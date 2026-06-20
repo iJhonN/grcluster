@@ -65,9 +65,17 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Regra do Fechamento Contábil e Funcionários (Apenas Admin e Gerente)
-    if (pathname.startsWith('/dashboard/fechamento') || pathname.startsWith('/dashboard/funcionarios')) {
+    // Regra do Fechamento Contábil (Apenas Admin e Gerente)
+    if (pathname.startsWith('/dashboard/fechamento')) {
         const autorizados = ['ADMIN', 'GERENTE'];
+        if (!autorizados.includes(cargo)) {
+            return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
+        }
+    }
+
+    // Regra de Funcionários (Admin, Gerente e Gestor de Frotas liberados)
+    if (pathname.startsWith('/dashboard/funcionarios')) {
+        const autorizados = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS'];
         if (!autorizados.includes(cargo)) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
         }
