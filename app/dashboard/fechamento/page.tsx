@@ -82,7 +82,7 @@ function ConteudoRelatorio() {
                 const [resFunc, resPontos, resPausas, resSaidas, resExtras] = await Promise.all([
                     supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome'),
                     supabase.from('pontos').select('id, funcionario_id, data_registro, hora_formatada, tipo_batida, observacao'),
-                    supabase.from('pausas').select('id, funcionario_id, data, minutes_ajuste, minutos_ajuste, tipo, observacao'),
+                    supabase.from('pausas').select('id, funcionario_id, data, minutos_ajuste, tipo, observacao'),
                     supabase.from('saidas_emergencia').select('id, funcionario_id, horario_saida, horario_retorno, justificativa'),
                     supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutos_diurnos, minutos_noturnos')
                 ]);
@@ -188,6 +188,7 @@ function ConteudoRelatorio() {
             } else if (p.tipo === 'feriado' || p.tipo === 'folga' || p.tipo === 'justificativa' || p.tipo === 'compensacao_diurna' || p.tipo === 'compensacao_noturna') {
                 mapa[chave].textoAjuste = String(p.observacao || '').toUpperCase();
 
+                // Mapeia as minutagens negativas de abatimento/compensação de banco
                 if (p.tipo === 'compensacao_diurna') {
                     mapa[chave].descontoDiurno += Math.abs(p.minutos_ajuste);
                 } else if (p.tipo === 'compensacao_noturna') {
@@ -278,6 +279,7 @@ function ConteudoRelatorio() {
                 const limiteNoite = 18 * 60;
 
                 if (saidaFim > limiteNoite) {
+                    const excedenteNoite = failed => saidaFim - limiteNoite;
                     extraNoturnaCalculada = Math.min(saidaFim - limiteNoite, extrasRestantes);
                     extrasRestantes -= extraNoturnaCalculada;
                 }
@@ -307,22 +309,13 @@ function ConteudoRelatorio() {
     };
 
     const formatarMinutosTotais = (minutos: number) => {
-        // CORRIGIDO AQUI: Removido fragmento 'minutes =>' que quebrava a tipagem do build
+        // Trata os saldos negativos caso o abatimento supere o banco
         const isNegativo = minutos < 0;
         const minutosAbsolutos = Math.abs(minutos);
         const hrs = Math.floor(minutosAbsolutos / 60);
         const mnts = minutosAbsolutos % 60;
         return `${isNegativo ? '-' : ''}${hrs}h ${mnts.toString().padStart(2, '0')}m`;
     };
-
-    const funcionariosFiltrados = useMemo(() => {
-        const termo = pesquisa.toLowerCase().trim();
-        if (!termo) return funcionarios;
-        return funcionarios.filter(func => {
-            const nomeCompleto = `${func.nome} ${func.sobrenome}`.toLowerCase();
-            return nomeCompleto.includes(termo) || String(func.id).includes(termo);
-        });
-    }, [funcionarios, pesquisa]);
 
     return (
         <main className="min-h-screen bg-black text-white p-4 font-sans print:bg-white print:text-black print:p-0 w-full">
@@ -403,6 +396,7 @@ function ConteudoRelatorio() {
                                     {diasDoCiclo.map((itemDia, idx) => {
                                         const jornada = obterDadosComExtrasDoDia(func.id, itemDia);
 
+                                        // Dedução real aplicada sobre as variáveis somadoras de banco
                                         acumuladoDiurna += (jornada.extraDiurnaMinutos - jornada.descontoDiurno);
                                         acumuladoNoturna += (jornada.extraNoturnaMinutos - jornada.descontoNoturno);
                                         acumuladoEmergencia += jornada.minutosEmergenciaAcumuladoDia;
@@ -427,6 +421,7 @@ function ConteudoRelatorio() {
                                                 <td className="py-2 px-3 text-left font-black text-red-700 bg-red-500/[0.03] italic whitespace-normal break-words">{jornada.justificativa || '---'}</td>
                                                 <td className="py-2 px-2 font-mono text-center font-black text-orange-600 bg-orange-500/[0.02] border-l border-slate-100">{jornada.totalPausa}</td>
 
+                                                {/* TEXTO DE COMPENSAÇÃO EXIBIDO COM PRECISÃO PARA AUDITORIA VISUAL */}
                                                 <td className={`py-2 px-2 text-center font-mono font-black text-[8px] uppercase tracking-tight whitespace-nowrap ${possuiExcecaoAmarela ? 'text-amber-700' : 'text-[#007aff]'}`}>
                                                     {jornada.textoAjuste || ''}
                                                 </td>
@@ -437,6 +432,7 @@ function ConteudoRelatorio() {
                                 </table>
                             </div>
 
+                            {/* PLACAR DE ACUMULADOS COM DESCONTO REAL INJETADO */}
                             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
                                 <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 flex flex-col items-center justify-center">
                                     <div className="flex items-center gap-1">
