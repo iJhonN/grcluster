@@ -107,6 +107,7 @@ function ConteudoRelatorio() {
             } catch (error) {
                 console.error("Erro ao carregar dados do Supabase:", error);
             } finally {
+                carregarDadosSupabase();
                 setCarregando(false);
             }
         };
@@ -198,11 +199,22 @@ function ConteudoRelatorio() {
             if (p.tipo === 'pausa') {
                 mapa[chave].minutosPausa += Number(p.minutos_ajuste || 0);
             } else if (p.tipo === 'feriado' || p.tipo === 'folga' || p.tipo === 'justificativa') {
-                mapa[chave].textoAjuste = String(p.observacao || '').toUpperCase();
+                const textoObserbacao = String(p.observacao || '').toUpperCase();
+
+                // REFORÇO DE PRIORIDADE: Se o dia já foi mapeado como ATESTADO, nada mais substitui (feriados/folgas perdem a vez)
+                if (mapa[chave].textoAjuste.startsWith("ATESTADO:")) {
+                    return;
+                }
+
+                // Caso contrário ou se a nova inserção for o atestado, ele ganha prioridade absoluta
+                if (p.tipo === 'justificativa' || textoObserbacao.startsWith("ATESTADO:")) {
+                    mapa[chave].textoAjuste = textoObserbacao;
+                } else {
+                    mapa[chave].textoAjuste = textoObserbacao;
+                }
             }
         });
 
-        // CRUZAMENTO DE DADOS: Mapeia as movimentações da nova tabela banco_horas
         bancoHoras.forEach(b => {
             if (!b.data_evento) return;
             const [ano, mes, dia] = b.data_evento.split('-').map(Number);
@@ -210,8 +222,10 @@ function ConteudoRelatorio() {
 
             if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
 
-            // A justificativa preenchida pelo gestor fica salva na coluna de ajustes
-            mapa[chave].textoAjuste = String(b.motivo || '').toUpperCase();
+            // REFORÇO DE PRIORIDADE NO BANCO DE HORAS: Não sobrepõe se for Atestado Médico mestre
+            if (!mapa[chave].textoAjuste.startsWith("ATESTADO:")) {
+                mapa[chave].textoAjuste = String(b.motivo || '').toUpperCase();
+            }
 
             if (b.tipo_hora === 'DIURNA') {
                 mapa[chave].descontoDiurno += Math.abs(b.minutos_ajuste);
@@ -432,7 +446,6 @@ function ConteudoRelatorio() {
                                         {diasDoCiclo.map((itemDia, idx) => {
                                             const jornada = obterDadosComExtrasDoDia(func.id, itemDia);
 
-                                            // Subtração matemática líquida baseada na nova tabela de banco_horas
                                             acumuladoDiurna += (jornada.extraDiurnaMinutos - jornada.descontoDiurno);
                                             acumuladoNoturna += (jornada.extraNoturnaMinutos - jornada.descontoNoturno);
                                             acumuladoEmergencia += jornada.minutosEmergenciaAcumuladoDia;
@@ -481,9 +494,8 @@ function ConteudoRelatorio() {
 
                                                     <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center font-black text-orange-600 bg-orange-500/[0.02] print:bg-orange-500/[0.02] border-l border-slate-100">{jornada.totalPausa}</td>
 
-                                                    {/* EXIBIÇÃO DA JUSTIFICATIVA OPERACIONAL PREENCHIDA NO CAMPO DE OBSERVAÇÃO */}
                                                     <td className={`py-2 px-2 print:py-0.5 print:px-1 border-l border-dashed border-slate-200 text-center font-mono font-black text-[8px] uppercase tracking-tight whitespace-nowrap ${
-                                                        possuiExcecaoAmarela ? 'text-amber-700 font-black' : 'text-[#007aff]'
+                                                        jornada.textoAjuste.startsWith("ATESTADO:") ? 'text-red-600 font-extrabold' : possuiExcecaoAmarela ? 'text-amber-700 font-black' : 'text-[#007aff]'
                                                     }`}>
                                                         {jornada.textoAjuste || ''}
                                                     </td>
