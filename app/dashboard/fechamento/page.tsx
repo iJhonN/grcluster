@@ -158,6 +158,8 @@ function ConteudoRelatorio() {
                 extraManualDiurna: number;
                 extraManualNoturna: number;
                 temAtraso: boolean;
+                descontoDiurno: number;
+                descontoNoturno: number;
             }
         } = {};
 
@@ -166,7 +168,7 @@ function ConteudoRelatorio() {
             const dLocal = new Date(new Date(p.data_registro).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${p.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
             mapa[chave].pontos.push(p);
 
             if (p.observacao === 'Atraso') {
@@ -179,12 +181,19 @@ function ConteudoRelatorio() {
             const dLocal = new Date(new Date(p.data).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${p.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
 
             if (p.tipo === 'pausa') {
                 mapa[chave].minutosPausa += Number(p.minutos_ajuste || 0);
-            } else if (p.tipo === 'feriado' || p.tipo === 'folga' || p.tipo === 'justificativa') {
+            } else if (p.tipo === 'feriado' || p.tipo === 'folga' || p.tipo === 'justificativa' || p.tipo === 'compensacao_diurna' || p.tipo === 'compensacao_noturna') {
                 mapa[chave].textoAjuste = String(p.observacao || '').toUpperCase();
+
+                // Mapeia as minutagens negativas de abatimento/compensação de banco
+                if (p.tipo === 'compensacao_diurna') {
+                    mapa[chave].descontoDiurno += Math.abs(p.minutos_ajuste);
+                } else if (p.tipo === 'compensacao_noturna') {
+                    mapa[chave].descontoNoturno += Math.abs(p.minutos_ajuste);
+                }
             }
         });
 
@@ -193,7 +202,7 @@ function ConteudoRelatorio() {
             const dLocal = new Date(new Date(s.horario_saida).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${s.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
 
             const formataHora = (isoString: string | null) => {
                 if (!isoString) return 'Ab.';
@@ -222,7 +231,7 @@ function ConteudoRelatorio() {
             const [ano, mes, dia] = m.data_referencia.split('-').map(Number);
             const chave = `${m.funcionario_id}-${ano}-${mes}-${dia}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
             mapa[chave].extraManualDiurna += Number(m.minutos_diurnos || 0);
             mapa[chave].extraManualNoturna += Number(m.minutos_noturnos || 0);
         });
@@ -242,7 +251,7 @@ function ConteudoRelatorio() {
             entrada: '---', saidaAlmoço: '---', voltaAlmoço: '---', saidaFinal: '---',
             totalPausa: '---', emSaida: '---', emRetorno: '---', emDuracao: '---',
             justificativa: '', extraDiurnaMinutos: 0, extraNoturnaMinutos: 0, minutosEmergenciaAcumuladoDia: 0, minutosPausaPurosDia: 0, temAtraso: false,
-            textoAjuste: ''
+            textoAjuste: '', descontoDiurno: 0, descontoNoturno: 0
         };
 
         if (!dadosDoDia) return retornoBase;
@@ -270,8 +279,8 @@ function ConteudoRelatorio() {
                 const limiteNoite = 18 * 60;
 
                 if (saidaFim > limiteNoite) {
-                    const excedenteNoite = saidaFim - limiteNoite;
-                    extraNoturnaCalculada = Math.min(excedenteNoite, extrasRestantes);
+                    const excedenteNoite = failed => saidaFim - limiteNoite;
+                    extraNoturnaCalculada = Math.min(saidaFim - limiteNoite, extrasRestantes);
                     extrasRestantes -= extraNoturnaCalculada;
                 }
                 extraDiurnaCalculada = extrasRestantes;
@@ -293,25 +302,20 @@ function ConteudoRelatorio() {
             minutosEmergenciaAcumuladoDia: dadosDoDia.emergenciaMinutosTotais,
             minutosPausaPurosDia: dadosDoDia.minutosPausa,
             temAtraso: dadosDoDia.temAtraso,
-            textoAjuste: dadosDoDia.textoAjuste
+            textoAjuste: dadosDoDia.textoAjuste,
+            descontoDiurno: dadosDoDia.descontoDiurno,
+            descontoNoturno: dadosDoDia.descontoNoturno
         };
     };
 
     const formatarMinutosTotais = (minutos: number) => {
-        if (minutos === 0) return "00h 00m";
-        const hrs = Math.floor(minutos / 60);
-        const mnts = minutos % 60;
-        return `${hrs}h ${mnts.toString().padStart(2, '0')}m`;
+        // Trata os saldos negativos caso o abatimento supere o banco
+        const isNegativo = minutos < 0;
+        const minutosAbsolutos = Math.abs(minutos);
+        const hrs = Math.floor(minutosAbsolutos / 60);
+        const mnts = minutosAbsolutos % 60;
+        return `${isNegativo ? '-' : ''}${hrs}h ${mnts.toString().padStart(2, '0')}m`;
     };
-
-    const funcionariosFiltrados = useMemo(() => {
-        const termo = pesquisa.toLowerCase().trim();
-        if (!termo) return funcionarios;
-        return funcionarios.filter(func => {
-            const nomeCompleto = `${func.nome} ${func.sobrenome}`.toLowerCase();
-            return nomeCompleto.includes(termo) || String(func.id).includes(termo);
-        });
-    }, [funcionarios, pesquisa]);
 
     return (
         <main className="min-h-screen bg-black text-white p-4 font-sans print:bg-white print:text-black print:p-0 w-full">
@@ -346,203 +350,160 @@ function ConteudoRelatorio() {
             </header>
 
             <section className="max-w-[1400px] print:max-w-[820px] mx-auto flex flex-col gap-8 print:gap-0 w-full">
-                {carregando ? (
-                    <div className="text-center py-20 animate-pulse font-black uppercase text-slate-800 tracking-[5px] print:hidden">Sincronizando Banco de Dados Supabase...</div>
-                ) : (
-                    funcionariosFiltrados.map((func) => {
-                        let acumuladoDiurna = 0;
-                        let acumuladoNoturna = 0;
-                        let acumuladoEmergencia = 0;
-                        let acumuladoPausas = 0;
+                {!carregando && funcionariosFiltrados.map((func) => {
+                    let acumuladoDiurna = 0;
+                    let acumuladoNoturna = 0;
+                    let acumuladoEmergencia = 0;
+                    let acumuladoPausas = 0;
 
-                        return (
-                            <div key={func.id} className="bg-white text-black p-4 sm:p-6 print:p-4 mb-6 border border-slate-200 rounded-[24px] print:border-slate-300 print:break-inside-avoid print:page-break-after-always shadow-md w-full">
+                    return (
+                        <div key={func.id} className="bg-white text-black p-4 sm:p-6 print:p-4 mb-6 border border-slate-200 rounded-[24px] print:border-slate-300 print:break-inside-avoid print:page-break-after-always shadow-md w-full">
 
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-black pb-3 mb-4 text-xs w-full">
-                                    <div className="space-y-1">
-                                        <h2 className="text-base print:text-sm font-black uppercase tracking-tight text-black leading-none">GR AUTOPECAS LTDA</h2>
-                                        <p className="text-[10px] print:text-[9px] font-bold text-slate-700 font-mono">CNPJ: 51.415.349/0001-25</p>
-                                        <p className="text-[9px] print:text-[8px] text-slate-500 leading-tight">Rua Coronel Vicente Ramos, Nº1552 — Arapiraca - AL</p>
-                                    </div>
-                                    <div className="text-left sm:text-right space-y-1">
-                                        <p className="text-[9px] print:text-[8px] font-black uppercase text-slate-400 tracking-wider leading-none">Colaborador</p>
-                                        <h3 className="text-base print:text-sm font-black uppercase italic text-black leading-none">{func.nome} {func.sobrenome}</h3>
-                                        <p className="text-[10px] print:text-[9px] font-bold text-orange-600 uppercase tracking-wide leading-none">{func.cargo} • ID: {func.id}</p>
-                                        <p className="text-xs print:text-[10px] font-black uppercase tracking-wider text-slate-800">
-                                            Período: 16/{String(mesSelecionado === 1 ? 12 : mesSelecionado - 1).padStart(2, '0')} a 15/{String(mesSelecionado).padStart(2, '0')}/{anoSelecionado}
-                                        </p>
-                                    </div>
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-black pb-3 mb-4 text-xs w-full">
+                                <div className="space-y-1">
+                                    <h2 className="text-base print:text-sm font-black uppercase tracking-tight text-black leading-none">GR AUTOPECAS LTDA</h2>
+                                    <p className="text-[10px] print:text-[9px] font-bold text-slate-700 font-mono">CNPJ: 51.415.349/0001-25</p>
+                                    <p className="text-[9px] print:text-[8px] text-slate-500 leading-tight">Rua Coronel Vicente Ramos, Nº1552 — Arapiraca - AL</p>
                                 </div>
-
-                                <div className="w-full overflow-x-auto print:overflow-visible">
-                                    <table className="w-full text-left text-xs print:text-[9px] border-collapse table-auto print:table-fixed min-w-[950px] print:min-w-0">
-                                        <thead>
-                                        <tr className="border-b border-slate-300 text-slate-800 uppercase font-black text-[10px] print:text-[7.5px] tracking-wider bg-slate-100">
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 w-[85px] print:w-[58px] min-w-[85px] print:min-w-0">Data</th>
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] min-w-[60px] print:min-w-0">Entrada</th>
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] min-w-[60px] print:min-w-0">Sai Alm</th>
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] min-w-[60px] print:min-w-0">Vol Alm</th>
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] min-w-[60px] print:min-w-0">Sai Fim</th>
-
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[65px] print:w-[42px] min-w-[65px] print:min-w-0 text-red-600 bg-red-500/5 font-black border-l border-slate-200">S. Emerg</th>
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[65px] print:w-[42px] min-w-[65px] print:min-w-0 text-red-600 bg-red-500/5 font-black">V. Emerg</th>
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] min-w-[60px] print:min-w-0 text-red-700 bg-red-500/10 font-black border-r border-slate-200">Tempo</th>
-
-                                            <th className="py-2 px-3 print:py-1 print:px-1.5 text-left w-[220px] print:w-[120px] min-w-[200px] print:min-w-0 text-red-700 bg-red-500/5 font-black">Motivo Emergência</th>
-
-                                            <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[70px] print:w-[42px] min-w-[70px] print:min-w-0 text-orange-600 border-l border-slate-200">Tot Pausa</th>
-                                            <th className="py-2 px-2 print:py-1 print:px-1 text-right min-w-[150px] print:min-w-0 border-l border-dashed border-slate-300">Assinatura / Ajustes</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {diasDoCiclo.map((itemDia, idx) => {
-                                            const jornada = obterDadosComExtrasDoDia(func.id, itemDia);
-
-                                            acumuladoDiurna += jornada.extraDiurnaMinutos;
-                                            acumuladoNoturna += jornada.extraNoturnaMinutos;
-                                            acumuladoEmergencia += jornada.minutosEmergenciaAcumuladoDia;
-                                            acumuladoPausas += jornada.minutosPausaPurosDia;
-
-                                            const possuiExcecaoAmarela = !!jornada.textoAjuste;
-
-                                            {/* AJUSTADO AQUI: Injeção de print:[color-adjust:exact] para forçar a impressão das cores de fundo das linhas */}
-                                            return (
-                                                <tr
-                                                    key={idx}
-                                                    className={`border-b border-slate-100 transition-colors text-xs print:text-[9px] print:[color-adjust:exact] [color-adjust:exact] ${
-                                                        jornada.temAtraso
-                                                            ? 'bg-red-50/70 border-l-4 border-l-red-500 font-medium hover:bg-red-100/60 print:bg-red-100/60 print:border-l-0'
-                                                            : possuiExcecaoAmarela
-                                                                ? 'bg-yellow-50 hover:bg-yellow-100/80 font-semibold print:bg-yellow-100/60'
-                                                                : itemDia.isFimDeSemana
-                                                                    ? 'bg-slate-100/70 font-medium hover:bg-slate-200/50 print:bg-slate-100'
-                                                                    : 'hover:bg-slate-50'
-                                                    }`}
-                                                >
-                                                    <td className={`py-2 px-2 print:py-0.5 print:px-0.5 font-mono font-black whitespace-nowrap ${
-                                                        jornada.temAtraso
-                                                            ? 'text-red-700 print:text-black print:font-black'
-                                                            : possuiExcecaoAmarela
-                                                                ? 'text-amber-800'
-                                                                : itemDia.isDomingo
-                                                                    ? 'text-blue-700'
-                                                                    : itemDia.isFimDeSemana
-                                                                        ? 'text-emerald-600'
-                                                                        : 'text-black'
-                                                    }`}>
-                                                        {itemDia.label} <span className="font-sans font-bold text-[10px] print:text-[8px] opacity-75">[{itemDia.diaSemanaLabel}]</span>
-                                                    </td>
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center text-slate-700">{jornada.entrada}</td>
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center text-slate-600">{jornada.saidaAlmoço}</td>
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center text-slate-600">{jornada.voltaAlmoço}</td>
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center text-slate-700">{jornada.saidaFinal}</td>
-
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center font-black text-red-600 bg-red-500/[0.03] print:bg-red-500/[0.03] border-l border-slate-100">{jornada.emSaida}</td>
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center font-black text-red-600 bg-red-500/[0.03] print:bg-red-500/[0.03]">{jornada.emRetorno}</td>
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center font-black text-red-700 bg-red-500/[0.07] print:bg-red-500/[0.07] border-r border-slate-100">{jornada.emDuracao}</td>
-
-                                                    <td className="py-2 px-3 print:py-0.5 print:px-1.5 text-left text-xs print:text-[7px] font-black text-red-700 bg-red-500/[0.03] print:bg-red-500/[0.03] italic whitespace-normal break-words print:truncate" title={jornada.justificativa}>
-                                                        {jornada.justificativa || '---'}
-                                                    </td>
-
-                                                    <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center font-black text-orange-600 bg-orange-500/[0.02] print:bg-orange-500/[0.02] border-l border-slate-100">{jornada.totalPausa}</td>
-
-                                                    <td className={`py-2 px-2 print:py-0.5 print:px-1 border-l border-dashed border-slate-200 text-center font-mono font-black text-[9px] uppercase tracking-tight whitespace-nowrap ${
-                                                        possuiExcecaoAmarela ? 'text-amber-700 font-black' : 'text-[#007aff]'
-                                                    }`}>
-                                                        {jornada.textoAjuste || ''}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                        </tbody>
-                                    </table>
+                                <div className="text-left sm:text-right space-y-1">
+                                    <p className="text-[9px] print:text-[8px] font-black uppercase text-slate-400 tracking-wider leading-none">Colaborador</p>
+                                    <h3 className="text-base print:text-sm font-black uppercase italic text-black leading-none">{func.nome} {func.sobrenome}</h3>
+                                    <p className="text-[10px] print:text-[9px] font-bold text-orange-600 uppercase tracking-wide leading-none">{func.cargo} • ID: {func.id}</p>
+                                    <p className="text-xs print:text-[10px] font-black uppercase tracking-wider text-slate-800">
+                                        Período: 16/{String(mesSelecionado === 1 ? 12 : mesSelecionado - 1).padStart(2, '0')} a 15/{String(mesSelecionado).padStart(2, '0')}/{anoSelecionado}
+                                    </p>
                                 </div>
+                            </div>
 
-                                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 print:grid-cols-4 print:gap-2 bg-slate-50 p-4 print:p-2.5 rounded-xl border border-slate-200/80">
+                            <div className="w-full overflow-x-auto print:overflow-visible">
+                                <table className="w-full text-left text-xs border-collapse table-auto print:table-fixed min-w-[950px] print:min-w-0">
+                                    <thead>
+                                    <tr className="border-b border-slate-300 text-slate-800 uppercase font-black text-[10px] print:text-[7.5px] tracking-wider bg-slate-100">
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 w-[85px] print:w-[58px]">Data</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px]">Entrada</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px]">Sai Alm</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px]">Vol Alm</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px]">Sai Fim</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[65px] print:w-[42px] text-red-600 bg-red-500/5 font-black border-l border-slate-200">S. Emerg</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[65px] print:w-[42px] text-red-600 bg-red-500/5 font-black">V. Emerg</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[60px] print:w-[38px] text-red-700 bg-red-500/10 font-black border-r border-slate-200">Tempo</th>
+                                        <th className="py-2 px-3 print:py-1 print:px-1.5 text-left w-[220px] print:w-[120px] text-red-700 bg-red-500/5 font-black">Motivo Emergência</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-0.5 text-center w-[70px] print:w-[42px] text-orange-600 border-l border-slate-200">Tot Pausa</th>
+                                        <th className="py-2 px-2 print:py-1 print:px-1 text-right min-w-[150px] border-l border-dashed border-slate-300">Assinatura / Ajustes</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {diasDoCiclo.map((itemDia, idx) => {
+                                        const jornada = obterDadosComExtrasDoDia(func.id, itemDia);
 
-                                    <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 flex flex-col items-center justify-center">
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-xs print:text-[9px]">☀️</span>
-                                            <p className="text-[10px] print:text-[7.5px] font-black text-slate-500 uppercase tracking-wider leading-none">Total Extra Diurna</p>
-                                        </div>
-                                        <p className="text-sm print:text-[11px] font-mono font-black text-emerald-600 mt-1.5 print:mt-1">
-                                            {formatarMinutosTotais(acumuladoDiurna)}
-                                        </p>
+                                        // Dedução real aplicada sobre as variáveis somadoras de banco
+                                        acumuladoDiurna += (jornada.extraDiurnaMinutos - jornada.descontoDiurno);
+                                        acumuladoNoturna += (jornada.extraNoturnaMinutos - jornada.descontoNoturno);
+                                        acumuladoEmergencia += jornada.minutosEmergenciaAcumuladoDia;
+                                        acumuladoPausas += jornada.minutosPausaPurosDia;
+
+                                        const possuiExcecaoAmarela = !!jornada.textoAjuste;
+
+                                        return (
+                                            <tr key={idx} className={`border-b border-slate-100 text-xs print:text-[9px] print:[color-adjust:exact] [color-adjust:exact] ${
+                                                jornada.temAtraso ? 'bg-red-50/70 border-l-4 border-l-red-500 font-medium' : possuiExcecaoAmarela ? 'bg-yellow-50' : itemDia.isFimDeSemana ? 'bg-slate-100/70 font-medium' : 'hover:bg-slate-50'
+                                            }`}>
+                                                <td className={`py-2 px-2 print:py-0.5 font-mono font-black whitespace-nowrap ${jornada.temAtraso ? 'text-red-700' : possuiExcecaoAmarela ? 'text-amber-800' : itemDia.isDomingo ? 'text-blue-700' : itemDia.isFimDeSemana ? 'text-emerald-600' : 'text-black'}`}>
+                                                    {itemDia.label} <span className="font-sans font-bold text-[10px] print:text-[8px] opacity-75">[{itemDia.diaSemanaLabel}]</span>
+                                                </td>
+                                                <td className="py-2 px-2 font-mono text-center text-slate-700">{jornada.entrada}</td>
+                                                <td className="py-2 px-2 font-mono text-center text-slate-600">{jornada.saidaAlmoço}</td>
+                                                <td className="py-2 px-2 font-mono text-center text-slate-600">{jornada.voltaAlmoço}</td>
+                                                <td className="py-2 px-2 font-mono text-center text-slate-700">{jornada.saidaFinal}</td>
+                                                <td className="py-2 px-2 font-mono text-center font-black text-red-600 bg-red-500/[0.03] border-l border-slate-100">{jornada.emSaida}</td>
+                                                <td className="py-2 px-2 font-mono text-center font-black text-red-600 bg-red-500/[0.03]">{jornada.emRetorno}</td>
+                                                <td className="py-2 px-2 font-mono text-center font-black text-red-700 bg-red-500/[0.07] border-r border-slate-100">{jornada.emDuracao}</td>
+                                                <td className="py-2 px-3 text-left font-black text-red-700 bg-red-500/[0.03] italic whitespace-normal break-words">{jornada.justificativa || '---'}</td>
+                                                <td className="py-2 px-2 font-mono text-center font-black text-orange-600 bg-orange-500/[0.02] border-l border-slate-100">{jornada.totalPausa}</td>
+
+                                                {/* TEXTO DE COMPENSAÇÃO EXIBIDO COM PRECISÃO PARA AUDITORIA VISUAL */}
+                                                <td className={`py-2 px-2 text-center font-mono font-black text-[8px] uppercase tracking-tight whitespace-nowrap ${possuiExcecaoAmarela ? 'text-amber-700' : 'text-[#007aff]'}`}>
+                                                    {jornada.textoAjuste || ''}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* PLACAR DE ACUMULADOS COM DESCONTO REAL INJETADO */}
+                            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                                <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 flex flex-col items-center justify-center">
+                                    <div className="flex items-center gap-1">
+                                        <span>☀️</span>
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider leading-none">Total Extra Diurna (Líquido)</p>
                                     </div>
-
-                                    <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 flex flex-col items-center justify-center">
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-xs print:text-[9px]">🌙</span>
-                                            <p className="text-[10px] print:text-[7.5px] font-black text-blue-800 print:text-blue-900 uppercase tracking-wider leading-none">Total Extra Noturna</p>
-                                        </div>
-                                        <p className="text-sm print:text-[11px] font-mono font-black text-blue-700 print:text-blue-900 mt-1.5 print:mt-1">
-                                            {formatarMinutosTotais(acumuladoNoturna)}
-                                        </p>
-                                    </div>
-
-                                    <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 pt-2 lg:pt-0 flex flex-col items-center justify-center">
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-xs print:text-[9px]">☕</span>
-                                            <p className="text-[10px] print:text-[7.5px] font-black text-orange-600 uppercase tracking-wider leading-none">Total de Pausas</p>
-                                        </div>
-                                        <p className="text-sm print:text-[11px] font-mono font-black text-orange-400 mt-1.5 print:mt-1">
-                                            {formatarMinutosTotais(acumuladoPausas)}
-                                        </p>
-                                    </div>
-
-                                    <div className="text-center pt-2 lg:pt-0 flex flex-col items-center justify-center">
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-xs print:text-[9px]">🚨</span>
-                                            <p className="text-[10px] print:text-[7.5px] font-black text-red-600 uppercase tracking-wider leading-none">Total Tempo Fora</p>
-                                        </div>
-                                        <p className="text-sm print:text-[11px] font-mono font-black text-red-600 mt-1.5 print:mt-1">
-                                            {formatarMinutosTotais(acumuladoEmergencia)}
-                                        </p>
-                                    </div>
-
-                                </div>
-
-                                <div className="mt-8 px-1">
-                                    <p className="text-[11px] print:text-[7.5px] text-slate-900 print:text-slate-600 font-bold leading-relaxed tracking-wide text-justify whitespace-normal break-words max-w-3xl">
-                                        Declaro, para os devidos fins de fechamento e apuração contábil, estar plenamente ciente das marcações de ponto, intervalos mecânicos e registros de saídas extras descritos nesta folha. Confirmo que todas as ausências, faltas e/ou atrasos ocorridos ao longo deste ciclo de competência foram devidamente justificados perante a gerência, expressando minha total concordância com os saldos apurados e registros armazenados.
+                                    <p className="text-sm font-mono font-black text-emerald-600 mt-1.5">
+                                        {formatarMinutosTotais(acumuladoDiurna)}
                                     </p>
                                 </div>
 
-                                <div className="mt-12 flex flex-col sm:flex-row justify-between items-center gap-8 sm:gap-12 pt-4 border-t border-slate-300">
-                                    <div className="w-full sm:w-64 print:w-52 text-center">
-                                        <div className="border-b border-black w-full h-5 mb-2"></div>
-                                        <p className="text-[10px] print:text-[7.5px] font-black uppercase tracking-wider text-black">Responsável GR Autopeças</p>
+                                <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 flex flex-col items-center justify-center">
+                                    <div className="flex items-center gap-1">
+                                        <span>🌙</span>
+                                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-wider leading-none">Total Extra Noturna (Líquido)</p>
                                     </div>
-                                    <div className="w-full sm:w-64 print:w-52 text-center">
-                                        <div className="border-b border-black w-full h-5 mb-2"></div>
-                                        <p className="text-[10px] print:text-[7.5px] font-black uppercase tracking-wider text-black">Assinatura do Colaborador</p>
-                                    </div>
+                                    <p className="text-sm font-mono font-black text-blue-700 mt-1.5">
+                                        {formatarMinutosTotais(acumuladoNoturna)}
+                                    </p>
                                 </div>
 
+                                <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 pt-2 lg:pt-0 flex flex-col items-center justify-center">
+                                    <div className="flex items-center gap-1">
+                                        <span>☕</span>
+                                        <p className="text-[10px] font-black text-orange-600 uppercase tracking-wider leading-none">Total de Pausas</p>
+                                    </div>
+                                    <p className="text-sm font-mono font-black text-orange-400 mt-1.5">
+                                        {formatarMinutosTotais(acumuladoPausas)}
+                                    </p>
+                                </div>
+
+                                <div className="text-center pt-2 lg:pt-0 flex flex-col items-center justify-center">
+                                    <div className="flex items-center gap-1">
+                                        <span>🚨</span>
+                                        <p className="text-[10px] font-black text-red-600 uppercase tracking-wider leading-none">Total Tempo Fora</p>
+                                    </div>
+                                    <p className="text-sm font-mono font-black text-red-600 mt-1.5">
+                                        {formatarMinutosTotais(acumuladoEmergencia)}
+                                    </p>
+                                </div>
                             </div>
-                        );
-                    })
-                )}
+
+                            <div className="mt-8 px-1">
+                                <p className="text-[11px] print:text-[7.5px] text-slate-900 font-bold leading-relaxed text-justify max-w-3xl">
+                                    Declaro, para os devidos fins de fechamento e apuração contábil, estar plenamente ciente das marcações de ponto, intervalos mecânicos e registros de saídas extras descritos nesta folha. Confirmo que todas as ausências, faltas e/ou atrasos ocorridos ao longo deste ciclo de competência foram devidamente justificados perante a gerência, expressando minha total concordância com os saldos apurados e registros armazenados.
+                                </p>
+                            </div>
+
+                            <div className="mt-12 flex flex-col sm:flex-row justify-between items-center gap-8 pt-4 border-t border-slate-300">
+                                <div className="w-full sm:w-64 text-center">
+                                    <div className="border-b border-black w-full h-5 mb-2"></div>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-black">Responsável GR Autopeças</p>
+                                </div>
+                                <div className="w-full sm:w-64 text-center">
+                                    <div className="border-b border-black w-full h-5 mb-2"></div>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-black">Assinatura do Colaborador</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    );
+                })}
             </section>
 
-            {/* AJUSTADO AQUI: Forçado via CSS nativo na tag style do print o cross-browser color-adjust */}
             <style jsx global>{`
                 @media print {
-                    html, body {
-                        background: white !important;
-                        color: black !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
+                    html, body { background: white !important; color: black !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                     main { background: white !important; padding: 0 !important; }
                     header { display: none !important; }
                     @page { size: A4 portrait; margin: 8mm 6mm 8mm 6mm; }
-
-                    th, td, div, tr {
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
+                    th, td, div, tr { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 }
             `}</style>
         </main>
