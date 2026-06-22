@@ -45,6 +45,7 @@ export default function GestaoFolgasEFeriadosPage() {
                 .select('id, nome, sobrenome, cargo')
                 .order('nome');
             if (data) setFuncionarios(data);
+            if (error) throw error;
         } catch (err) {
             console.error("Erro ao carregar colaboradores:", err);
         } finally {
@@ -63,9 +64,9 @@ export default function GestaoFolgasEFeriadosPage() {
         } else if (tipoIndividual === 'justificativa') {
             setObsIndividual('SAIU ÀS 17:00 - ');
         } else if (tipoIndividual === 'compensacao_diurna') {
-            setObsIndividual('COMPENSAÇÃO DE HORAS DIURNAS');
+            setObsIndividual('ABATIMENTO BANCO DE HORAS DIURNAS');
         } else if (tipoIndividual === 'compensacao_noturna') {
-            setObsIndividual('COMPENSAÇÃO DE HORAS NOTURNAS');
+            setObsIndividual('COMPENSAÇÃO BANCO DE HORAS NOTURNAS');
         }
     }, [tipoIndividual]);
 
@@ -89,7 +90,7 @@ export default function GestaoFolgasEFeriadosPage() {
     const handleLancarIndividual = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!funcionarioId || !dataIndividual || !obsIndividual.trim()) {
-            setStatusFeed({ tipo: 'erro', texto: 'Preencha o colaborador, a data e a justificativa.' });
+            setStatusFeed({ tipo: 'erro', texto: 'Preencha o colaborador, a data e as informações necessárias.' });
             return;
         }
 
@@ -101,33 +102,51 @@ export default function GestaoFolgasEFeriadosPage() {
             const nomeCompleto = func ? `${func.nome} ${func.sobrenome}` : 'Colaborador';
 
             const isCompensacao = tipoIndividual.startsWith('compensacao');
-            const minutosLancamento = isCompensacao ? -Math.abs(minutosCompensacao) : 0;
 
-            const { error } = await supabase
-                .from('pausas')
-                .insert([{
-                    funcionario_id: funcionarioId,
-                    nome: nomeCompleto,
-                    data: `${dataIndividual}T12:00:00Z`,
-                    minutos_ajuste: minutosLancamento, // Injeta o valor negativo para o motor matemático subtrair
-                    tipo: tipoIndividual,
-                    observacao: obsIndividual.trim().toUpperCase(),
-                    origem: 'admin'
-                }]);
+            if (isCompensacao) {
+                // ROTA A: Envia para a tabela dedicada 'banco_horas'
+                const tipoHoraStr = tipoIndividual === 'compensacao_diurna' ? 'DIURNA' : 'NOTURNA';
+                const minutosLancamento = -Math.abs(minutosCompensacao);
 
-            if (error) throw error;
+                const { error } = await supabase
+                    .from('banco_horas')
+                    .insert([{
+                        funcionario_id: funcionarioId,
+                        nome: nomeCompleto,
+                        data_evento: dataIndividual,
+                        minutos_ajuste: minutosLancamento,
+                        tipo_hora: tipoHoraStr,
+                        motivo: obsIndividual.trim().toUpperCase(),
+                        origem: 'admin'
+                    }]);
 
-            let labelSucesso = 'Folga';
-            if (tipoIndividual === 'justificativa') labelSucesso = 'Justificativa';
-            if (isCompensacao) labelSucesso = 'Abatimento de Banco de Horas';
+                if (error) throw error;
+                setStatusFeed({ tipo: 'sucesso', texto: `Desconto de Banco de Horas (${tipoHoraStr}) registrado com sucesso para ${nomeCompleto}.` });
+            } else {
+                // ROTA B: Mantém na tabela 'pausas'
+                const { error } = await supabase
+                    .from('pausas')
+                    .insert([{
+                        funcionario_id: funcionarioId,
+                        nome: nomeCompleto,
+                        data: `${dataIndividual}T12:00:00Z`,
+                        minutos_ajuste: 0,
+                        tipo: tipoIndividual,
+                        observacao: obsIndividual.trim().toUpperCase(),
+                        origem: 'admin'
+                    }]);
 
-            setStatusFeed({ tipo: 'sucesso', texto: `${labelSucesso} registrada com sucesso para ${nomeCompleto}.` });
+                if (error) throw error;
+                const labelSucesso = tipoIndividual === 'folga' ? 'Folga' : 'Justificativa';
+                setStatusFeed({ tipo: 'sucesso', texto: `${labelSucesso} registrada na folha para ${nomeCompleto}.` });
+            }
+
             setFuncionarioId('');
             setDataIndividual('');
             setBuscaFuncionario('');
         } catch (err) {
             console.error(err);
-            setStatusFeed({ tipo: 'erro', texto: 'Falha ao salvar o registro no banco.' });
+            setStatusFeed({ tipo: 'erro', texto: 'Falha ao salvar o registro no banco de dados.' });
         } finally {
             setEnviando(false);
         }
@@ -136,12 +155,7 @@ export default function GestaoFolgasEFeriadosPage() {
     const handleLancarFeriadoColetivo = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!dataFeriado || !nomeFeriado.trim()) {
-            setStatusFeed({ tipo: 'erro', texto: 'Preencha a data e o nome do feriado nacional/local.' });
-            return;
-        }
-
-        if (funcionarios.length === 0) {
-            setStatusFeed({ tipo: 'erro', texto: 'Nenhum funcionário cadastrado.' });
+            setStatusFeed({ tipo: 'erro', texto: 'Preencha a data e o nome do feriado.' });
             return;
         }
 
@@ -162,7 +176,7 @@ export default function GestaoFolgasEFeriadosPage() {
             const { error } = await supabase.from('pausas').insert(feriadosEmLote);
             if (error) throw error;
 
-            setStatusFeed({ tipo: 'sucesso', texto: `Feriado "${nomeFeriado.toUpperCase()}" aplicado a todos.` });
+            setStatusFeed({ tipo: 'sucesso', texto: `Feriado aplicado com sucesso para todos os colaboradores.` });
             setDataFeriado('');
             setNomeFeriado('');
         } catch (err) {
@@ -196,7 +210,7 @@ export default function GestaoFolgasEFeriadosPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start w-full">
 
-                    {/* BLOC 1: FERIADO COLETIVO */}
+                    {/* BLOCO 1: FERIADO COLETIVO */}
                     <div className="bg-white border border-[#e5e5ea] p-5 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] space-y-4">
                         <div className="border-b border-[#f5f5f7] pb-3 select-none">
                             <span className="text-[9px] font-bold uppercase text-blue-600 tracking-wider">Ação Coletiva</span>
@@ -210,7 +224,7 @@ export default function GestaoFolgasEFeriadosPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Nome do Feriado</label>
-                                <input type="text" placeholder="Ex: CONFRATERNIZAÇÃO UNIVERSAL" value={nomeFeriado} onChange={e => setNomeFeriado(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2.5 rounded-lg text-xs font-bold uppercase outline-none" required />
+                                <input type="text" placeholder="Ex: SÃO JOÃO" value={nomeFeriado} onChange={e => setNomeFeriado(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2.5 rounded-lg text-xs font-bold uppercase outline-none" required />
                             </div>
                             <button type="submit" disabled={enviando || carregando} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider disabled:opacity-40">
                                 {enviando ? "Processando..." : `Aplicar a todos (${funcionarios.length})`}
@@ -223,7 +237,7 @@ export default function GestaoFolgasEFeriadosPage() {
                         <div className="border-b border-[#f5f5f7] pb-3 select-none flex justify-between items-center">
                             <div>
                                 <span className={`text-[9px] font-bold uppercase tracking-wider ${tipoIndividual.startsWith('compensacao') ? 'text-red-500' : 'text-[#ff9500]'}`}>
-                                    {tipoIndividual.startsWith('compensacao') ? 'Desconto de Banco' : 'Ação Individual'}
+                                    {tipoIndividual.startsWith('compensacao') ? 'Banco de Horas' : 'Ação Individual'}
                                 </span>
                                 <h3 className="text-xs font-bold text-[#1d1d1f] uppercase tracking-wider mt-0.5">Exceções de Pátio</h3>
                             </div>
@@ -291,8 +305,8 @@ export default function GestaoFolgasEFeriadosPage() {
                                 </div>
                             )}
 
-                            <button type="submit" disabled={enviando || !funcionarioId} className={`w-full py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40 ${tipoIndividual.startsWith('compensacao') ? 'bg-red-600 text-white' : 'bg-[#1d1d1f] text-white'}`}>
-                                {enviando ? "Gravando..." : tipoIndividual === 'folga' ? "Confirmar Folga" : tipoIndividual === 'justificativa' ? "Gravar Justificativa" : "Efetivar Subtração de Horas"}
+                            <button type="submit" disabled={enviando || !funcionarioId} className={`w-full py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40 ${tipoIndividual.startsWith('compensacao') ? 'bg-red-600 text-white shadow-md' : 'bg-[#1d1d1f] text-white'}`}>
+                                {enviando ? "Gravando..." : tipoIndividual === 'folga' ? "Confirmar Folga" : tipoIndividual === 'justificativa' ? "Gravar Justificativa" : "Registrar na Tabela Banco de Horas"}
                             </button>
                         </form>
                     </div>
@@ -300,7 +314,7 @@ export default function GestaoFolgasEFeriadosPage() {
                 </div>
             </div>
             <footer className="w-full max-w-6xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 text-[8px] text-[#86868b] uppercase font-bold tracking-wider select-none">
-                <div>GR Autopeças &amp; Serviços • v1.3</div>
+                <div>GR Autopeças &amp; Serviços • v2.0</div>
             </footer>
         </main>
     );

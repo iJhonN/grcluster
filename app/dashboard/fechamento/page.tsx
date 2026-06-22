@@ -46,6 +46,15 @@ interface HoraExtraManual {
     minutos_noturnos: number;
 }
 
+interface BancoHorasMovimentacao {
+    id: number;
+    funcionario_id: string;
+    data_evento: string;
+    minutos_ajuste: number;
+    tipo_hora: 'DIURNA' | 'NOTURNA';
+    motivo: string;
+}
+
 interface DiaCompetencia {
     dia: number;
     mes: number;
@@ -62,6 +71,7 @@ function ConteudoRelatorio() {
     const [pausas, setPausas] = useState<RegistroPausa[]>([]);
     const [saidasEmergencia, setSaidasEmergencia] = useState<SaidaEmergency[]>([]);
     const [extrasManuais, setExtrasManuais] = useState<HoraExtraManual[]>([]);
+    const [bancoHoras, setBancoHoras] = useState<BancoHorasMovimentacao[]>([]);
     const [carregando, setCarregando] = useState(true);
     const [pesquisa, setPesquisa] = useState('');
 
@@ -79,12 +89,13 @@ function ConteudoRelatorio() {
         const carregarDadosSupabase = async () => {
             setCarregando(true);
             try {
-                const [resFunc, resPontos, resPausas, resSaidas, resExtras] = await Promise.all([
+                const [resFunc, resPontos, resPausas, resSaidas, resExtras, resBanco] = await Promise.all([
                     supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome'),
                     supabase.from('pontos').select('id, funcionario_id, data_registro, hora_formatada, tipo_batida, observacao'),
                     supabase.from('pausas').select('id, funcionario_id, data, minutos_ajuste, tipo, observacao'),
                     supabase.from('saidas_emergencia').select('id, funcionario_id, horario_saida, horario_retorno, justificativa'),
-                    supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutos_diurnos, minutos_noturnos')
+                    supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutos_diurnos, minutos_noturnos'),
+                    supabase.from('banco_horas').select('id, funcionario_id, data_evento, minutos_ajuste, tipo_hora, motivo')
                 ]);
 
                 if (resFunc.data) setFuncionarios(resFunc.data);
@@ -92,6 +103,7 @@ function ConteudoRelatorio() {
                 if (resPausas.data) setPausas(resPausas.data as unknown as RegistroPausa[]);
                 if (resSaidas.data) setSaidasEmergencia(resSaidas.data as unknown as SaidaEmergency[]);
                 if (resExtras.data) setExtrasManuais(resExtras.data as unknown as HoraExtraManual[]);
+                if (resBanco.data) setBancoHoras(resBanco.data as unknown as BancoHorasMovimentacao[]);
             } catch (error) {
                 console.error("Erro ao carregar dados do Supabase:", error);
             } finally {
@@ -99,7 +111,7 @@ function ConteudoRelatorio() {
             }
         };
         carregarDadosSupabase();
-    }, []);
+    }, [supabase]);
 
     const diasDoCiclo = useMemo((): DiaCompetencia[] => {
         const listaDias: DiaCompetencia[] = [];
@@ -158,6 +170,8 @@ function ConteudoRelatorio() {
                 extraManualDiurna: number;
                 extraManualNoturna: number;
                 temAtraso: boolean;
+                descontoDiurno: number;
+                descontoNoturno: number;
             }
         } = {};
 
@@ -166,7 +180,7 @@ function ConteudoRelatorio() {
             const dLocal = new Date(new Date(p.data_registro).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${p.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
             mapa[chave].pontos.push(p);
 
             if (p.observacao === 'Atraso') {
@@ -179,7 +193,7 @@ function ConteudoRelatorio() {
             const dLocal = new Date(new Date(p.data).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${p.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
 
             if (p.tipo === 'pausa') {
                 mapa[chave].minutosPausa += Number(p.minutos_ajuste || 0);
@@ -188,12 +202,30 @@ function ConteudoRelatorio() {
             }
         });
 
+        // CRUZAMENTO DE DADOS: Mapeia as movimentações da nova tabela banco_horas
+        bancoHoras.forEach(b => {
+            if (!b.data_evento) return;
+            const [ano, mes, dia] = b.data_evento.split('-').map(Number);
+            const chave = `${b.funcionario_id}-${ano}-${mes}-${dia}`;
+
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
+
+            // A justificativa preenchida pelo gestor fica salva na coluna de ajustes
+            mapa[chave].textoAjuste = String(b.motivo || '').toUpperCase();
+
+            if (b.tipo_hora === 'DIURNA') {
+                mapa[chave].descontoDiurno += Math.abs(b.minutos_ajuste);
+            } else if (b.tipo_hora === 'NOTURNA') {
+                mapa[chave].descontoNoturno += Math.abs(b.minutos_ajuste);
+            }
+        });
+
         saidasEmergencia.forEach(s => {
             if (!s.horario_saida) return;
             const dLocal = new Date(new Date(s.horario_saida).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
             const chave = `${s.funcionario_id}-${dLocal.getFullYear()}-${dLocal.getMonth() + 1}-${dLocal.getDate()}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
 
             const formataHora = (isoString: string | null) => {
                 if (!isoString) return 'Ab.';
@@ -205,12 +237,12 @@ function ConteudoRelatorio() {
                 return Math.floor((new Date(retornoStr).getTime() - new Date(saidaStr).getTime()) / 60000);
             };
 
-            const minutosPuros = obtenerMinutosPuros(s.horario_saida, s.horario_retorno);
+            const minutesPuros = obtenerMinutosPuros(s.horario_saida, s.horario_retorno);
             const hSaida = formataHora(s.horario_saida);
             const hRetorno = formataHora(s.horario_retorno);
-            const hDuracao = minutosPuros > 0 ? `${minutosPuros}m` : 'Ab.';
+            const hDuracao = minutesPuros > 0 ? `${minutesPuros}m` : 'Ab.';
 
-            mapa[chave].emergenciaMinutosTotais += minutosPuros;
+            mapa[chave].emergenciaMinutosTotais += minutesPuros;
             mapa[chave].emergenciaSaida = mapa[chave].emergenciaSaida === '---' ? hSaida : `${mapa[chave].emergenciaSaida}|${hSaida}`;
             mapa[chave].emergenciaRetorno = mapa[chave].emergenciaRetorno === '---' ? hRetorno : `${mapa[chave].emergenciaRetorno}|${hRetorno}`;
             mapa[chave].emergenciaDuracao = mapa[chave].emergenciaDuracao === '---' ? hDuracao : `${mapa[chave].emergenciaDuracao}|${hDuracao}`;
@@ -222,7 +254,7 @@ function ConteudoRelatorio() {
             const [ano, mes, dia] = m.data_referencia.split('-').map(Number);
             const chave = `${m.funcionario_id}-${ano}-${mes}-${dia}`;
 
-            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false };
+            if (!mapa[chave]) mapa[chave] = { pontos: [], minutosPausa: 0, textoAjuste: '', emergenciaSaida: '---', emergenciaRetorno: '---', emergenciaDuracao: '---', emergenciaMinutosTotais: 0, justificativa: '', extraManualDiurna: 0, extraManualNoturna: 0, temAtraso: false, descontoDiurno: 0, descontoNoturno: 0 };
             mapa[chave].extraManualDiurna += Number(m.minutos_diurnos || 0);
             mapa[chave].extraManualNoturna += Number(m.minutos_noturnos || 0);
         });
@@ -232,7 +264,7 @@ function ConteudoRelatorio() {
         });
 
         return mapa;
-    }, [pontos, pausas, saidasEmergencia, extrasManuais]);
+    }, [pontos, pausas, saidasEmergencia, extrasManuais, bancoHoras]);
 
     const obterDadosComExtrasDoDia = (funcionarioId: string, itemDia: DiaCompetencia) => {
         const chave = `${funcionarioId}-${itemDia.ano}-${itemDia.mes}-${itemDia.dia}`;
@@ -242,7 +274,7 @@ function ConteudoRelatorio() {
             entrada: '---', saidaAlmoço: '---', voltaAlmoço: '---', saidaFinal: '---',
             totalPausa: '---', emSaida: '---', emRetorno: '---', emDuracao: '---',
             justificativa: '', extraDiurnaMinutos: 0, extraNoturnaMinutos: 0, minutosEmergenciaAcumuladoDia: 0, minutosPausaPurosDia: 0, temAtraso: false,
-            textoAjuste: ''
+            textoAjuste: '', descontoDiurno: 0, descontoNoturno: 0
         };
 
         if (!dadosDoDia) return retornoBase;
@@ -270,8 +302,7 @@ function ConteudoRelatorio() {
                 const limiteNoite = 18 * 60;
 
                 if (saidaFim > limiteNoite) {
-                    const excedenteNoite = saidaFim - limiteNoite;
-                    extraNoturnaCalculada = Math.min(excedenteNoite, extrasRestantes);
+                    extraNoturnaCalculada = Math.min(saidaFim - limiteNoite, extrasRestantes);
                     extrasRestantes -= extraNoturnaCalculada;
                 }
                 extraDiurnaCalculada = extrasRestantes;
@@ -293,15 +324,18 @@ function ConteudoRelatorio() {
             minutosEmergenciaAcumuladoDia: dadosDoDia.emergenciaMinutosTotais,
             minutosPausaPurosDia: dadosDoDia.minutosPausa,
             temAtraso: dadosDoDia.temAtraso,
-            textoAjuste: dadosDoDia.textoAjuste
+            textoAjuste: dadosDoDia.textoAjuste,
+            descontoDiurno: dadosDoDia.descontoDiurno,
+            descontoNoturno: dadosDoDia.descontoNoturno
         };
     };
 
     const formatarMinutosTotais = (minutos: number) => {
-        if (minutos === 0) return "00h 00m";
-        const hrs = Math.floor(minutos / 60);
-        const mnts = minutos % 60;
-        return `${hrs}h ${mnts.toString().padStart(2, '0')}m`;
+        const isNegativo = minutos < 0;
+        const minutosAbsolutos = Math.abs(minutos);
+        const hrs = Math.floor(minutosAbsolutos / 60);
+        const mnts = minutosAbsolutos % 60;
+        return `${isNegativo ? '-' : ''}${hrs}h ${mnts.toString().padStart(2, '0')}m`;
     };
 
     const funcionariosFiltrados = useMemo(() => {
@@ -398,14 +432,14 @@ function ConteudoRelatorio() {
                                         {diasDoCiclo.map((itemDia, idx) => {
                                             const jornada = obterDadosComExtrasDoDia(func.id, itemDia);
 
-                                            acumuladoDiurna += jornada.extraDiurnaMinutos;
-                                            acumuladoNoturna += jornada.extraNoturnaMinutos;
+                                            // Subtração matemática líquida baseada na nova tabela de banco_horas
+                                            acumuladoDiurna += (jornada.extraDiurnaMinutos - jornada.descontoDiurno);
+                                            acumuladoNoturna += (jornada.extraNoturnaMinutos - jornada.descontoNoturno);
                                             acumuladoEmergencia += jornada.minutosEmergenciaAcumuladoDia;
                                             acumuladoPausas += jornada.minutosPausaPurosDia;
 
                                             const possuiExcecaoAmarela = !!jornada.textoAjuste;
 
-                                            {/* AJUSTADO AQUI: Injeção de print:[color-adjust:exact] para forçar a impressão das cores de fundo das linhas */}
                                             return (
                                                 <tr
                                                     key={idx}
@@ -447,7 +481,8 @@ function ConteudoRelatorio() {
 
                                                     <td className="py-2 px-2 print:py-0.5 print:px-0.5 font-mono text-center font-black text-orange-600 bg-orange-500/[0.02] print:bg-orange-500/[0.02] border-l border-slate-100">{jornada.totalPausa}</td>
 
-                                                    <td className={`py-2 px-2 print:py-0.5 print:px-1 border-l border-dashed border-slate-200 text-center font-mono font-black text-[9px] uppercase tracking-tight whitespace-nowrap ${
+                                                    {/* EXIBIÇÃO DA JUSTIFICATIVA OPERACIONAL PREENCHIDA NO CAMPO DE OBSERVAÇÃO */}
+                                                    <td className={`py-2 px-2 print:py-0.5 print:px-1 border-l border-dashed border-slate-200 text-center font-mono font-black text-[8px] uppercase tracking-tight whitespace-nowrap ${
                                                         possuiExcecaoAmarela ? 'text-amber-700 font-black' : 'text-[#007aff]'
                                                     }`}>
                                                         {jornada.textoAjuste || ''}
@@ -464,7 +499,7 @@ function ConteudoRelatorio() {
                                     <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 flex flex-col items-center justify-center">
                                         <div className="flex items-center gap-1">
                                             <span className="text-xs print:text-[9px]">☀️</span>
-                                            <p className="text-[10px] print:text-[7.5px] font-black text-slate-500 uppercase tracking-wider leading-none">Total Extra Diurna</p>
+                                            <p className="text-[10px] print:text-[7.5px] font-black text-slate-500 uppercase tracking-wider leading-none">Total Extra Diurna (Líquido)</p>
                                         </div>
                                         <p className="text-sm print:text-[11px] font-mono font-black text-emerald-600 mt-1.5 print:mt-1">
                                             {formatarMinutosTotais(acumuladoDiurna)}
@@ -474,7 +509,7 @@ function ConteudoRelatorio() {
                                     <div className="text-center border-b lg:border-b-0 lg:border-r border-slate-200/80 pb-2 lg:pb-0 flex flex-col items-center justify-center">
                                         <div className="flex items-center gap-1">
                                             <span className="text-xs print:text-[9px]">🌙</span>
-                                            <p className="text-[10px] print:text-[7.5px] font-black text-blue-800 print:text-blue-900 uppercase tracking-wider leading-none">Total Extra Noturna</p>
+                                            <p className="text-[10px] print:text-[7.5px] font-black text-blue-800 print:text-blue-900 uppercase tracking-wider leading-none">Total Extra Noturna (Líquido)</p>
                                         </div>
                                         <p className="text-sm print:text-[11px] font-mono font-black text-blue-700 print:text-blue-900 mt-1.5 print:mt-1">
                                             {formatarMinutosTotais(acumuladoNoturna)}
@@ -505,7 +540,7 @@ function ConteudoRelatorio() {
 
                                 <div className="mt-8 px-1">
                                     <p className="text-[11px] print:text-[7.5px] text-slate-900 print:text-slate-600 font-bold leading-relaxed tracking-wide text-justify whitespace-normal break-words max-w-3xl">
-                                        Declaro, para os devidos fins de fechamento e apuração contábil, estar plenamente ciente das marcações de ponto, intervalos mecânicos e registros de saídas extras descritos nesta folha. Confirmo que todas as ausências, faltas e/ou atrasos ocorridos ao longo deste ciclo de competência foram devidamente justificados perante a gerência, expressando minha total concordância com os saldos apurados e registros armazenados.
+                                        Declaro, para os devidos fins de fechamento e apuração contábil, estar plenamente ciente das marcações de ponto, intervalos mecânicos e registros de saídas extras descritos nesta folha. Confirmo que todas as ausências, faltas hives e/ou atrasos ocorridos ao longo deste ciclo de competência foram devidamente justificados perante a gerência, expressando minha total concordância com os saldos apurados e registros armazenados.
                                     </p>
                                 </div>
 
@@ -526,7 +561,6 @@ function ConteudoRelatorio() {
                 )}
             </section>
 
-            {/* AJUSTADO AQUI: Forçado via CSS nativo na tag style do print o cross-browser color-adjust */}
             <style jsx global>{`
                 @media print {
                     html, body {
