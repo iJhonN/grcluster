@@ -81,8 +81,8 @@ function ConteudoRelatorio() {
             try {
                 const [resFunc, resPontos, resPausas, resSaidas, resExtras] = await Promise.all([
                     supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome'),
-                    supabase.from('pontos').select('id, funcionario_id, data_registro, relative_time, hora_formatada, tipo_batida, observacao'),
-                    supabase.from('pausas').select('id, funcionario_id, data, minutos_ajuste, tipo, observacao'),
+                    supabase.from('pontos').select('id, funcionario_id, data_registro, hora_formatada, tipo_batida, observacao'),
+                    supabase.from('pausas').select('id, funcionario_id, data, minutes_ajuste, minutos_ajuste, tipo, observacao'),
                     supabase.from('saidas_emergencia').select('id, funcionario_id, horario_saida, horario_retorno, justificativa'),
                     supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutos_diurnos, minutos_noturnos')
                 ]);
@@ -307,11 +307,12 @@ function ConteudoRelatorio() {
     };
 
     const formatarMinutosTotais = (minutos: number) => {
-        const isNegativo = minutes => minutos < 0;
+        // CORRIGIDO AQUI: Removido fragmento 'minutes =>' que quebrava a tipagem do build
+        const isNegativo = minutos < 0;
         const minutosAbsolutos = Math.abs(minutos);
         const hrs = Math.floor(minutosAbsolutos / 60);
         const mnts = minutosAbsolutos % 60;
-        return `${minutos < 0 ? '-' : ''}${hrs}h ${mnts.toString().padStart(2, '0')}m`;
+        return `${isNegativo ? '-' : ''}${hrs}h ${mnts.toString().padStart(2, '0')}m`;
     };
 
     const funcionariosFiltrados = useMemo(() => {
