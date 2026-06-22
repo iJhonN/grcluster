@@ -81,7 +81,7 @@ function ConteudoRelatorio() {
             try {
                 const [resFunc, resPontos, resPausas, resSaidas, resExtras] = await Promise.all([
                     supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome'),
-                    supabase.from('pontos').select('id, funcionario_id, data_registro, hora_formatada, tipo_batida, observacao'),
+                    supabase.from('pontos').select('id, funcionario_id, data_registro, relative_time, hora_formatada, tipo_batida, observacao'),
                     supabase.from('pausas').select('id, funcionario_id, data, minutos_ajuste, tipo, observacao'),
                     supabase.from('saidas_emergencia').select('id, funcionario_id, horario_saida, horario_retorno, justificativa'),
                     supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutos_diurnos, minutos_noturnos')
@@ -278,7 +278,6 @@ function ConteudoRelatorio() {
                 const limiteNoite = 18 * 60;
 
                 if (saidaFim > limiteNoite) {
-                    // CORRIGIDO AQUI: Removido fragmento morto de código com erro de digitação
                     extraNoturnaCalculada = Math.min(saidaFim - limiteNoite, extrasRestantes);
                     extrasRestantes -= extraNoturnaCalculada;
                 }
@@ -292,7 +291,7 @@ function ConteudoRelatorio() {
             voltaAlmoço: pts[2] ? pts[2].hora_formatada : '---',
             saidaFinal: pts[3] ? pts[3].hora_formatada : '---',
             totalPausa: dadosDoDia.minutosPausa > 0 ? `${dadosDoDia.minutosPausa} min` : '---',
-            emSaida: dadosDoDia.emeraldSaida || dadosDoDia.emergenciaSaida,
+            emSaida: dadosDoDia.emergenciaSaida,
             emRetorno: dadosDoDia.emergenciaRetorno,
             emDuracao: dadosDoDia.emergenciaDuracao,
             justificativa: dadosDoDia.justificativa,
@@ -308,11 +307,11 @@ function ConteudoRelatorio() {
     };
 
     const formatarMinutosTotais = (minutos: number) => {
-        const isNegativo = minutos < 0;
+        const isNegativo = minutes => minutos < 0;
         const minutosAbsolutos = Math.abs(minutos);
         const hrs = Math.floor(minutosAbsolutos / 60);
         const mnts = minutosAbsolutos % 60;
-        return `${isNegativo ? '-' : ''}${hrs}h ${mnts.toString().padStart(2, '0')}m`;
+        return `${minutos < 0 ? '-' : ''}${hrs}h ${mnts.toString().padStart(2, '0')}m`;
     };
 
     const funcionariosFiltrados = useMemo(() => {
