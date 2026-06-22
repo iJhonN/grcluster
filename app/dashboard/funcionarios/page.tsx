@@ -19,6 +19,10 @@ export default function CentralFuncionariosPage() {
     const [pesquisa, setPesquisa] = useState('');
     const [erroRequest, setErroRequest] = useState<string | null>(null);
 
+    // Estados para o Modal de Edição Privilegiada
+    const [funcionarioParaEditar, setFuncionarioParaEditar] = useState<Funcionario | null>(null);
+    const [salvando, setSalvando] = useState(false);
+
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -53,6 +57,37 @@ export default function CentralFuncionariosPage() {
         carregarFuncionarios();
     }, []);
 
+    // Rotina de Atualização Cadastral Protegida (Trava Estrita de ID)
+    const handleAtualizarFuncionario = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!funcionarioParaEditar) return;
+
+        setSalvando(true);
+        try {
+            const { error } = await supabase
+                .from('funcionarios')
+                .update({
+                    nome: funcionarioParaEditar.nome.trim(),
+                    sobrenome: funcionarioParaEditar.sobrenome.trim(),
+                    cargo: funcionarioParaEditar.cargo.trim().toUpperCase()
+                })
+                .eq('id', funcionarioParaEditar.id);
+
+            if (error) throw error;
+
+            // Atualiza o estado em memória local instantaneamente
+            setFuncionarios(prev =>
+                prev.map(f => f.id === funcionarioParaEditar.id ? funcionarioParaEditar : f)
+            );
+            setFuncionarioParaEditar(null);
+        } catch (err: any) {
+            console.error("Erro ao atualizar colaborador:", err);
+            alert("Erro ao gravar modificações: " + (err?.message || "Tente novamente."));
+        } finally {
+            setSalvando(false);
+        }
+    };
+
     const filtrados = useMemo(() => {
         const termo = pesquisa.toLowerCase().trim();
         if (!termo) return funcionarios;
@@ -80,7 +115,6 @@ export default function CentralFuncionariosPage() {
                         </h1>
                     </div>
 
-                    {/* BOTÕES COM DESIGN EXECUTIVO SÓLIDO */}
                     <div className="flex flex-wrap gap-3 w-full md:w-auto">
                         <button
                             onClick={carregarFuncionarios}
@@ -102,7 +136,6 @@ export default function CentralFuncionariosPage() {
                     </div>
                 </header>
 
-                {/* MENSAGEM DE ERRO TRATADA */}
                 {erroRequest && (
                     <div className="flex items-start gap-2.5 bg-[#ff3b30]/5 border border-[#ff3b30]/20 p-4 rounded-xl text-xs text-[#ff3b30] font-semibold">
                         <span>⚠️ Falha na sincronização: {erroRequest}</span>
@@ -150,7 +183,8 @@ export default function CentralFuncionariosPage() {
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                 <tr className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider text-[8px] font-bold select-none">
-                                    <th className="pb-3 pl-1 w-1/4">ID (Crachá)</th>
+                                    <th className="pb-3 pl-1 w-[80px]">Editar</th>
+                                    <th className="pb-3 w-1/4">ID (Crachá)</th>
                                     <th className="pb-3 w-2/4">Colaborador / Operador</th>
                                     <th className="pb-3 w-1/4">Cargo / Função</th>
                                     <th className="pb-3 text-right pr-1">Data Admissão</th>
@@ -158,8 +192,16 @@ export default function CentralFuncionariosPage() {
                                 </thead>
                                 <tbody className="divide-y divide-[#f5f5f7]">
                                 {filtrados.map(f => (
-                                    <tr key={f.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                                        <td className="py-3.5 font-mono font-bold text-[#ff9500] pl-1 tracking-widest text-xs">
+                                    <tr key={f.id} className="hover:bg-[#f5f5f7]/50 transition-colors group">
+                                        <td className="py-3.5 pl-1 select-none">
+                                            <button
+                                                onClick={() => setFuncionarioParaEditar(f)}
+                                                className="bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-[#1d1d1f] px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide opacity-60 group-hover:opacity-100 transition-all active:scale-95"
+                                            >
+                                                ✏️ Editar
+                                            </button>
+                                        </td>
+                                        <td className="py-3.5 font-mono font-bold text-[#ff9500] tracking-widest text-xs">
                                             {f.id}
                                         </td>
                                         <td className="py-3.5 font-bold text-[#1d1d1f] uppercase tracking-tight text-xs">
@@ -179,6 +221,80 @@ export default function CentralFuncionariosPage() {
                     )}
                 </section>
             </div>
+
+            {/* MODAL APPLE STYLE: ALTERAÇÃO PROTEGIDA DE OPERADOR */}
+            {funcionarioParaEditar && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <form
+                        onSubmit={handleAtualizarFuncionario}
+                        className="bg-white border border-[#e5e5ea] p-6 rounded-2xl max-w-md w-full space-y-4 shadow-xl"
+                    >
+                        <div className="border-b border-[#e5e5ea] pb-3">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-[#1d1d1f]">Modificar Cadastro</h3>
+                            <p className="text-[10px] text-[#86868b] font-medium mt-0.5">As alterações serão gravadas imediatamente no banco de dados.</p>
+                        </div>
+
+                        {/* BLOQUEIO ABSOLUTO DE ID */}
+                        <div className="space-y-1">
+                            <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">ID Interno (Crachá Bloqueado)</label>
+                            <div className="w-full bg-[#f5f5f7] border border-[#e5e5ea] px-3 py-2.5 rounded-xl text-xs font-mono font-black text-[#ff9500] select-all cursor-not-allowed">
+                                🔒 {funcionarioParaEditar.id}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Primeiro Nome</label>
+                                <input
+                                    type="text"
+                                    value={funcionarioParaEditar.nome}
+                                    onChange={e => setFuncionarioParaEditar({...funcionarioParaEditar, nome: e.target.value})}
+                                    className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-xl text-xs font-bold text-[#1d1d1f] outline-none"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Sobrenome</label>
+                                <input
+                                    type="text"
+                                    value={funcionarioParaEditar.sobrenome}
+                                    onChange={e => setFuncionarioParaEditar({...funcionarioParaEditar, sobrenome: e.target.value})}
+                                    className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-xl text-xs font-bold text-[#1d1d1f] outline-none"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Cargo / Atribuição de Pátio</label>
+                            <input
+                                type="text"
+                                value={funcionarioParaEditar.cargo}
+                                onChange={e => setFuncionarioParaEditar({...funcionarioParaEditar, cargo: e.target.value})}
+                                className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-xl text-xs font-bold text-[#1d1d1f] outline-none uppercase"
+                                required
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-2 border-t border-[#e5e5ea] select-none">
+                            <button
+                                type="button"
+                                onClick={() => setFuncionarioParaEditar(null)}
+                                className="flex-1 bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={salvando}
+                                className="flex-1 bg-[#1d1d1f] active:bg-black text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40"
+                            >
+                                {salvando ? 'Gravando...' : 'Salvar'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {/* RODAPÉ */}
             <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
