@@ -29,6 +29,12 @@ export default function HubRHPage() {
             rota: "/dashboard/rh/atestados"
         },
         {
+            titulo: "Mural de Avisos",
+            descricao: "Disparar comunicados oficiais e alertas operacionais urgentes direto no portal do colaborador.",
+            icone: "📢",
+            rota: "/dashboard/rh/avisos"
+        },
+        {
             titulo: "Histórico Disciplinar",
             descricao: "Aplicação e monitoramento de avisos, advertências e suspensões de pátio com cálculo de retorno.",
             icone: "⚖️",
@@ -92,8 +98,8 @@ export default function HubRHPage() {
                     <h2 className="text-[9px] font-bold uppercase tracking-wider text-[#007aff] pl-0.5">
                         I. Diretoria &amp; Administração
                     </h2>
-                    {/* Grid responsivo atualizado para comportar dinamicamente os cards de gestão */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 w-full">
+                    {/* Ajustado o grid para comportar de forma harmônica a inserção do 7º card de avisos */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
                         {acoesDiretas.map((o, idx) => (
                             <Link
                                 key={idx}
@@ -154,7 +160,7 @@ export default function HubRHPage() {
             {/* RODAPÉ OPERACIONAL */}
             <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-10 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
                 <div>GR Autopeças &amp; Serviços</div>
-                <div className="font-mono text-[#b4b4b9]">Módulo Core Security v3.0</div>
+                <div className="font-mono text-[#b4b4b9]">Módulo Core Security v3.1</div>
             </footer>
         </main>
     );
