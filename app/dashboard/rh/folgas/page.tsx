@@ -25,8 +25,9 @@ export default function GestaoFolgasEFeriadosPage() {
     const [dataIndividual, setDataIndividual] = useState('');
     const [obsIndividual, setObsIndividual] = useState('FOLGA');
 
-    // Minutagem de desconto
-    const [minutosCompensacao, setMinutosCompensacao] = useState(60);
+    // AJUSTADO AQUI: Estados para minutagem e horas personalizadas digitaveis
+    const [inputHoras, setInputHoras] = useState<number>(1);
+    const [inputMinutos, setInputMinutos] = useState<number>(0);
 
     // Estados para Lançamento Coletivo
     const [dataFeriado, setDataFeriado] = useState('');
@@ -104,9 +105,17 @@ export default function GestaoFolgasEFeriadosPage() {
             const isCompensacao = tipoIndividual.startsWith('compensacao');
 
             if (isCompensacao) {
-                // ROTA A: Envia para a tabela dedicada 'banco_horas'
                 const tipoHoraStr = tipoIndividual === 'compensacao_diurna' ? 'DIURNA' : 'NOTURNA';
-                const minutosLancamento = -Math.abs(minutosCompensacao);
+
+                // AJUSTADO AQUI: Conversão matemática dos campos numéricos digitados para minutos puros
+                const minutosTotaisCalculados = (Number(inputHoras) * 60) + Number(inputMinutos);
+                const minutosLancamento = -Math.abs(minutosTotaisCalculados);
+
+                if (minutosTotaisCalculados <= 0) {
+                    setStatusFeed({ tipo: 'erro', texto: 'Informe uma quantidade válida de horas ou minutos para abater.' });
+                    setEnviando(false);
+                    return;
+                }
 
                 const { error } = await supabase
                     .from('banco_horas')
@@ -121,9 +130,8 @@ export default function GestaoFolgasEFeriadosPage() {
                     }]);
 
                 if (error) throw error;
-                setStatusFeed({ tipo: 'sucesso', texto: `Desconto de Banco de Horas (${tipoHoraStr}) registrado com sucesso para ${nomeCompleto}.` });
+                setStatusFeed({ tipo: 'sucesso', texto: `Desconto personalizado de ${inputHoras}h ${inputMinutos}m (${tipoHoraStr}) gravado no Banco de Horas para ${nomeCompleto}.` });
             } else {
-                // ROTA B: Mantém na tabela 'pausas'
                 const { error } = await supabase
                     .from('pausas')
                     .insert([{
@@ -144,6 +152,8 @@ export default function GestaoFolgasEFeriadosPage() {
             setFuncionarioId('');
             setDataIndividual('');
             setBuscaFuncionario('');
+            setInputHoras(1);
+            setInputMinutos(0);
         } catch (err) {
             console.error(err);
             setStatusFeed({ tipo: 'erro', texto: 'Falha ao salvar o registro no banco de dados.' });
@@ -278,17 +288,34 @@ export default function GestaoFolgasEFeriadosPage() {
                                     <input type="date" value={dataIndividual} onChange={e => setDataIndividual(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] px-3 py-2.5 rounded-lg text-xs font-bold text-center" required />
                                 </div>
 
+                                {/* AJUSTADO AQUI: Campos Diários Customizados numéricos lado a lado para Horas e Minutos */}
                                 {tipoIndividual.startsWith('compensacao') ? (
                                     <div className="space-y-1">
-                                        <label className="text-[9px] font-black uppercase text-red-500 tracking-wider ml-0.5">Tempo a Descontar</label>
-                                        <select value={minutosCompensacao} onChange={e => setMinutosCompensacao(Number(e.target.value))} className="w-full bg-red-50/50 border border-red-200 text-red-700 font-black text-xs px-3 py-2.5 rounded-lg outline-none text-center cursor-pointer">
-                                            <option value={60}>1h 00m (60 min)</option>
-                                            <option value={90}>1h 30m (90 min)</option>
-                                            <option value={120}>2h 00m (120 min)</option>
-                                            <option value={180}>3h 00m (180 min)</option>
-                                            <option value={240}>4h 00m (240 min)</option>
-                                            <option value={480}>Dia Inteiro (480 min)</option>
-                                        </select>
+                                        <label className="text-[9px] font-black uppercase text-red-500 tracking-wider block ml-0.5">Tempo Customizado</label>
+                                        <div className="flex gap-2 items-center">
+                                            <div className="flex-1 flex items-center bg-[#f5f5f7] border border-[#e5e5ea] rounded-lg px-2 py-1">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="23"
+                                                    value={inputHoras}
+                                                    onChange={e => setInputHoras(Math.max(0, parseInt(e.target.value) || 0))}
+                                                    className="w-full bg-transparent text-xs font-mono font-black text-red-700 text-center outline-none"
+                                                />
+                                                <span className="text-[9px] font-bold text-slate-400 font-sans uppercase shrink-0 ml-1">h</span>
+                                            </div>
+                                            <div className="flex-1 flex items-center bg-[#f5f5f7] border border-[#e5e5ea] rounded-lg px-2 py-1">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="59"
+                                                    value={inputMinutos}
+                                                    onChange={e => setInputMinutos(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
+                                                    className="w-full bg-transparent text-xs font-mono font-black text-red-700 text-center outline-none"
+                                                />
+                                                <span className="text-[9px] font-bold text-slate-400 font-sans uppercase shrink-0 ml-1">m</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-1">
@@ -314,7 +341,7 @@ export default function GestaoFolgasEFeriadosPage() {
                 </div>
             </div>
             <footer className="w-full max-w-6xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 text-[8px] text-[#86868b] uppercase font-bold tracking-wider select-none">
-                <div>GR Autopeças &amp; Serviços • v2.0</div>
+                <div>GR Autopeças &amp; Serviços • v2.1</div>
             </footer>
         </main>
     );
