@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
+export const dynamic = 'force-dynamic';
+
 interface Funcionario {
     id: string;
     nome: string;
@@ -52,7 +54,7 @@ export default function ControleAtestadosPage() {
         try {
             const [resFunc, resAtestados] = await Promise.all([
                 supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome'),
-                supabase.from('atestados_medicos').select('*, funcionarios(nome, sobrenome, cargo)').order('criado_em', { ascending: false })
+                supabase.from('atestados_medicos').select('*, funcionarios(nome, sobrenome, cargo)').order('data_emissao', { ascending: false })
             ]);
 
             if (resFunc.data) setFuncionarios(resFunc.data);
@@ -75,7 +77,6 @@ export default function ControleAtestadosPage() {
         return data.toLocaleDateString('pt-BR');
     };
 
-    // Filtro em tempo real memoizado por funcionário, ID ou CID
     const atestadosFiltrados = useMemo(() => {
         const termo = pesquisa.toLowerCase().trim();
         if (!termo) return atestados;
@@ -115,6 +116,8 @@ export default function ControleAtestadosPage() {
 
         try {
             const urlsDocumentos: string[] = [];
+            const func = funcionarios.find(f => f.id === funcionarioId);
+            const nomeCompleto = func ? `${func.nome} ${func.sobrenome}` : 'Colaborador';
 
             for (const file of arquivosSelecionados) {
                 const fileExt = file.name.split('.').pop();
@@ -128,6 +131,7 @@ export default function ControleAtestadosPage() {
                 if (uploadData) urlsDocumentos.push(uploadData.path);
             }
 
+            // 1. Grava na tabela mestre de auditoria de atestados
             const { error: insertError } = await supabase
                 .from('atestados_medicos')
                 .insert([{
@@ -141,7 +145,39 @@ export default function ControleAtestadosPage() {
 
             if (insertError) throw insertError;
 
-            setStatusFeed({ tipo: 'sucesso', texto: 'Atestado e anexos registrados com sucesso!' });
+            // 2. ENGENHARIA AUTOMÁTICA DE EXTENSÃO: Replica o atestado dia após dia na tabela de pausas
+            const lotePausasAtestado = [];
+            const textoCid = cid.trim() ? ` (CID: ${cid.trim().toUpperCase()})` : '';
+            const observacaoFormatada = `ATESTADO: ${justificativa.trim().toUpperCase()}${textoCid}`;
+
+            for (let i = 0; i < diasNum; i++) {
+                const dataCorrente = new Date(dataEmissao + 'T00:00:00');
+                dataCorrente.setDate(dataCorrente.getDate() + i);
+
+                // Formata a data de forma segura ISO sem perder o dia por causa do timezone da borda
+                const anoStr = dataCorrente.getFullYear();
+                const mesStr = String(dataCorrente.getMonth() + 1).padStart(2, '0');
+                const diaStr = String(dataCorrente.getDate()).padStart(2, '0');
+
+                lotePausasAtestado.push({
+                    funcionario_id: funcionarioId,
+                    nome: nomeCompleto,
+                    data: `${anoStr}-${mesStr}-${diaStr}T12:00:00Z`,
+                    minutos_ajuste: 0,
+                    tipo: 'justificativa',
+                    observacao: observacaoFormatada,
+                    origem: 'admin'
+                });
+            }
+
+            // Insere o lote completo de dias abonados direto na folha de ponto de uma só vez
+            const { error: errorLotePausas } = await supabase
+                .from('pausas')
+                .insert(lotePausasAtestado);
+
+            if (errorLotePausas) throw errorLotePausas;
+
+            setStatusFeed({ tipo: 'sucesso', texto: `Atestado de ${diasNum}d gravado e espelhado com sucesso na Folha de Ponto!` });
 
             setFuncionarioId('');
             setDataEmissao('');
@@ -196,7 +232,7 @@ export default function ControleAtestadosPage() {
                     </div>
                 </header>
 
-                {/* BARRA DE FILTRAGEM / PESQUISA OPERACIONAL */}
+                {/* BARRA DE FILTRAGEM */}
                 <div className="w-full max-w-md">
                     <div className="space-y-1">
                         <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Filtro de Busca Rápida</label>
@@ -211,7 +247,7 @@ export default function ControleAtestadosPage() {
                                 placeholder="Buscar por colaborador, ID ou código CID..."
                                 value={pesquisa}
                                 onChange={e => setPesquisa(e.target.value)}
-                                className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] pl-10 pr-4 py-2.5 rounded-xl outline-none text-[#1d1d1f] text-xs font-medium uppercase placeholder-[#b4b4b9] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.005)]"
+                                className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] pl-10 pr-4 py-2.5 rounded-xl outline-none text-[#1d1d1f] text-xs font-medium uppercase placeholder-[#b4b4b9] transition-colors"
                             />
                         </div>
                     </div>
@@ -237,7 +273,6 @@ export default function ControleAtestadosPage() {
 
                         <form onSubmit={handleCadastrarAtestado} className="space-y-4">
 
-                            {/* Colaborador */}
                             <div className="space-y-1">
                                 <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Colaborador *</label>
                                 <div className="relative">
@@ -247,7 +282,7 @@ export default function ControleAtestadosPage() {
                                         className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] pl-3 pr-8 py-2.5 rounded-lg outline-none text-[#1d1d1f] text-xs font-bold uppercase cursor-pointer appearance-none transition-colors"
                                         required
                                     >
-                                        <option value="" className="text-[#b4b4b9]">Selecionar Funcionário...</option>
+                                        <option value="">Selecionar Funcionário...</option>
                                         {funcionarios.map(f => (
                                             <option key={f.id} value={f.id}>
                                                 {f.nome} {f.sobrenome} (ID: {f.id})
@@ -262,7 +297,6 @@ export default function ControleAtestadosPage() {
                                 </div>
                             </div>
 
-                            {/* Emissão e CID */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Data Emissão *</label>
@@ -270,7 +304,7 @@ export default function ControleAtestadosPage() {
                                         type="date"
                                         value={dataEmissao}
                                         onChange={e => setDataEmissao(e.target.value)}
-                                        className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-medium uppercase transition-colors"
+                                        className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-medium uppercase"
                                         required
                                     />
                                 </div>
@@ -281,12 +315,11 @@ export default function ControleAtestadosPage() {
                                         placeholder="EX: M54.5"
                                         value={cid}
                                         onChange={e => setCid(e.target.value)}
-                                        className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#007aff] font-mono text-xs font-bold uppercase placeholder-[#b4b4b9] transition-colors"
+                                        className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#007aff] font-mono text-xs font-bold uppercase placeholder-[#b4b4b9]"
                                     />
                                 </div>
                             </div>
 
-                            {/* Dias e Retorno */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Total de Dias *</label>
@@ -296,7 +329,7 @@ export default function ControleAtestadosPage() {
                                         placeholder="Ex: 5"
                                         value={quantidadeDias}
                                         onChange={e => setQuantidadeDias(e.target.value)}
-                                        className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold transition-colors text-center"
+                                        className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold text-center"
                                         required
                                     />
                                 </div>
@@ -308,7 +341,6 @@ export default function ControleAtestadosPage() {
                                 </div>
                             </div>
 
-                            {/* Justificativa */}
                             <div className="space-y-1">
                                 <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Justificativa / Motivo *</label>
                                 <textarea
@@ -316,12 +348,11 @@ export default function ControleAtestadosPage() {
                                     value={justificativa}
                                     onChange={e => setJustificativa(e.target.value)}
                                     rows={3}
-                                    className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-medium transition-colors placeholder-[#b4b4b9] resize-none"
+                                    className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-medium resize-none"
                                     required
                                 />
                             </div>
 
-                            {/* Área de múltiplos anexos */}
                             <div className="space-y-1.5">
                                 <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Anexos Documentais</label>
 
