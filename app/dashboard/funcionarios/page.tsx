@@ -28,6 +28,23 @@ export default function CentralFuncionariosPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // Lista oficial de opções idêntica ao banco e ao cadastro para evitar erro de enum
+    const listaCargosOficiais = [
+        "Administrativo",
+        "Ajudante",
+        "Balconista",
+        "Comprador",
+        "Estoque",
+        "Gerente",
+        "Lojista",
+        "Mecânico",
+        "Motoboy",
+        "Pedreiro",
+        "Técnico de OS",
+        "TI",
+        "Vendedor"
+    ];
+
     async function carregarFuncionarios() {
         setCarregando(true);
         setErroRequest(null);
@@ -57,7 +74,7 @@ export default function CentralFuncionariosPage() {
         carregarFuncionarios();
     }, []);
 
-    // Rotina de Atualização Cadastral Protegida (Trava Estrita de ID)
+    // Rotina de Atualização Cadastral Protegida (Trava Estrita de ID e Enum de Cargo)
     const handleAtualizarFuncionario = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!funcionarioParaEditar) return;
@@ -69,7 +86,7 @@ export default function CentralFuncionariosPage() {
                 .update({
                     nome: funcionarioParaEditar.nome.trim(),
                     sobrenome: funcionarioParaEditar.sobrenome.trim(),
-                    cargo: funcionarioParaEditar.cargo.trim().toUpperCase()
+                    cargo: funcionarioParaEditar.cargo // Enviado exatamente como o Enum espera
                 })
                 .eq('id', funcionarioParaEditar.id);
 
@@ -265,15 +282,26 @@ export default function CentralFuncionariosPage() {
                             </div>
                         </div>
 
+                        {/* AJUSTADO AQUI: Substituído input por select oficial do enum */}
                         <div className="space-y-1">
                             <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Cargo / Atribuição de Pátio</label>
-                            <input
-                                type="text"
-                                value={funcionarioParaEditar.cargo}
-                                onChange={e => setFuncionarioParaEditar({...funcionarioParaEditar, cargo: e.target.value})}
-                                className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-xl text-xs font-bold text-[#1d1d1f] outline-none uppercase"
-                                required
-                            />
+                            <div className="relative">
+                                <select
+                                    value={funcionarioParaEditar.cargo}
+                                    onChange={e => setFuncionarioParaEditar({...funcionarioParaEditar, cargo: e.target.value})}
+                                    className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] pr-8 pl-3 py-2.5 rounded-xl text-xs font-bold text-[#1d1d1f] outline-none cursor-pointer appearance-none transition-colors"
+                                    required
+                                >
+                                    {listaCargosOficiais.map((cargoOpcao, cIdx) => (
+                                        <option key={cIdx} value={cargoOpcao}>{cargoOpcao}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] pointer-events-none">
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex gap-3 pt-2 border-t border-[#e5e5ea] select-none">
@@ -299,7 +327,7 @@ export default function CentralFuncionariosPage() {
             {/* RODAPÉ */}
             <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
                 <div>GR Autopeças &amp; Serviços</div>
-                <div className="font-mono text-[#b4b4b9]">Módulo de Varredura Operacional v2.5</div>
+                <div className="font-mono text-[#b4b4b9]">Módulo de Varredura Operacional v2.6</div>
             </footer>
         </main>
     );
