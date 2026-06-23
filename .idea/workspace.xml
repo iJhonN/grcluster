@@ -4,34 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="77c8bc44-128e-4015-b348-a169b79978b9" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/app/dashboard/fechamento/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/discord.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gr-admin.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/atrasos/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/calendario/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/ferramenta/etiquetas/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/ferramenta/historico/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/ferramenta/lista/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/ferramenta/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/funcionario/crachas/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/funcionario/lista/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/funcionario/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/he/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/dashboard/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/ponto/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/registrar/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/relatorio/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/retirada/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-    </list>
+    <list default="true" id="77c8bc44-128e-4015-b348-a169b79978b9" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -76,6 +49,13 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/dashboard/estoque/contagem" />
+      <recent name="$PROJECT_DIR$/app/dashboard/ponto" />
+      <recent name="$PROJECT_DIR$/app/dashboard/pausas" />
+    </key>
+  </component>
   <component name="RunManager" selected="npm.Next.js: server-side">
     <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
       <method v="2" />
@@ -109,7 +89,7 @@
       <workItem from="1779897716525" duration="8000" />
       <workItem from="1779897729017" duration="8179000" />
       <workItem from="1781100689664" duration="2006000" />
-      <workItem from="1781104250065" duration="3119000" />
+      <workItem from="1781104250065" duration="75604000" />
     </task>
     <servers />
   </component>

@@ -51,12 +51,19 @@ function ConteudoHorasExtras() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // ATUALIZADO: Formata corretamente horas positivas (+) e horas subtraídas (-)
     const formatarMinutosParaHoras = (minutosTotais: number, exibirVazio = false): string => {
         if (minutosTotais === 0) return exibirVazio ? '---' : '0h';
-        const hrs = Math.floor(minutosTotais / 60);
-        const mnts = minutosTotais % 60;
-        if (hrs === 0) return `+${mnts}m`;
-        return mnts === 0 ? `+${hrs}h` : `+${hrs}h ${mnts.toString().padStart(2, '0')}m`;
+
+        const isNegativo = minutosTotais < 0;
+        const minutosAbsolutos = Math.abs(minutosTotais);
+
+        const hrs = Math.floor(minutosAbsolutos / 60);
+        const mnts = minutosAbsolutos % 60;
+        const sinal = isNegativo ? '-' : '+';
+
+        if (hrs === 0) return `${sinal}${mnts}m`;
+        return mnts === 0 ? `${sinal}${hrs}h` : `${sinal}${hrs}h ${mnts.toString().padStart(2, '0')}m`;
     };
 
     useEffect(() => {
@@ -66,12 +73,24 @@ function ConteudoHorasExtras() {
                 const [resFunc, resPontos, resManuais] = await Promise.all([
                     supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome'),
                     supabase.from('pontos').select('id, funcionario_id, data_registro, hora_formatada, tipo_batida'),
-                    supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutos_diurnos, minutos_noturnos, observacao')
+                    supabase.from('horas_extras').select('id, funcionario_id, data_referencia, minutes_diurnos, minutes_noturnos, observacao')
                 ]);
 
                 if (resFunc.data) setFuncionarios(resFunc.data);
                 if (resPontos.data) setPontos(resPontos.data as unknown as RegistroPonto[]);
-                if (resManuais.data) setExtrasManuais(resManuais.data as unknown as HoraExtraManual[]);
+
+                // Trata o mapeamento caso o banco possua os campos renomeados/originais de minutos
+                if (resManuais.data) {
+                    const normais = resManuais.data.map((m: any) => ({
+                        id: m.id,
+                        funcionario_id: m.funcionario_id,
+                        data_referencia: m.data_referencia,
+                        minutos_diurnos: m.minutes_diurnos ?? m.minutos_diurnos ?? 0,
+                        minutos_noturnos: m.minutes_noturnos ?? m.minutos_noturnos ?? 0,
+                        observacao: m.observacao
+                    }));
+                    setExtrasManuais(normais);
+                }
             } catch (error) {
                 console.error("Erro ao carregar dados de horas extras:", error);
             } finally {
@@ -127,6 +146,7 @@ function ConteudoHorasExtras() {
         return mapa;
     }, [extrasManuais]);
 
+    // ATUALIZADO: Subtrai os minutos lançados (negativos) e impede que o total do dia fique abaixo de zero
     const calcularExtrasTotaisDoDia = (funcionarioId: string, itemDia: DiaCompetencia) => {
         const chave = `${funcionarioId}-${itemDia.ano}-${itemDia.mes}-${itemDia.dia}`;
         const pts = mapaPontos[chave] || [];
@@ -165,10 +185,18 @@ function ConteudoHorasExtras() {
             }
         }
 
+        // Soma o valor calculado do ponto com o manual (se for negativo, a matemática faz a subtração)
         const diurnaFinal = extraDiurnaCalculada + (manualDoDia ? manualDoDia.diurnos : 0);
         const noturnaFinal = extraNoturnaCalculada + (manualDoDia ? manualDoDia.noturnos : 0);
 
-        return { diurna: diurnaFinal, noturna: noturnaFinal };
+        // Se a subtração manual superou o que o colaborador tinha ganho no dia, limita o dia em 0.
+        return {
+            diurna: Math.max(0, diurnaFinal),
+            noturna: Math.max(0, noturnaFinal),
+            // Passamos os manuais puros caso precise auditar se houve desconto
+            descontoDiurno: manualDoDia?.diurnos < 0 ? manualDoDia.diurnos : 0,
+            descontoNoturno: manualDoDia?.noturnos < 0 ? manualDoDia.noturnos : 0
+        };
     };
 
     const resumoFuncionariosComExtras = useMemo(() => {
@@ -204,7 +232,7 @@ function ConteudoHorasExtras() {
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-black/5 print:bg-white print:text-black print:p-0">
 
-            {/* PAINEL ADMINISTRATIVO CRISTALINO */}
+            {/* PAINEL ADMINISTRATIVO */}
             <header className="max-w-5xl mx-auto mb-6 bg-white border border-[#e5e5ea] p-4 sm:p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] print:hidden">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <div className="space-y-1 pl-1">
@@ -257,15 +285,13 @@ function ConteudoHorasExtras() {
                 ) : (
                     resumoFuncionariosComExtras.map((func, index) => (
                         <div key={func.id}>
-                            {/* LINHA DIVISÓRIA PRETA ISOLADA: Aparece apenas entre os funcionários na impressão */}
                             {index > 0 && (
                                 <div className="hidden print:block border-b-2 border-black my-8" />
                             )}
 
-                            {/* Bloco do funcionário mantido original e limpo */}
                             <div className="bg-white border border-[#e5e5ea] p-5 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] print:border-none print:shadow-none print:p-0 print:break-inside-avoid">
 
-                                {/* CABEÇALHO INDIVIDUAL APPLE-STYLE */}
+                                {/* CABEÇALHO INDIVIDUAL */}
                                 <div className="flex flex-col sm:flex-row justify-between items-start border-b border-[#f5f5f7] pb-4 mb-4 gap-2 sm:gap-0">
                                     <div className="leading-tight">
                                         <h3 className="text-sm sm:text-base font-bold tracking-tight text-[#1d1d1f] uppercase">{func.nome} {func.sobrenome}</h3>
@@ -277,7 +303,7 @@ function ConteudoHorasExtras() {
                                     </div>
                                 </div>
 
-                                {/* QUADRO DE RESUMO ACUMULADO */}
+                                {/* QUADRO DE RESUMO ACUMULADO COM DESCONTOS EMBUTIDOS */}
                                 <div className="grid grid-cols-2 gap-4 mb-5 bg-[#f5f5f7] p-4 rounded-xl print:bg-[#f5f5f7]">
                                     <div className="text-center border-r border-[#e5e5ea]">
                                         <p className="text-[9px] font-bold text-[#86868b] uppercase tracking-wider">Total Extra Diurna</p>
@@ -308,21 +334,39 @@ function ConteudoHorasExtras() {
                                             const extras = calcularExtrasTotaisDoDia(func.id, itemDia);
                                             const chave = `${func.id}-${itemDia.ano}-${itemDia.mes}-${itemDia.dia}`;
                                             const pts = mapaPontos[chave] || [];
+                                            const manual = mapaManuais[chave];
 
-                                            if (extras.diurna === 0 && extras.noturna === 0) return null;
+                                            // Se o dia não tem batidas e não tem lançamento manual (seja extra ou desconto), pula a linha
+                                            if (extras.diurna === 0 && extras.noturna === 0 && !manual) return null;
+
+                                            // Cor de destaque visual se o dia tiver um desconto manual ativo
+                                            const possuiDesconto = (manual?.diurnos < 0 || manual?.noturnos < 0);
 
                                             return (
-                                                <tr key={idx} className="hover:bg-[#f5f5f7]/30 transition-colors">
-                                                    <td className="py-2.5 px-2 font-mono font-bold text-[#1d1d1f]">{itemDia.label}</td>
+                                                <tr key={idx} className={`transition-colors ${possuiDesconto ? 'bg-orange-50/40 hover:bg-orange-50/60' : 'hover:bg-f5f5f7/30'}`}>
+                                                    <td className="py-2.5 px-2 font-mono font-bold text-[#1d1d1f]">
+                                                        {itemDia.label}
+                                                        {possuiDesconto && <span className="text-[9px] text-orange-600 block font-sans font-normal print:hidden">Descontado</span>}
+                                                    </td>
                                                     <td className="py-2.5 px-2 font-mono text-center text-slate-500">{pts[0]?.hora_formatada || '---'}</td>
                                                     <td className="py-2.5 px-2 font-mono text-center text-slate-500">{pts[1]?.hora_formatada || '---'}</td>
                                                     <td className="py-2.5 px-2 font-mono text-center text-slate-500">{pts[2]?.hora_formatada || '---'}</td>
                                                     <td className="py-2.5 px-2 font-mono text-center text-slate-500">{pts[3]?.hora_formatada || '---'}</td>
-                                                    <td className="py-2.5 px-2 font-mono text-center font-bold text-[#248a3d]">
-                                                        {extras.diurna > 0 ? formatarMinutosParaHoras(extras.diurna) : '---'}
+
+                                                    {/* COLUNA DIURNA (Muda a cor para vermelho/laranja se o saldo final ou o lançamento manual do dia for de desconto) */}
+                                                    <td className={`py-2.5 px-2 font-mono text-center font-bold ${manual?.diurnos < 0 && extras.diurna === 0 ? 'text-red-500' : 'text-[#248a3d]'}`}>
+                                                        {manual?.diurnos < 0 && extras.diurna === 0
+                                                            ? formatarMinutosParaHoras(manual.diurnos)
+                                                            : extras.diurna > 0 ? formatarMinutosParaHoras(extras.diurna) : '---'
+                                                        }
                                                     </td>
-                                                    <td className="py-2.5 px-2 font-mono text-center font-bold text-[#5856d6]">
-                                                        {extras.noturna > 0 ? formatarMinutosParaHoras(extras.noturna) : '---'}
+
+                                                    {/* COLUNA NOTURNA */}
+                                                    <td className={`py-2.5 px-2 font-mono text-center font-bold ${manual?.noturnos < 0 && extras.noturna === 0 ? 'text-red-500' : 'text-[#5856d6]'}`}>
+                                                        {manual?.noturnos < 0 && extras.noturna === 0
+                                                            ? formatarMinutosParaHoras(manual.noturnos)
+                                                            : extras.noturna > 0 ? formatarMinutosParaHoras(extras.noturna) : '---'
+                                                        }
                                                     </td>
                                                 </tr>
                                             );
