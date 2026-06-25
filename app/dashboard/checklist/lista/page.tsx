@@ -19,16 +19,14 @@ export default function ListaChecklistsPage() {
     const [carregando, setCarregando] = useState(true);
     const [pesquisa, setPesquisa] = useState('');
 
-    // Estados de ordenação: 'placa' | 'data' | 'mecanico'
     const [ordenarPor, setOrdenarPor] = useState<'placa' | 'data' | 'mecanico'>('data');
-    const [ordemCrescente, setOrdemCrescente] = useState(false); // Padrão mais recente primeiro para data
+    const [ordemCrescente, setOrdemCrescente] = useState(false);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Carrega os cabeçalhos das revisões salvas
     useEffect(() => {
         const buscarChecklists = async () => {
             setCarregando(true);
@@ -49,7 +47,6 @@ export default function ListaChecklistsPage() {
         buscarChecklists();
     }, []);
 
-    // Alternador de ordenação seguro
     const alterarOrdenacao = (criterio: 'placa' | 'data' | 'mecanico') => {
         if (ordenarPor === criterio) {
             setOrdemCrescente(!ordemCrescente);
@@ -59,9 +56,7 @@ export default function ListaChecklistsPage() {
         }
     };
 
-    // Filtra e ordena os registros de forma performática
     const checklistsProcessados = useMemo(() => {
-        // 1. Filtro de pesquisa por texto
         const termo = pesquisa.toLowerCase().trim();
         let resultado = checklists.filter(item => {
             if (!termo) return true;
@@ -73,7 +68,6 @@ export default function ListaChecklistsPage() {
             );
         });
 
-        // 2. Ordenação explícita por Placa, Data ou Mecânico
         resultado.sort((a, b) => {
             let valorA = '';
             let valorB = '';
@@ -119,13 +113,21 @@ export default function ListaChecklistsPage() {
                         <p className="text-xs text-orange-600 font-bold uppercase tracking-wide">Gerenciamento e Auditoria de Checklists</p>
                     </div>
 
-                    {/* Botão para Criar Novo */}
-                    <Link
-                        href="/dashboard/checklist"
-                        className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 active:scale-95 shadow-sm"
-                    >
-                        ➕ Nova Checklist
-                    </Link>
+                    {/* BOTÕES SUPERIORES: NOVO BOTÃO DE IMPRESSÃO DA BASE VAZIA ADICIONADO */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                            href="/dashboard/checklist/imprimir-base"
+                            className="bg-white border border-[#e5e5ea] hover:bg-[#f5f5f7] text-[#1d1d1f] px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 active:scale-95 shadow-sm"
+                        >
+                            🖨️ Imprimir Ficha Base
+                        </Link>
+                        <Link
+                            href="/dashboard/checklist"
+                            className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 active:scale-95 shadow-sm"
+                        >
+                            ➕ Nova Checklist
+                        </Link>
+                    </div>
                 </header>
 
                 {/* FILTROS E CONTROLES DE ORDENAÇÃO */}
@@ -140,7 +142,6 @@ export default function ListaChecklistsPage() {
                         />
                     </div>
 
-                    {/* SELETORES DE ORDENAÇÃO APPLE-STYLE */}
                     <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] font-bold uppercase tracking-wide text-[#86868b]">
                         <span className="mr-1 select-none text-[#1d1d1f]">Ordenar por:</span>
 
@@ -201,7 +202,6 @@ export default function ListaChecklistsPage() {
                                             <td className="py-3.5 px-4 font-mono text-slate-600">{formatarData(item.data_entrada)}</td>
                                             <td className="py-3.5 px-4 font-semibold text-[#1d1d1f] uppercase">{item.mecanico_responsavel}</td>
                                             <td className="py-3.5 px-4 text-center">
-                                                {/* GRUPO DE AÇÕES INTEGRADO E MINIMALISTA */}
                                                 <div className="flex items-center justify-center gap-2 font-black uppercase tracking-tight text-xs">
                                                     <Link
                                                         href={`/dashboard/checklist/visualizar?id=${item.id}`}
