@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -17,7 +17,7 @@ interface SecaoChecklist {
     itens: ItemChecklist[];
 }
 
-export default function EditarChecklistPage() {
+function EditarChecklistForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const revisaoId = searchParams.get('id');
@@ -31,7 +31,6 @@ export default function EditarChecklistPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // 1. DADOS DE IDENTIFICAÇÃO DO VEÍCULO
     const [identificacao, setIdentificacao] = useState({
         placa: '', frotaNo: '', marcaModelo: '', ano: '',
         quilometragem: '', proxRevisao: '', dataEntrada: '', hora: '',
@@ -55,7 +54,6 @@ export default function EditarChecklistPage() {
         }
     };
 
-    // 2. ESTRUTURA DE SEÇÕES
     const secoes: SecaoChecklist[] = [
         {
             titulo: "2. Motor e Combustão",
@@ -272,7 +270,6 @@ export default function EditarChecklistPage() {
         }
     ];
 
-    // 3. ESTADOS DE CONTROLE
     const [statusItens, setStatusItens] = useState<{ [key: string]: string }>({});
     const [obsItens, setObsItens] = useState<{ [key: string]: string }>({});
     const [observacoesGerais, setObservacoesGerais] = useState('');
@@ -282,7 +279,6 @@ export default function EditarChecklistPage() {
         setStatusItens(prev => ({ ...prev, [itemId]: prev[itemId] === valor ? '' : valor }));
     };
 
-    // CARREGA DADOS DO BANCO
     useEffect(() => {
         if (!revisaoId) return;
 
@@ -343,7 +339,6 @@ export default function EditarChecklistPage() {
         carregarDadosParaEdicao();
     }, [revisaoId]);
 
-    // LÓGICA BLINDADA DE ATUALIZAÇÃO NO SUPABASE
     const handleAtualizarChecklist = async () => {
         setStatusFeed({ tipo: '', texto: '' });
 
@@ -357,7 +352,6 @@ export default function EditarChecklistPage() {
         const idNumerico = Number(revisaoId);
 
         try {
-            // 1. UPDATE DO CABEÇALHO
             const { error: errorCabecalho } = await supabase
                 .from('revisoes_frota')
                 .update({
@@ -378,7 +372,6 @@ export default function EditarChecklistPage() {
 
             if (errorCabecalho) throw errorCabecalho;
 
-            // 2. EXCLUI OS ITENS ANTIGOS (Exige que a policy de DELETE esteja ativa no banco!)
             const { error: errorDeletar } = await supabase
                 .from('revisoes_frota_itens')
                 .delete()
@@ -386,7 +379,6 @@ export default function EditarChecklistPage() {
 
             if (errorDeletar) throw errorDeletar;
 
-            // 3. REMONTA A ESTRUTURA COM UPSERT PARA BLINDAR CONTRA DUPLICATAS
             const novosItens = secoes.flatMap(secao =>
                 secao.itens
                     .filter(item => statusItens[item.id])
@@ -399,7 +391,6 @@ export default function EditarChecklistPage() {
             );
 
             if (novosItens.length > 0) {
-                // Utilizando UPSERT ao invés de INSERT. Se a exclusão falhar, o upsert sobrescreve o valor antigo sem estourar o limite "unique"
                 const { error: errorReinserir } = await supabase
                     .from('revisoes_frota_itens')
                     .upsert(novosItens, { onConflict: 'revisao_id, item_id' });
@@ -434,7 +425,6 @@ export default function EditarChecklistPage() {
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-orange-500/10">
-
             <header className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mb-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="space-y-0.5">

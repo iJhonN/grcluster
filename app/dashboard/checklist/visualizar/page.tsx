@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -17,7 +17,7 @@ interface SecaoChecklist {
     itens: ItemChecklist[];
 }
 
-export default function VisualizarChecklistPage() {
+function VisualizarChecklistViewer() {
     const searchParams = useSearchParams();
     const revisaoId = searchParams.get('id');
 
@@ -249,7 +249,6 @@ export default function VisualizarChecklistPage() {
         }
     ];
 
-    // CARREGA OS DADOS DO SUPABASE
     useEffect(() => {
         if (!revisaoId) return;
 
@@ -322,7 +321,6 @@ export default function VisualizarChecklistPage() {
             className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-orange-500/10 print:bg-white print:p-0 print:text-black"
             style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
         >
-            {/* TOPO / HEADER */}
             <header className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mb-6 print:border-none print:shadow-none print:p-0 print:mb-2">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
                     <div className="space-y-0.5">
@@ -337,7 +335,6 @@ export default function VisualizarChecklistPage() {
                     </button>
                 </div>
 
-                {/* LEGENDA */}
                 <div className="mt-4 p-3 bg-[#f5f5f7] rounded-xl text-[10px] font-bold uppercase tracking-wide text-[#86868b] flex flex-wrap gap-4 border border-[#e5e5ea] print:bg-white print:p-1 print:mt-1 print:gap-2 print:text-[8px] print:border-gray-300">
                     <span className="text-[#1d1d1f] font-black">Legenda:</span>
                     <span className="text-green-600">🟢 OK = Conforme</span>
@@ -347,7 +344,6 @@ export default function VisualizarChecklistPage() {
                 </div>
             </header>
 
-            {/* FORMULÁRIO DE IDENTIFICAÇÃO DO VEÍCULO (READ-ONLY) */}
             <section className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mb-6 print:border-gray-300 print:rounded-none print:p-2 print:mb-2">
                 <div className="border-b border-[#f5f5f7] pb-3 mb-4 print:border-gray-300 print:pb-1 print:mb-2">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[10px]">1. Identificação do Veículo</h2>
@@ -396,7 +392,6 @@ export default function VisualizarChecklistPage() {
                 </div>
             </section>
 
-            {/* GRUPO DE TABELAS DO CHECKLIST */}
             <section className="max-w-4xl mx-auto space-y-4 print:space-y-2">
                 {secoes.map((secao, idxSecao) => (
                     <div key={idxSecao} className="bg-white border border-[#e5e5ea] rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] overflow-hidden print:border-gray-300 print:rounded-none print:shadow-none print:break-inside-avoid">
@@ -459,7 +454,6 @@ export default function VisualizarChecklistPage() {
                 ))}
             </section>
 
-            {/* SEÇÃO 16: OBSERVAÇÕES GERAIS */}
             <section className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mt-4 print:border-gray-300 print:rounded-none print:break-inside-avoid print:p-2 print:mt-2">
                 <div className="border-b border-[#f5f5f7] pb-3 mb-3 print:border-gray-300 print:pb-1 print:mb-1">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[9px]">16. Observações e Itens fora do Checklist</h2>
@@ -469,7 +463,6 @@ export default function VisualizarChecklistPage() {
                 </div>
             </section>
 
-            {/* SEÇÃO 17: ASSINATURAS E SAÍDA */}
             <section className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mt-4 mb-10 print:border-gray-300 print:rounded-none print:break-inside-avoid print:p-2 print:mt-2 print:mb-0">
                 <div className="border-b border-[#f5f5f7] pb-3 mb-6 print:border-gray-300 print:pb-1 print:mb-4">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[9px]">17. Encerramento e Assinaturas</h2>
@@ -487,5 +480,14 @@ export default function VisualizarChecklistPage() {
                 </div>
             </section>
         </main>
+    );
+}
+
+// === EXPORTAÇÃO ENVOLVIDA NO SUSPENSE PARA RESOLVER O ERRO DA VERCEL ===
+export default function VisualizarChecklistPageWrapper() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center font-mono text-[10px] font-bold uppercase tracking-widest text-[#86868b]">Carregando Laudo...</div>}>
+            <VisualizarChecklistViewer />
+        </Suspense>
     );
 }
