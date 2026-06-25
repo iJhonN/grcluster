@@ -77,8 +77,8 @@ export default function DashboardPage() {
     const podeVerFrota = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS'];
     const podeVerRH = ['ADMIN', 'GERENTE'];
     const podeVerEstoque = ['ADMIN', 'GERENTE', 'TECNICO', 'MECANICO', 'GESTORDEFROTAS', 'ESTOQUE'];
-    // ADICIONADO AQUI: Permissão explícita para visualização da lista e cadastros de colaboradores
     const podeVerFuncionarios = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS'];
+    const podeVerChecklist = ['ADMIN', 'GERENTE', 'TECNICO']; // Agora Admin e Gerente também veem!
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased flex flex-col lg:flex-row w-full selection:bg-black/5">
@@ -197,7 +197,7 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* ADICIONADO AQUI: NOVO CARD PARA GERENCIAMENTO DE FUNCIONÁRIOS */}
+                    {/* NOVO CARD PARA GERENCIAMENTO DE FUNCIONÁRIOS */}
                     {podeVerFuncionarios.includes(userRole) && (
                         <Link href="/dashboard/funcionarios" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
@@ -225,7 +225,21 @@ export default function DashboardPage() {
                         </Link>
                     )}
 
-                    {/* 6. 💼 DIRETORIA / RH */}
+                    {/* 6. 📋 CHECKLIST PREVENTIVA */}
+                    {podeVerChecklist.includes(userRole) && (
+                        <Link href="/dashboard/checklist/lista" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">📋</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-orange-600 bg-orange-600/10 px-2 py-0.5 rounded">Pátio</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Checklist Preventiva</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Histórico e laudos de revisão da frota.</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {/* 7. 💼 DIRETORIA / RH */}
                     {podeVerRH.includes(userRole) && (
                         <Link href="/dashboard/rh" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">

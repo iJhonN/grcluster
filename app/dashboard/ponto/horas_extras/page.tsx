@@ -315,7 +315,7 @@ function ConteudoHorasExtras() {
                                     </div>
                                 </div>
 
-                                {/* DETALHAMENTO DIA A DIA RESPONSIVO */}
+                                {/* DETALHAMENTO (NÃO MEXAM) */}
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-xs border-collapse">
                                         <thead>
