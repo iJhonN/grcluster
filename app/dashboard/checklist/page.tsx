@@ -143,7 +143,7 @@ export default function ChecklistPage() {
                 { id: "s8", texto: "Inspeção da manga de eixo dianteira (LD e LE)" },
                 { id: "s9", texto: "Verificação da pista da manga (recalcamento se necessário)" },
                 { id: "s10", texto: "Verificação dos pinos da manga" },
-                { id: "s11", texto: "Inspeção dos terminais de direção (LD e LE)" },
+                { id: "s11", texto: "Inspeção dos terminals de direção (LD e LE)" },
                 { id: "s12", texto: "Verificação da caixa de direção (folgas, vedação)" },
                 { id: "s13", texto: "Substituição da coifa da caixa de direção (se necessário)" },
                 { id: "s14", texto: "Verificação dos amortecedores" }
@@ -181,11 +181,11 @@ export default function ChecklistPage() {
                 { id: "e4", texto: "Teste do alternador (saída em carga)" },
                 { id: "e5", texto: "Inspeção do motor de partida (escovas)" },
                 { id: "e6", texto: "Faróis alto e baixo (alinhamento)" },
-                { id: "e7", text: "Lanternas laterais / corujinhas (acende e isenta de água)" },
+                { id: "e7", texto: "Lanternas laterais / corujinhas (acende e isenta de água)" },
                 { id: "e8", texto: "Pisca, alerta, freio, ré, neblina (testar)" },
                 { id: "e9", texto: "Iluminação do salão (todas as luminárias)" },
                 { id: "e10", texto: "Iluminação do bagageiro" },
-                { id: "e11", texto: "Painel e instrumentos (RPM, temperatura, combustível, pressure)" },
+                { id: "e11", texto: "Painel e instrumentos (RPM, temperatura, combustível, pressão)" },
                 { id: "e12", texto: "Buzina (sonora normal e a ar)" },
                 { id: "e13", texto: "Limpador de para-brisa (motor, palhetas, hastes)" },
                 { id: "e14", texto: "Chave de seta, corte de luz, contato de ignição" },
@@ -292,7 +292,7 @@ export default function ChecklistPage() {
         setSalvando(true);
 
         try {
-            // 1. Insere os metadados na tabela principal (Mapeado exatamente para observacoes_gerais)
+            // 1. Insere os metadados na tabela principal
             const { data: novaRevisao, error: errorCabecalho } = await supabase
                 .from('revisoes_frota')
                 .insert([{
@@ -358,12 +358,20 @@ export default function ChecklistPage() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
                     <div className="space-y-0.5">
                         <Link href="/dashboard/checklist/lista" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors">
-                            ← Histórico de Listas
+                            ← Voltar
                         </Link>
                         <h1 className="text-xl font-bold tracking-tight text-[#1d1d1f]">Revisão Geral / Preventiva</h1>
                         <p className="text-xs text-orange-600 font-bold uppercase tracking-wide">Recesso de Meio de Ano • Frota Escolar &amp; Rodoviária</p>
                     </div>
+
+                    {/* BOTÕES DE AÇÃO COM O NOVO BOTÃO DE HISTÓRICO */}
                     <div className="flex items-center gap-2">
+                        <Link
+                            href="/dashboard/checklist/lista"
+                            className="bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors hidden sm:inline-block"
+                        >
+                            📋 Histórico
+                        </Link>
                         <button onClick={() => window.print()} className="bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
                             🖨️ Imprimir
                         </button>
