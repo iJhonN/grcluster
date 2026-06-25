@@ -4,12 +4,24 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
+export const dynamic = 'force-dynamic';
+
+interface ToastMessage {
+    id: number;
+    tipo: 'sucesso' | 'erro';
+    texto: string;
+}
+
 export default function TotemPontoPage() {
     const [idCracha, setIdCracha] = useState('');
-    const [statusEnvio, setStatusEnvio] = useState({ tipo: '', texto: '' });
     const [carregando, setCarregando] = useState(false);
+    const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
     const inputRef = useRef<HTMLInputElement>(null);
+    // Trava de segurança para evitar batidas duplicadas do mesmo crachá
+    const ultimasBatidasRef = useRef<Map<string, number>>(new Map());
+    const TEMPO_BLOQUEIO_MS = 2 * 60 * 1000; // 2 minutos em milissegundos
+
     const router = useRouter();
 
     const supabase = createBrowserClient(
@@ -17,48 +29,67 @@ export default function TotemPontoPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // Adiciona um popup flutuante que some sozinho após 4 segundos
+    const adicionarToast = (tipo: 'sucesso' | 'erro', texto: string) => {
+        const novoId = Date.now();
+        setToasts(prev => [...prev, { id: novoId, tipo, texto }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== novoId));
+        }, 4000);
+    };
+
     // Prende o foco no input para o leitor de código de barras estar sempre pronto
     useEffect(() => {
-        if (inputRef.current) {
+        if (inputRef.current && !carregando) {
             inputRef.current.focus();
         }
-    }, [statusEnvio]);
+    }, [carregando]);
 
     // Força o foco de volta se clicarem em qualquer outro lugar da tela
     useEffect(() => {
         const forcarFocoGeral = () => {
-            if (inputRef.current) {
+            if (inputRef.current && !carregando) {
                 inputRef.current.focus();
             }
         };
         window.addEventListener("click", forcarFocoGeral);
         return () => window.removeEventListener("click", forcarFocoGeral);
-    }, []);
+    }, [carregando]);
 
     const handleLimpar = () => {
         setIdCracha('');
-        setStatusEnvio({ tipo: '', texto: '' });
-        setTimeout(() => inputRef.current?.focus(), 50);
+        setTimeout(() => inputRef.current?.focus(), 10);
     };
 
     const handleVerificarERegistrarPonto = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!idCracha.trim() || carregando) return;
+        const crachaAtual = idCracha.trim();
+        if (!crachaAtual || carregando) return;
+
+        // TRAVA ANTI-DUPLICIDADE DE 2 MINUTOS
+        const agora = Date.now();
+        const ultimaBatida = ultimasBatidasRef.current.get(crachaAtual);
+
+        if (ultimaBatida && (agora - ultimaBatida < TEMPO_BLOQUEIO_MS)) {
+            const segundosFaltantes = Math.ceil((TEMPO_BLOQUEIO_MS - (agora - ultimaBatida)) / 1000);
+            adicionarToast('erro', `Crachá já lido! Aguarde ${segundosFaltantes}s para bater novamente.`);
+            handleLimpar();
+            return;
+        }
 
         setCarregando(true);
-        setStatusEnvio({ tipo: '', texto: '' });
 
         try {
             // 1. Busca funcionário no Supabase para validar a existência
             const { data: func } = await supabase
                 .from('funcionarios')
                 .select('id, nome, sobrenome')
-                .eq('id', idCracha.trim())
+                .eq('id', crachaAtual)
                 .maybeSingle();
 
             if (!func) {
-                setStatusEnvio({ tipo: 'erro', texto: 'Crachá inválido ou não encontrado.' });
-                setIdCracha('');
+                adicionarToast('erro', 'Crachá inválido ou não encontrado na base.');
+                handleLimpar();
                 setCarregando(false);
                 return;
             }
@@ -96,7 +127,7 @@ export default function TotemPontoPage() {
                 textoObservacao = 'Atraso';
             }
 
-            // 4. Injeta direto na tabela com o status de observação correto
+            // 4. Injeta direto na tabela
             const { error: errInsert } = await supabase
                 .from('pontos')
                 .insert([{
@@ -112,27 +143,58 @@ export default function TotemPontoPage() {
 
             if (errInsert) throw errInsert;
 
-            setStatusEnvio({
-                tipo: 'sucesso',
-                texto: `Ponto registrado! Bom trabalho, ${func.nome}. (${horaFormatada})`
-            });
+            // REGISTRA O HORÁRIO NA MEMÓRIA DO TOTEM PARA BLOQUEAR BATIDAS DUPLAS NOS PRÓXIMOS 2 MINUTOS
+            ultimasBatidasRef.current.set(crachaAtual, Date.now());
 
-            setTimeout(() => {
-                handleLimpar();
-            }, 3000);
+            // Sucesso! Dispara o toast e limpa a tela instantaneamente para o próximo
+            adicionarToast('sucesso', `Ponto registrado! Bom trabalho, ${func.nome}. (${horaFormatada})`);
+            handleLimpar();
 
         } catch (err) {
             console.error(err);
-            setStatusEnvio({ tipo: 'erro', texto: 'Erro de conexão ao salvar o ponto.' });
+            adicionarToast('erro', 'Erro de conexão ao salvar o ponto.');
+            handleLimpar();
         } finally {
             setCarregando(false);
         }
     };
 
     return (
-        <main className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 font-sans antialiased w-full selection:bg-black/5">
+        <main className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 font-sans antialiased w-full selection:bg-black/5 relative overflow-hidden">
 
-            {/* CARD DO TOTEM - PLACA BRANCA PREMIUM INTEGRADA */}
+            {/* CONTAINER DE TOASTS (POP-UPS FLUTUANTES) */}
+            <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+                {toasts.map((toast) => (
+                    <div
+                        key={toast.id}
+                        className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border transition-all animate-in slide-in-from-right-8 fade-in duration-300 min-w-[300px] bg-white pointer-events-auto ${
+                            toast.tipo === 'sucesso' ? 'border-green-200' : 'border-red-200'
+                        }`}
+                    >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.tipo === 'sucesso' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                            {toast.tipo === 'sucesso' ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                                </svg>
+                            )}
+                        </div>
+                        <div>
+                            <h4 className={`text-xs font-black uppercase tracking-wider ${toast.tipo === 'sucesso' ? 'text-green-600' : 'text-red-600'}`}>
+                                {toast.tipo === 'sucesso' ? 'Validação Concluída' : 'Acesso Negado'}
+                            </h4>
+                            <p className="text-[11px] font-bold text-[#1d1d1f] mt-0.5 leading-tight uppercase">
+                                {toast.texto}
+                            </p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* CARD DO TOTEM PRINCIPAL */}
             <div className="w-full max-w-sm bg-white border border-[#e5e5ea] rounded-2xl shadow-[0_1px_5px_rgba(0,0,0,0.02)] overflow-hidden transition-all relative">
 
                 {/* Botão de Retorno Compacto no Topo */}
@@ -158,32 +220,24 @@ export default function TotemPontoPage() {
                         </p>
                     </div>
 
-                    {/* FEEDBACK ANALÍTICO DE REQUISIÇÃO */}
-                    {statusEnvio.texto && (
-                        <div className={`mb-5 flex items-start gap-2.5 p-4 rounded-xl border text-[11px] font-medium leading-normal ${
-                            statusEnvio.tipo === 'sucesso'
-                                ? 'bg-[#34c759]/5 border-[#34c759]/20 text-[#248a3d]'
-                                : 'bg-[#ff3b30]/5 border-[#ff3b30]/20 text-[#ff3b30]'
-                        }`}>
-                            <div className="shrink-0 text-xs">{statusEnvio.tipo === 'sucesso' ? '🔹' : '🔸'}</div>
-                            <p className="tracking-tight uppercase text-[10px] font-bold">{statusEnvio.texto}</p>
-                        </div>
-                    )}
-
                     {/* INTERFACE DO ESCANER INVISÍVEL */}
                     <form onSubmit={handleVerificarERegistrarPonto} className="space-y-4">
-                        <div className="w-full bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl p-6 text-center relative flex flex-col items-center justify-center gap-3 transition-colors">
+                        <div className={`w-full bg-[#f5f5f7] border rounded-xl p-6 text-center relative flex flex-col items-center justify-center gap-3 transition-colors ${carregando ? 'border-orange-500 bg-orange-500/5' : 'border-[#e5e5ea]'}`}>
 
                             {/* Linha discreta simulando laser óptico fixo */}
                             <div className="absolute inset-x-0 h-px bg-[#1d1d1f]/5 top-1/2 -translate-y-1/2 pointer-events-none" />
 
                             <div className="relative z-10 w-9 h-9 bg-white border border-[#e5e5ea] rounded-lg flex items-center justify-center text-sm shadow-[0_1px_2px_rgba(0,0,0,0.01)] select-none">
-                                💳
+                                {carregando ? <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" /> : '💳'}
                             </div>
 
                             <div className="relative z-10 space-y-0.5">
-                                <p className="text-xs font-bold tracking-tight text-[#1d1d1f]">Leitor Óptico Ativo</p>
-                                <p className="text-[9px] font-medium text-[#86868b]">Aproxime a tag de barras ou digite o registro</p>
+                                <p className={`text-xs font-bold tracking-tight ${carregando ? 'text-orange-600' : 'text-[#1d1d1f]'}`}>
+                                    {carregando ? 'Sincronizando Base...' : 'Leitor Óptico Ativo'}
+                                </p>
+                                <p className="text-[9px] font-medium text-[#86868b]">
+                                    Aproxime a tag de barras ou digite o registro
+                                </p>
                             </div>
 
                             {/* Input focado de forma contínua */}
