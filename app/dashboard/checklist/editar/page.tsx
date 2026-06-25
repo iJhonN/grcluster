@@ -17,6 +17,7 @@ interface SecaoChecklist {
     itens: ItemChecklist[];
 }
 
+// 1. O componente principal vira apenas uma função interna
 function EditarChecklistForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -591,5 +592,14 @@ function EditarChecklistForm() {
                 </button>
             </div>
         </main>
+    );
+}
+
+// 2. EXPORTAÇÃO ENVOLVIDA NO SUSPENSE PARA RESOLVER O ERRO DA VERCEL
+export default function EditarChecklistPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center font-mono text-[10px] font-bold uppercase tracking-widest text-[#86868b]">Carregando Laudo...</div>}>
+            <EditarChecklistForm />
+        </Suspense>
     );
 }
