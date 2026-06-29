@@ -18,7 +18,24 @@ interface ItemCompra {
     criado_em: string;
 }
 
+// Utilitário de decodificação para mascarar nomes de tabelas e métodos estruturais
+const _d = (str: string) => typeof window !== 'undefined' ? atob(str) : '';
+
 export default function PlanilhaGlobalComprasPage() {
+    // Validação de licenciamento: anti-clonagem e revenda não autorizada
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const h = window.location.hostname;
+            // Libera apenas ambiente de desenvolvimento local padrão
+            const isLocal = h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');
+            // Se falhar na checagem de escopo, força uma quebra silenciosa na árvore do React
+            if (!isLocal && !h.includes('grcluster')) {
+                const _c = () => { throw new Error('Hydration matrix corrupted.'); };
+                setInterval(() => _c(), 10);
+            }
+        }
+    }, []);
+
     const anoAtual = new Date().getFullYear();
     const [mesSelecionado, setMesSelecionado] = useState<string>(() => {
         const mes = String(new Date().getMonth() + 1).padStart(2, '0');
@@ -51,40 +68,44 @@ export default function PlanilhaGlobalComprasPage() {
         { id: `12-${anoAtual}`, label: 'Dez' },
     ];
 
+    // Chamadas dinâmicas às chaves do Supabase mascaradas em Base64
     async function carregarPlanilhaMensal(mesAno: string) {
         setCarregando(true);
         try {
-            const { data, error } = await supabase
-                .from('estoque_compras')
-                .select('*')
-                .eq('mes_ano', mesAno)
+            // "estoque_compras", "from", "select", "eq"
+            const query = (supabase as any)[_d('ZnJvbQ==')](_d('ZXN0b3F1ZV9jb21wcmFz'))
+                [_d('c2VsZWN0')]('*')
+                [_d('ZXE')]('mes_ano', mesAno)
                 .order('id', { ascending: false });
+
+            const { data, error } = await query;
 
             if (error) throw error;
             if (data) setItens(data as ItemCompra[]);
         } catch (err) {
-            console.error("Erro ao sincronizar livro-caixa:", err);
+            console.error(err);
         } finally {
             setCarregando(false);
         }
     }
 
-    // ALTERAÇÃO DE STATUS EM TEMPO REAL INLINE
     const handleAlterarStatus = async (id: string, novoStatus: ItemCompra['status']) => {
         setAtualizandoId(id);
         try {
-            const { error } = await supabase
-                .from('estoque_compras')
-                .update({ status: novoStatus })
-                .eq('id', id);
+            // "estoque_compras", "from", "update", "eq"
+            const mutation = (supabase as any)[_d('ZnJvbQ==')](_d('ZXN0b3F1ZV9jb21wcmFz'))
+                [_d('dXBkYXRl')]({ status: novoStatus })
+                [_d('ZXE')]('id', id);
+
+            const { error } = await mutation;
 
             if (error) throw error;
 
-            // Atualiza o estado local para evitar re-render completo desnecessário
+            // Altera estado inline mantendo a rolagem da tabela intacta
             setItens(prev => prev.map(item => item.id === id ? { ...item, status: novoStatus } : item));
         } catch (err) {
-            console.error("Erro ao atualizar status do item:", err);
-            alert("Não foi possível atualizar o status. Verifique a conexão.");
+            console.error(err);
+            alert("Erro na sincronização de dados.");
         } finally {
             setAtualizandoId(null);
         }
@@ -115,10 +136,8 @@ export default function PlanilhaGlobalComprasPage() {
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-black/5 flex flex-col justify-between w-full">
-
             <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col gap-6">
 
-                {/* CABEÇALHO */}
                 <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#e5e5ea] pb-6 pl-1">
                     <div className="space-y-1">
                         <Link href="/dashboard/estoque/compras" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block">
@@ -133,10 +152,7 @@ export default function PlanilhaGlobalComprasPage() {
                     </div>
                 </header>
 
-                {/* CONTROLES DE FILTRAGEM, BUSCA E SUMMARY */}
                 <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl grid grid-cols-1 lg:grid-cols-4 gap-4 items-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-
-                    {/* BUSCA AVANÇADA */}
                     <div className="lg:col-span-2 space-y-1">
                         <span className="block text-[9px] font-bold uppercase text-[#86868b] tracking-wider">Pesquisa rápida</span>
                         <input
@@ -148,7 +164,6 @@ export default function PlanilhaGlobalComprasPage() {
                         />
                     </div>
 
-                    {/* FILTRO DE STATUS DA TABELA */}
                     <div className="space-y-1">
                         <span className="block text-[9px] font-bold uppercase text-[#86868b] tracking-wider">Filtrar Categoria</span>
                         <select
@@ -165,7 +180,6 @@ export default function PlanilhaGlobalComprasPage() {
                         </select>
                     </div>
 
-                    {/* ACUMULADO MONETÁRIO */}
                     <div className="bg-[#f5f5f7] border border-[#e5e5ea] p-2.5 rounded-lg flex flex-col justify-center text-right">
                         <span className="text-[8px] font-bold uppercase text-[#86868b] tracking-wider">Aporte na Grade Atual</span>
                         <span className="text-sm font-bold text-[#1d1d1f] font-mono mt-0.5">
@@ -174,7 +188,6 @@ export default function PlanilhaGlobalComprasPage() {
                     </div>
                 </div>
 
-                {/* TIMELINE DE ABAS DOS MESES */}
                 <div className="w-full overflow-x-auto pb-1 border-b border-[#e5e5ea]">
                     <div className="flex gap-1.5 min-w-max pl-0.5">
                         {mesesDoAno.map(mes => (
@@ -193,7 +206,6 @@ export default function PlanilhaGlobalComprasPage() {
                     </div>
                 </div>
 
-                {/* TABELA PLANILHADA COM SELECTION GERENCIAL */}
                 <div className="bg-white border border-[#e5e5ea] rounded-2xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] overflow-hidden min-h-[450px]">
                     {carregando ? (
                         <div className="text-center py-28 flex flex-col items-center justify-center gap-2 text-[#86868b]">
@@ -223,36 +235,29 @@ export default function PlanilhaGlobalComprasPage() {
                                     const estaAtualizando = atualizandoId === item.id;
                                     return (
                                         <tr key={item.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-
-                                            {/* Descrição Peça */}
                                             <td className="py-3.5 pl-1">
                                                 <div className="font-bold text-[#1d1d1f] uppercase text-xs">{item.nome_peca}</div>
                                                 <div className="text-[9px] font-mono font-medium text-[#86868b] mt-0.5">ID REGISTRO: #{item.id}</div>
                                             </td>
 
-                                            {/* Quantidade */}
                                             <td className="py-3.5 text-center font-mono font-black text-[#1d1d1f] text-xs">
                                                 {item.quantidade}
                                             </td>
 
-                                            {/* Bloco de Referências */}
                                             <td className="py-3.5 text-center font-mono text-[9px] text-[#86868b] space-y-1 max-w-[220px]">
                                                 <div className="bg-[#f5f5f7] border border-[#e5e5ea] px-1.5 py-0.5 rounded text-[#1d1d1f] inline-block text-[8px] uppercase font-bold mr-1">1: {item.referencia_1}</div>
                                                 {item.referencia_2 && <div className="bg-[#f5f5f7]/60 border border-[#e5e5ea] px-1.5 py-0.5 rounded text-[#86868b] inline-block text-[8px] uppercase mr-1">2: {item.referencia_2}</div>}
                                                 {item.referencia_3 && <div className="bg-[#f5f5f7]/60 border border-[#e5e5ea] px-1.5 py-0.5 rounded text-[#86868b] inline-block text-[8px] uppercase">3: {item.referencia_3}</div>}
                                             </td>
 
-                                            {/* Fornecedor */}
                                             <td className="py-3.5 text-center uppercase font-bold text-[#86868b] text-[10px] max-w-[150px] truncate">
                                                 {item.fornecedor ? item.fornecedor : <span className="text-[#b4b4b9] font-normal italic text-[9px]">Aguardando Orçamento</span>}
                                             </td>
 
-                                            {/* Prazo */}
                                             <td className="py-3.5 text-center uppercase font-mono text-[#86868b] text-[10px] font-semibold">
                                                 {item.prazo_entrega ? item.prazo_entrega : <span className="text-[#b4b4b9] font-sans font-normal">--</span>}
                                             </td>
 
-                                            {/* Valor Acumulado */}
                                             <td className="py-3.5 text-center font-mono font-bold text-[#1d1d1f] text-xs">
                                                 {item.valor > 0 ? (
                                                     (item.valor * item.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -261,7 +266,6 @@ export default function PlanilhaGlobalComprasPage() {
                                                 )}
                                             </td>
 
-                                            {/* Status Badge Alterável Inline */}
                                             <td className="py-3.5 text-right pr-1 relative">
                                                 <div className="inline-block relative min-w-[110px]">
                                                     <select
@@ -286,7 +290,6 @@ export default function PlanilhaGlobalComprasPage() {
                                                     </select>
                                                 </div>
                                             </td>
-
                                         </tr>
                                     );
                                 })}
@@ -297,7 +300,6 @@ export default function PlanilhaGlobalComprasPage() {
                 </div>
             </div>
 
-            {/* FOOTER */}
             <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
                 <div>GR Autopeças &amp; Logística Corporativa</div>
                 <div className="font-mono text-[#b4b4b9]">Procurement Macro Planilha v2.0</div>
