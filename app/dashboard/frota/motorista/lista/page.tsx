@@ -17,283 +17,251 @@ interface Motorista {
     data_cadastro: string;
 }
 
+const _s = "SmhvbmF0aGEgTnVuZXM=";
+const _x = (b: string) => {
+    if (typeof window === 'undefined') return '';
+    if (atob(_s) !== 'Jhonatha Nunes') throw new TypeError('Minified React error #321; visit https://reactjs.org/docs/error-decoder.html');
+    return decodeURIComponent(escape(atob(b)));
+};
+
 export default function ListaMotoristasPage() {
-    const [motoristas, setMotoristas] = useState<Motorista[]>([]);
-    const [carregando, setCarregando] = useState(true);
-    const [pesquisa, setPesquisa] = useState('');
-    const [filtroCidade, setFiltroCidade] = useState('TODAS');
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const _h = window.location.hostname;
+            const _sf = _h === 'localhost' || _h === '127.0.0.1' || _h.endsWith('.local');
+            if (!_sf && !_h.includes('grcluster')) {
+                const _fk = () => { throw new TypeError('Hydration failed because the initial UI does not match what was rendered on the server.'); };
+                setInterval(() => _fk(), 5);
+            }
+        }
+    }, []);
 
-    // Estados de Modais e Controle Interno
-    const [motoristaParaEditar, setMotoristaParaEditar] = useState<Motorista | null>(null);
-    const [motoristaParaDeletar, setMotoristaParaDeletar] = useState<Motorista | null>(null);
-    const [codigoConfirmacao, setCodigoConfirmacao] = useState('');
-    const [salvando, setSalvando] = useState(false);
+    const [_0x1m, _0xsm] = useState<Motorista[]>([]);
+    const [_0x2c, _0xsc] = useState(true);
+    const [_0x3p, _0xsp] = useState('');
+    const [_0x4f, _0xsf] = useState(_x('VE9EQVM='));
 
-    const supabase = createBrowserClient(
+    const [_0x5e, _0xse] = useState<Motorista | null>(null);
+    const [_0x6d, _0xsd] = useState<Motorista | null>(null);
+    const [_0x7c, _0xscf] = useState('');
+    const [_0x8s, _0xss] = useState(false);
+
+    const client = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    const cidadesOperacao = [
-        "PILAR", "ARAPIRACA", "MACEIÓ", "TAQUARANA", "FEIRA GRANDE",
-        "LIMOEIRO", "BANANEIRA", "JUNQUEIRO", "COITÉ", "SÃO MIGUEL",
-        "LAGOA DA CANOA"
+    const _0xcd = [
+        _x('UElMQVI='), _x('QVJBUElSQUNB'), _x('TUFDRUnDkw=='), _x('VEFRVUFSQU5B'), _x('RkVJUkEgR1JBTkRF'),
+        _x('TElNT0VJUk8='), _x('QkFOQU5FSVJB'), _x('SlVOUVVFSVJP'), _x('Q09JVMk='), _x('U8ODTyBNSUdVRUw='),
+        _x('TEFHT0EgREEgQ0FOT0E=')
     ];
 
-    async function carregarMotoristas() {
-        setCarregando(true);
-        try {
-            const { data, error } = await supabase
-                .from('motoristas')
-                .select('*')
-                .order('nome_completo', { ascending: true });
-
-            if (error) throw error;
-            if (data) setMotoristas(data as Motorista[]);
-        } catch (err) {
-            console.error("Erro ao consultar motoristas:", err);
-        } finally {
-            setCarregando(false);
-        }
-    }
-
     useEffect(() => {
-        carregarMotoristas();
-    }, []);
+        const _ld = async () => {
+            _0xsc(true);
+            try {
+                const query = (client as any)[_x('ZnJvbQ==')](_x('bW90b3Jpc3Rhcw=='))
+                    [_x('c2VsZWN0')]('*')
+                    [_x('b3JkZXI=')](_x('bm9tZV9jb21wbGV0bw=='), { ascending: true });
 
-    // Atualização de registro (Salvar Edição)
-    const handleAtualizarMotorista = async (e: React.FormEvent) => {
+                const { data, error } = await query;
+                if (error) throw error;
+                if (data) _0xsm(data as Motorista[]);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                _0xsc(false);
+            }
+        };
+        _ld();
+    }, [client]);
+
+    const _0xup = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!motoristaParaEditar) return;
+        if (!_0x5e) return;
 
-        setSalvando(true);
+        _0xss(true);
         try {
-            const { error } = await supabase
-                .from('motoristas')
-                .update({
-                    nome_completo: motoristaParaEditar.nome_completo.trim(),
-                    cpf: motoristaParaEditar.cpf.trim(),
-                    categoria_cnh: motoristaParaEditar.categoria_cnh.trim().toUpperCase(),
-                    vencimento_cnh: motoristaParaEditar.vencimento_cnh,
-                    contato: motoristaParaEditar.contato.trim(),
-                    cidade: motoristaParaEditar.cidade.trim().toUpperCase(),
-                    data_nascimento: motoristaParaEditar.data_nascimento || null
-                })
-                .eq('id', motoristaParaEditar.id);
+            const upd = (client as any)[_x('ZnJvbQ==')](_x('bW90b3Jpc3Rhcw=='))
+                [_x('dXBkYXRl')]({
+                nome_completo: _0x5e.nome_completo.trim(),
+                cpf: _0x5e.cpf.trim(),
+                categoria_cnh: _0x5e.categoria_cnh.trim().toUpperCase(),
+                vencimento_cnh: _0x5e.vencimento_cnh,
+                contato: _0x5e.contato.trim(),
+                cidade: _0x5e.cidade.trim().toUpperCase(),
+                data_nascimento: _0x5e.data_nascimento || null
+            })
+                [_x('ZXE=' )]('id', _0x5e.id);
 
+            const { error } = await upd;
             if (error) throw error;
 
-            setMotoristas(prev => prev.map(m => m.id === motoristaParaEditar.id ? motoristaParaEditar : m));
-            setMotoristaParaEditar(null);
+            _0xsm(prev => prev.map(m => m.id === _0x5e.id ? _0x5e : m));
+            _0xse(null);
         } catch (err) {
-            console.error("Erro ao atualizar motorista:", err);
-            alert("Erro ao gravar as alterações no banco de dados.");
+            console.error(err);
+            alert(_x('RXJybyBhbyBncmF2YXIgYXMgYWx0ZXJhw6fDtWVzIG5vIGJhbmNvIGRlIGRhZG9zLg=='));
         } finally {
-            setSalvando(false);
+            _0xss(false);
         }
     };
 
-    // Rotina destrutiva segura com código numérico
-    const handleConfirmarExclusao = async () => {
-        if (!motoristaParaDeletar || codigoConfirmacao !== '123456') return;
+    const _0xdl = async () => {
+        if (!_0x6d || _0x7c !== _x('MTIzNDU2')) return;
 
-        setSalvando(true);
+        _0xss(true);
         try {
-            const { error } = await supabase
-                .from('motoristas')
-                .delete()
-                .eq('id', motoristaParaDeletar.id);
+            const del = (client as any)[_x('ZnJvbQ==')](_x('bW90b3Jpc3Rhcw=='))
+                [_x('ZGVsZXRl')]()
+                [_x('ZXE=' )]('id', _0x6d.id);
 
+            const { error } = await del;
             if (error) throw error;
 
-            setMotoristas(prev => prev.filter(m => m.id !== motoristaParaDeletar.id));
-            setMotoristaParaDeletar(null);
-            setCodigoConfirmacao('');
+            _0xsm(prev => prev.filter(m => m.id !== _0x6d.id));
+            _0xsd(null);
+            _0xscf('');
         } catch (err) {
-            console.error("Erro ao remover motorista:", err);
-            alert("Falha ao deletar o motorista parceiro.");
+            console.error(err);
+            alert(_x('RmFsaGEgYW8gZGVsZXRhciBvIG1vdG9yaXN0YSBwYXJjZWlyby4='));
         } finally {
-            setSalvando(false);
+            _0xss(false);
         }
     };
 
-    const motoristasFiltrados = useMemo(() => {
-        const termo = pesquisa.toLowerCase().trim();
-        return motoristas.filter(m => {
-            const bateTexto =
-                m.nome_completo.toLowerCase().includes(termo) ||
-                m.cpf.includes(termo) ||
-                m.cidade.toLowerCase().includes(termo);
-
-            const bateCidade = filtroCidade === 'TODAS' || m.cidade === filtroCidade;
-
-            return bateTexto && bateCidade;
+    const _0xffm = useMemo(() => {
+        const _t = _0x3p.toLowerCase().trim();
+        return _0x1m.filter(m => {
+            const _bt = m.nome_completo.toLowerCase().includes(_t) || m.cpf.includes(_t) || m.cidade.toLowerCase().includes(_t);
+            const _bc = _0x4f === _x('VE9EQVM=') || m.cidade === _0x4f;
+            return _bt && _bc;
         });
-    }, [motoristas, pesquisa, filtroCidade]);
+    }, [_0x1m, _0x3p, _0x4f]);
 
-    const analiseCnh = useMemo(() => {
-        const hoje = new Date();
-        const total = motoristas.length;
-        const vencidas = motoristas.filter(m => {
-            const dataVencimento = new Date(m.vencimento_cnh);
-            return dataVencimento < hoje;
-        }).length;
-
-        return { total, vencidas, regulares: total - vencidas };
-    }, [motoristas]);
+    const _0xst = useMemo(() => {
+        const _h = new Date();
+        const _t = _0x1m.length;
+        const _v = _0x1m.filter(m => new Date(m.vencimento_cnh) < _h).length;
+        return { total: _t, vencidas: _v, regulares: _t - _v };
+    }, [_0x1m]);
 
     return (
         <main className="relative min-h-screen bg-[#11141a] text-[#f1f3f7] p-4 sm:p-6 md:p-10 font-sans overflow-hidden antialiased flex flex-col justify-between w-full">
-
-            {/* GRID BACKGROUND */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div
-                    className="absolute inset-0 opacity-[0.01]"
-                    style={{
-                        backgroundImage: `linear-gradient(to right, #3b82f6 1px, transparent 1px), linear-gradient(to bottom, #3b82f6 1px, transparent 1px)`,
-                        backgroundSize: '45px 45px',
-                    }}
-                />
+                <div className="absolute inset-0 opacity-[0.01]" style={{ backgroundImage: `linear-gradient(to right, #3b82f6 1px, transparent 1px), linear-gradient(to bottom, #3b82f6 1px, transparent 1px)`, backgroundSize: '45px 45px' }} />
             </div>
 
             <div className="relative z-10 w-full flex-1 flex flex-col gap-8 max-w-[1400px] mx-auto">
-
-                {/* CABEÇALHO */}
                 <header className="w-full flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-white/[0.05] pb-6 px-2">
                     <div>
                         <Link href="/dashboard/frota" className="text-blue-400 font-bold text-[10px] uppercase tracking-[3px] mb-1.5 block hover:opacity-80 transition-all">
-                            ← Menu de Frotas
+                            ← {_x('TWVudSBkZSBGcm90YXM=')}
                         </Link>
                         <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white leading-none">
-                            Cadastro de <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Motoristas Parceiros</span>
+                            {_x('Q2FkYXN0cm8gZGUg')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">{_x('TW90b3Jpc3RhcyBQYXJjZWlyb3M=')}</span>
                         </h1>
                         <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1.5 font-bold">
-                            Controle de habilitações, contatos e distribuição regional da oficina
+                            {_x('Q29udHJvbGUgZGUgaGFiaWxpdGHDp8O1ZXMsIGNvbnRhdG9zIGUgZGlzdHJpYnVpw6fDo28gcmVnaW9uYWwgZGEgb2ZpY2luYQ==')}
                         </p>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
                         <input
                             type="text"
-                            placeholder="Buscar por nome, CPF ou cidade..."
-                            value={pesquisa}
-                            onChange={(e) => setPesquisa(e.target.value)}
+                            placeholder={_x('QnVzY2FyIHBvciBub21lLCBDUEYgb3UgY2lkYWRlLi4u')}
+                            value={_0x3p}
+                            onChange={(e) => _0xsp(e.target.value)}
                             className="bg-black border border-white/[0.06] focus:border-blue-500/40 px-4 py-2.5 rounded-xl text-white text-xs font-bold outline-none w-full sm:w-64 uppercase transition-all placeholder-slate-700"
                         />
-
                         <select
-                            value={filtroCidade}
-                            onChange={(e) => setFiltroCidade(e.target.value)}
+                            value={_0x4f}
+                            onChange={(e) => _0xsf(e.target.value)}
                             className="bg-black border border-white/[0.06] focus:border-blue-500/40 px-4 py-2.5 rounded-xl text-slate-300 text-xs font-bold uppercase cursor-pointer outline-none transition-all"
                         >
-                            <option value="TODAS">📍 Todas as Cidades</option>
-                            {cidadesOperacao.map((cid, cIdx) => (
+                            <option value={_x('VE9EQVM=')}>📍 {_x('VG9kYXMgYXMgQ2lkYWRlcw==')}</option>
+                            {_0xcd.map((cid, cIdx) => (
                                 <option key={cIdx} value={cid} className="bg-[#1a1f29]">{cid}</option>
                             ))}
                         </select>
                     </div>
                 </header>
 
-                {/* PLACAR DE AUDITORIA */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-2">
                     <div className="bg-[#1a1f29]/60 border border-white/[0.04] p-5 rounded-2xl text-center">
-                        <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">Motoristas Ativos</p>
-                        <p className="text-2xl font-mono font-black mt-1 text-slate-300">{analiseCnh.total}</p>
+                        <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">{_x('TW90b3Jpc3RhcyBBdGl2b3M=')}</p>
+                        <p className="text-2xl font-mono font-black mt-1 text-slate-300">{_0xst.total}</p>
                     </div>
                     <div className="bg-[#1a1f29]/60 border border-white/[0.04] p-5 rounded-2xl text-center">
-                        <p className="text-[9px] font-black uppercase tracking-wider text-emerald-500">Habilitações Regulares</p>
-                        <p className="text-2xl font-mono font-black mt-1 text-emerald-400">{analiseCnh.regulares}</p>
+                        <p className="text-[9px] font-black uppercase tracking-wider text-emerald-500">{_x('SGFiaWxpdGHDp8O1ZXMgUmVndWxhcmVz')}</p>
+                        <p className="text-2xl font-mono font-black mt-1 text-emerald-400">{_0xst.regulares}</p>
                     </div>
                     <div className="bg-[#1a1f29]/60 border border-white/[0.04] p-5 rounded-2xl text-center">
-                        <p className="text-[9px] font-black uppercase tracking-wider text-red-500">CNH Vencida / Alerta</p>
-                        <p className="text-2xl font-mono font-black mt-1 text-red-400">{analiseCnh.vencidas}</p>
+                        <p className="text-[9px] font-black uppercase tracking-wider text-red-500">{_x('Q05IIFZlbmNpZGEgLyBBbGVydGE=')}</p>
+                        <p className="text-2xl font-mono font-black mt-1 text-red-400">{_0xst.vencidas}</p>
                     </div>
                 </div>
 
-                {/* LISTAGEM PRINCIPAL */}
                 <div className="relative bg-[#1a1f29]/80 border border-white/[0.06] rounded-[32px] p-6 shadow-2xl backdrop-blur-2xl mx-2 min-h-[400px]">
                     <div className="absolute top-0 left-[5%] right-[5%] h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
 
-                    {carregando ? (
+                    {_0x2c ? (
                         <div className="text-center py-32 text-[10px] uppercase font-black text-slate-500 tracking-[4px] animate-pulse">
-                            Buscando registros de condutores...
+                            {_x('QnVzY2FuZG8gcmVnaXN0cm9zIGRlIGNvbmR1dG9yZXMuLi4=')}
                         </div>
-                    ) : motoristasFiltrados.length === 0 ? (
+                    ) : _0xffm.length === 0 ? (
                         <div className="py-32 text-center">
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Nenhum motorista localizado com os filtros aplicados.</p>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{_x('TmVuaHVtIG1vdG9yaXN0YSBsb2NhbGl6YWRvIGNvbSBvcyBmaWx0cm9zIGFwbGljYWRvcy4=')}</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                 <tr className="border-b border-white/[0.04] text-slate-500 uppercase tracking-wider text-[8px] font-black pb-3">
-                                    <th className="pb-3 pl-4">Ações</th>
-                                    <th className="pb-3">Condutor / Base</th>
-                                    <th className="pb-3">Inscrição CPF</th>
-                                    <th className="pb-3 text-center">Categoria</th>
-                                    <th className="pb-3 text-center">Vencimento CNH</th>
-                                    <th className="pb-3 text-right pr-4">Linha de Contato</th>
+                                    <th className="pb-3 pl-4">{_x('QcOnw7Vlcw==')}</th>
+                                    <th className="pb-3">{_x('Q29uZHV0b3IgLyBCYXNl')}</th>
+                                    <th className="pb-3">{_x('SW5zY3Jpw6fDo28gQ1BG')}</th>
+                                    <th className="pb-3 text-center">{_x('Q2F0ZWdvcmlh')}</th>
+                                    <th className="pb-3 text-center">{_x('VmVuY2ltZW50byBDTkg=')}</th>
+                                    <th className="pb-3 text-right pr-4">{_x('TGluaGEgZGUgQ29udGF0bw==')}</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/[0.01]">
-                                {motoristasFiltrados.map(m => {
-                                    const cnhVencida = new Date(m.vencimento_cnh) < new Date();
+                                {_0xffm.map(m => {
+                                    const _cv = new Date(m.vencimento_cnh) < new Date();
                                     return (
                                         <tr key={m.id} className="hover:bg-white/[0.01] transition-colors group">
-                                            {/* COLUNA DE CONTROLES OPERACIONAIS */}
-                                            <td className="py-4Doc pl-4 select-none w-20">
+                                            <td className="py-4 pl-4 select-none w-20">
                                                 <div className="flex gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => setMotoristaParaEditar(m)}
-                                                        className="bg-black/40 hover:bg-blue-600 border border-white/[0.08] text-white p-1 rounded-md text-[10px] transition-colors"
-                                                        title="Editar Cadastro"
-                                                    >
-                                                        ✏️
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setMotoristaParaDeletar(m)}
-                                                        className="bg-black/40 hover:bg-red-600 border border-white/[0.08] text-white p-1 rounded-md text-[10px] transition-colors"
-                                                        title="Excluir Condutor"
-                                                    >
-                                                        🗑️
-                                                    </button>
+                                                    <button onClick={() => _0xse(m)} className="bg-black/40 hover:bg-blue-600 border border-white/[0.08] text-white p-1 rounded-md text-[10px] transition-colors" title={_x('RWRpdGFyIENhZGFzdHJv')}>✏️</button>
+                                                    <button onClick={() => _0xsd(m)} className="bg-black/40 hover:bg-red-600 border border-white/[0.08] text-white p-1 rounded-md text-[10px] transition-colors" title={_x('RXhjbHVpciBDb25kdXRvcg==')}>🗑️</button>
                                                 </div>
                                             </td>
-
                                             <td className="py-4">
-                                                <p className="font-black text-slate-200 uppercase tracking-tight text-xs">
-                                                    {m.nome_completo}
-                                                </p>
+                                                <p className="font-black text-slate-200 uppercase tracking-tight text-xs">{m.nome_completo}</p>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <span className="bg-slate-800 text-slate-400 border border-white/[0.04] rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide">
-                                                        📍 {m.cidade || 'Não Informada'}
+                                                        📍 {m.cidade || _x('TsOjbyBJbmZvcm1hZGE=')}
                                                     </span>
                                                     {m.data_nascimento && (
                                                         <span className="text-[8px] font-mono text-slate-500">
-                                                            Nasc: {new Date(m.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR')}
+                                                            {_x('TmFzYzo=')} {new Date(m.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR')}
                                                         </span>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="py-4 font-mono text-slate-400 text-xs">
-                                                {m.cpf}
-                                            </td>
+                                            <td className="py-4 font-mono text-slate-400 text-xs">{m.cpf}</td>
                                             <td className="py-4 text-center">
-                                                <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded font-mono font-black px-2 py-0.5 text-[10px] uppercase tracking-wider">
-                                                    {m.categoria_cnh}
-                                                </span>
+                                                <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded font-mono font-black px-2 py-0.5 text-[10px] uppercase tracking-wider">{m.categoria_cnh}</span>
                                             </td>
                                             <td className="py-4 text-center font-mono text-xs">
-                                                <p className={cnhVencida ? "text-red-400 font-bold" : "text-slate-300"}>
+                                                <p className={_cv ? "text-red-400 font-bold" : "text-slate-300"}>
                                                     {new Date(m.vencimento_cnh + 'T12:00:00').toLocaleDateString('pt-BR')}
                                                 </p>
-                                                {cnhVencida && (
-                                                    <span className="text-[7px] text-red-500 uppercase font-black tracking-widest block">Regularizar</span>
-                                                )}
+                                                {_cv && <span className="text-[7px] text-red-500 uppercase font-black tracking-widest block">{_x('UmVndWxhcml6YXI=')}</span>}
                                             </td>
-                                            <td className="py-4 text-right pr-4 font-mono text-xs font-bold text-slate-300">
-                                                {m.contato}
-                                            </td>
+                                            <td className="py-4 text-right pr-4 font-mono text-xs font-bold text-slate-300">{m.contato}</td>
                                         </tr>
                                     );
                                 })}
@@ -304,173 +272,83 @@ export default function ListaMotoristasPage() {
                 </div>
             </div>
 
-            {/* MODAL I: EDIÇÃO DE MOTORISTA */}
-            {motoristaParaEditar && (
+            {_0x5e && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <form
-                        onSubmit={handleAtualizarMotorista}
-                        className="bg-[#1a1f29] border border-white/[0.08] p-6 rounded-[28px] max-w-md w-full space-y-4 shadow-2xl"
-                    >
+                    <form onSubmit={_0xup} className="bg-[#1a1f29] border border-white/[0.08] p-6 rounded-[28px] max-w-md w-full space-y-4 shadow-2xl">
                         <div className="border-b border-white/[0.04] pb-3">
-                            <h3 className="text-sm font-black uppercase tracking-wider text-white">Editar Motorista</h3>
-                            <p className="text-[9px] text-slate-400 font-mono uppercase mt-0.5">Código Condutor: {motoristaParaEditar.id}</p>
+                            <h3 className="text-sm font-black uppercase tracking-wider text-white">{_x('RWRpdGFyIE1vdG9yaXN0YQ==')}</h3>
+                            <p className="text-[9px] text-slate-400 font-mono uppercase mt-0.5">{_x('Q8OzZGlnbyBDb25kdXRvcjo=')} {_0x5e.id}</p>
                         </div>
-
                         <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Nome Completo</label>
-                            <input
-                                type="text"
-                                value={motoristaParaEditar.nome_completo}
-                                onChange={e => setMotoristaParaEditar({...motoristaParaEditar, nome_completo: e.target.value})}
-                                className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-bold text-white outline-none uppercase"
-                                required
-                            />
+                            <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{_x('Tm9tZSBDb21wbGV0bw==')}</label>
+                            <input type="text" value={_0x5e.nome_completo} onChange={e => _0xse({..._0x5e, nome_completo: e.target.value})} className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-bold text-white outline-none uppercase" required />
                         </div>
-
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">CPF</label>
-                                <input
-                                    type="text"
-                                    value={motoristaParaEditar.cpf}
-                                    onChange={e => setMotoristaParaEditar({...motoristaParaEditar, cpf: e.target.value})}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white outline-none"
-                                    required
-                                />
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{_x('Q1BG')}</label>
+                                <input type="text" value={_0x5e.cpf} onChange={e => _0xse({..._0x5e, cpf: e.target.value})} className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white outline-none" required />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Contato</label>
-                                <input
-                                    type="text"
-                                    value={motoristaParaEditar.contato}
-                                    onChange={e => setMotoristaParaEditar({...motoristaParaEditar, contato: e.target.value})}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white outline-none"
-                                    required
-                                />
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{_x('Q29udGF0bw==')}</label>
+                                <input type="text" value={_0x5e.contato} onChange={e => _0xse({..._0x5e, contato: e.target.value})} className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white outline-none" required />
                             </div>
                         </div>
-
                         <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">CNH Cat.</label>
-                                <input
-                                    type="text"
-                                    value={motoristaParaEditar.categoria_cnh}
-                                    onChange={e => setMotoristaParaEditar({...motoristaParaEditar, categoria_cnh: e.target.value})}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-black text-center text-white outline-none uppercase"
-                                    maxLength={3}
-                                    required
-                                />
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{_x('Q05IIENhdC4=')}</label>
+                                <input type="text" value={_0x5e.categoria_cnh} onChange={e => _0xse({..._0x5e, categoria_cnh: e.target.value})} className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-black text-center text-white outline-none uppercase" maxLength={3} required />
                             </div>
                             <div className="space-y-1 col-span-2">
-                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Vencimento CNH</label>
-                                <input
-                                    type="date"
-                                    value={motoristaParaEditar.vencimento_cnh}
-                                    onChange={e => setMotoristaParaEditar({...motoristaParaEditar, vencimento_cnh: e.target.value})}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white text-center outline-none"
-                                    required
-                                />
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{_x('VmVuY2ltZW50byBDTkg=')}</label>
+                                <input type="date" value={_0x5e.vencimento_cnh} onChange={e => _0xse({..._0x5e, vencimento_cnh: e.target.value})} className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white text-center outline-none" required />
                             </div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Base / Cidade</label>
-                                <select
-                                    value={motoristaParaEditar.cidade}
-                                    onChange={e => setMotoristaParaEditar({...motoristaParaEditar, cidade: e.target.value})}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-bold text-white outline-none uppercase cursor-pointer"
-                                >
-                                    {cidadesOperacao.map((cid, idx) => (
-                                        <option key={idx} value={cid}>{cid}</option>
-                                    ))}
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{_x('QmFzZSAvIENpZGFkZQ==')}</label>
+                                <select value={_0x5e.cidade} onChange={e => _0xse({..._0x5e, cidade: e.target.value})} className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-bold text-white outline-none uppercase cursor-pointer">
+                                    {_0xcd.map((cid, idx) => ( <option key={idx} value={cid}>{cid}</option> ))}
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Nascimento</label>
-                                <input
-                                    type="date"
-                                    value={motoristaParaEditar.data_nascimento || ''}
-                                    onChange={e => setMotoristaParaEditar({...motoristaParaEditar, data_nascimento: e.target.value || null})}
-                                    className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white text-center outline-none"
-                                />
+                                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{_x('TmFzY2ltZW50bw==')}</label>
+                                <input type="date" value={_0x5e.data_nascimento || ''} onChange={e => _0xse({..._0x5e, data_nascimento: e.target.value || null})} className="w-full bg-black border border-white/[0.06] focus:border-blue-500 px-3 py-2 rounded-xl text-xs font-mono font-bold text-white text-center outline-none" />
                             </div>
                         </div>
-
                         <div className="flex gap-2.5 pt-2 border-t border-white/[0.04] select-none">
-                            <button
-                                type="button"
-                                onClick={() => setMotoristaParaEditar(null)}
-                                className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={salvando}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40"
-                            >
-                                {salvando ? 'Gravando...' : 'Salvar'}
-                            </button>
+                            <button type="button" onClick={() => _0xse(null)} className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">{_x('Q2FuY2VsYXI=')}</button>
+                            <button type="submit" disabled={_0x8s} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40">{_0x8s ? _x('R3JhdmFuZG8uLi4=') : _x('U2FsdmFy')}</button>
                         </div>
                     </form>
                 </div>
             )}
 
-            {/* MODAL II: EXCLUSÃO PROTEGIDA (1 a 6) */}
-            {motoristaParaDeletar && (
+            {_0x6d && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-[#151922] border border-red-500/20 p-6 rounded-[28px] max-w-sm w-full space-y-4 shadow-2xl">
                         <div className="text-center space-y-1">
                             <span className="text-2xl block select-none">⚠️</span>
-                            <h3 className="text-sm font-black uppercase tracking-wider text-white">Remover Condutor?</h3>
+                            <h3 className="text-sm font-black uppercase tracking-wider text-white">{_x('UmVtb3ZlciBDb25kdXRvcj8=')}</h3>
                             <p className="text-[11px] text-slate-400 leading-normal font-medium">
-                                Você está removendo em definitivo <strong className="text-white font-black">{motoristaParaDeletar.nome_completo}</strong> do cadastro do pátio.
+                                {_x('Vm9jw6ogZXN0w6EgcmVtb3ZlbmRvIGVtIGRlZmluaXRpdm8g')} <strong className="text-white font-black">{_0x6d.nome_completo}</strong> {_x('ZG8gY2FkYXN0cm8gZG8gcMOhdGlvLg==')}
                             </p>
                         </div>
-
                         <div className="space-y-1.5 bg-black/40 border border-white/[0.03] p-3.5 rounded-xl">
                             <label className="text-[9px] font-black uppercase text-red-400 tracking-wider block text-center">
-                                Para confirmar, digite de 1 até 6:
+                                {_x('UGFyYSBjb25maXJtYXIsIGRpZ2l0ZSBkZSAxIGF0w6kgNjo=')}
                             </label>
-                            <input
-                                type="text"
-                                maxLength={6}
-                                placeholder="Digite 123456..."
-                                value={codigoConfirmacao}
-                                onChange={e => setCodigoConfirmacao(e.target.value)}
-                                className="w-full bg-black border border-white/[0.08] focus:border-red-500 px-3 py-2 rounded-lg text-sm font-mono font-black text-center text-white outline-none tracking-[6px]"
-                            />
+                            <input type="text" maxLength={6} placeholder={_x('RGlnaXRlIDEyMzQ1Ni4uLg==')} value={_0x7c} onChange={e => _0xscf(e.target.value)} className="w-full bg-black border border-white/[0.08] focus:border-red-500 px-3 py-2 rounded-lg text-sm font-mono font-black text-center text-white outline-none tracking-[6px]" />
                         </div>
-
                         <div className="flex gap-2.5 select-none">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setMotoristaParaDeletar(null);
-                                    setCodigoConfirmacao('');
-                                }}
-                                className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
-                            >
-                                Abortar
-                            </button>
-                            <button
-                                type="button"
-                                disabled={codigoConfirmacao !== '123456' || salvando}
-                                onClick={handleConfirmarExclusao}
-                                className="flex-1 bg-red-600 disabled:bg-red-950/20 hover:bg-red-700 disabled:text-red-400/40 text-white py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {salvando ? 'Removendo...' : 'Confirmar'}
-                            </button>
+                            <button type="button" onClick={() => { _0xsd(null); _0xscf(''); }} className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">{_x('QWJvcnRhcg==')}</button>
+                            <button type="button" disabled={_0x7c !== _x('MTIzNDU2') || _0x8s} onClick={_0xdl} className="flex-1 bg-red-600 disabled:bg-red-950/20 hover:bg-red-700 disabled:text-red-400/40 text-white py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{_0x8s ? _x('UmVtb3ZlbmRvLi4u') : _x('Q29uZmlybWFy')}</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* RODAPÉ */}
             <footer className="w-full border-t border-white/[0.02] pt-6 mt-10 flex flex-col sm:flex-row items-center justify-between text-[8px] text-slate-500 uppercase font-bold tracking-[3px] gap-4 text-center sm:text-left max-w-[1400px] mx-auto px-2">
-                <div>GR Autopeças &amp; Distribuição</div>
+                <div>{_x('R1IgQXV0b3Blw6dhcyAmIERpc3RyaWJ1acOnw6Nv')}</div>
                 <div className="font-mono text-slate-600">Fleet Control Unit v1.2</div>
             </footer>
         </main>
