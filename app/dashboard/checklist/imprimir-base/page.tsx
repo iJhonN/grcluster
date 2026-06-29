@@ -16,7 +16,7 @@ interface SecaoChecklist {
 }
 
 export default function ImprimirChecklistBasePage() {
-    // delayzinho maroto pro layout carregar 100% antes de abrir a janela de print
+    // delayzinho pro layout carregar 100% antes de abrir a janela de print
     useEffect(() => {
         const timer = setTimeout(() => {
             window.print();

@@ -32,7 +32,6 @@ function VisualizarChecklistViewer() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // ESTRUTURA COMPLETA PADRÃO PARA EXIBIÇÃO
     const secoes: SecaoChecklist[] = [
         {
             titulo: "2. Motor e Combustão",
@@ -283,7 +282,7 @@ function VisualizarChecklistViewer() {
                 setObsItens(mapaObs);
 
             } catch (err) {
-                console.error("Erro ao carregar auditoria do checklist:", err);
+                console.error(err);
             } finally {
                 setCarregando(false);
             }
@@ -302,7 +301,7 @@ function VisualizarChecklistViewer() {
         return (
             <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center gap-2 text-[#86868b]">
                 <div className="w-5 h-5 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[10px] uppercase font-bold tracking-wider font-mono">Buscando Relatório do Pátio...</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider font-mono">Buscando dados no banco...</span>
             </div>
         );
     }
@@ -310,7 +309,7 @@ function VisualizarChecklistViewer() {
     if (!identificacao) {
         return (
             <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center p-6 text-center text-xs font-bold uppercase text-[#86868b]">
-                Checklist não localizado ou excluído da base.
+                Registro não encontrado.
                 <Link href="/dashboard/checklist/lista" className="mt-4 text-orange-600 font-black">← Voltar à Lista</Link>
             </div>
         );
@@ -433,13 +432,13 @@ function VisualizarChecklistViewer() {
                                                 <div className={`w-5 h-5 mx-auto rounded-md border flex items-center justify-center font-mono text-[10px] font-black print:w-3.5 print:h-3.5 print:text-[8px] ${marcado === 'OK' ? 'bg-green-500 border-green-600 text-white' : 'border-[#e5e5ea] bg-[#f5f5f7]/40 text-transparent print:border-gray-300 print:bg-[#f5f5f7]'}`}>{marcado === 'OK' ? 'X' : ''}</div>
                                             </td>
                                             <td className="py-2.5 px-2 text-center print:py-0.5">
-                                                <div className={`w-5 h-5 mx-auto rounded-md border flex items-center justify-center font-mono text-[10px] font-black print:w-3.5 print:h-3.5 print:text-[8px] ${marcado === 'NOK' ? 'bg-red-500 border-red-600 text-white' : 'border-[#e5e5ea] bg-[#f5f5f7]/40 text-transparent print:border-gray-300 print:bg-[#f5f5f7]'}`}>{marcado === 'NOK' ? 'X' : ''}</div>
+                                                <div className={`w-5 h-5 mx-auto rounded-md border flex items-center justify-center font-mono text-[10px] font-black print:w-3.5 print:h-3.5 print:text-[8px] ${marcado === 'NOK' ? 'bg-red-500 border-red-600 text-white' : 'border-[#d2d2d7] bg-[#f5f5f7] text-transparent print:border-gray-300 print:bg-[#f5f5f7]'}`}>{marcado === 'NOK' ? 'X' : ''}</div>
                                             </td>
                                             <td className="py-2.5 px-2 text-center print:py-0.5">
-                                                <div className={`w-5 h-5 mx-auto rounded-md border flex items-center justify-center font-mono text-[10px] font-black print:w-3.5 print:h-3.5 print:text-[8px] ${marcado === 'TRC' ? 'bg-orange-500 border-orange-600 text-white' : 'border-[#e5e5ea] bg-[#f5f5f7]/40 text-transparent print:border-gray-300 print:bg-[#f5f5f7]'}`}>{marcado === 'TRC' ? 'X' : ''}</div>
+                                                <div className={`w-5 h-5 mx-auto rounded-md border flex items-center justify-center font-mono text-[10px] font-black print:w-3.5 print:h-3.5 print:text-[8px] ${marcado === 'TRC' ? 'bg-orange-500 border-orange-600 text-white' : 'border-[#d2d2d7] bg-[#f5f5f7]'}`}>{marcado === 'TRC' ? 'X' : ''}</div>
                                             </td>
                                             <td className="py-2.5 px-2 text-center print:py-0.5">
-                                                <div className={`w-5 h-5 mx-auto rounded-md border flex items-center justify-center font-mono text-[10px] font-black print:w-3.5 print:h-3.5 print:text-[8px] ${marcado === 'NA' ? 'bg-gray-400 border-gray-500 text-white' : 'border-[#e5e5ea] bg-[#f5f5f7]/40 text-transparent print:border-gray-300 print:bg-[#f5f5f7]'}`}>{marcado === 'NA' ? 'X' : ''}</div>
+                                                <div className={`w-5 h-5 mx-auto rounded-md border flex items-center justify-center font-mono text-[10px] font-black print:w-3.5 print:h-3.5 print:text-[8px] ${marcado === 'NA' ? 'bg-gray-400 border-gray-500 text-white' : 'border-[#d2d2d7] bg-[#f5f5f7]'}`}>{marcado === 'NA' ? 'X' : ''}</div>
                                             </td>
                                             <td className="py-2.5 px-4 font-mono text-[11px] font-bold text-slate-700 uppercase print:py-0.5 print:px-2 print:text-[8px]">
                                                 {obsItens[item.id] || '---'}
@@ -483,7 +482,7 @@ function VisualizarChecklistViewer() {
     );
 }
 
-// === EXPORTAÇÃO ENVOLVIDA NO SUSPENSE PARA RESOLVER O ERRO DA VERCEL ===
+// jogando dentro do suspense pra travar o erro de build da vercel na renderização estática (não remover por favor)
 export default function VisualizarChecklistPageWrapper() {
     return (
         <Suspense fallback={<div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center font-mono text-[10px] font-bold uppercase tracking-widest text-[#86868b]">Carregando Laudo...</div>}>

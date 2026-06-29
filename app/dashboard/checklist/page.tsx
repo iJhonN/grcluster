@@ -27,14 +27,13 @@ export default function ChecklistPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // 1. DADOS DE IDENTIFICAÇÃO DO VEÍCULO
     const [identificacao, setIdentificacao] = useState({
         placa: '', frotaNo: '', marcaModelo: '', ano: '',
         quilometragem: '', proxRevisao: '', dataEntrada: '', hora: '',
         mecanico: '', ajudante: '', dataSaida: ''
     });
 
-    // MÁSCARA AUTOMÁTICA DE PLACA (Padrão Antigo AAA-0000 e Mercosul AAA-0A00)
+    // Trata a string da placa para aceitar cinza antigo (AAA-1234) ou Mercosul (AAA1A23)
     const handlePlacaChange = (val: string) => {
         let texto = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (texto.length <= 3) {
@@ -52,7 +51,6 @@ export default function ChecklistPage() {
         }
     };
 
-    // 2. ESTRUTURA COMPLETA DE SEÇÕES E ITENS PREDETERMINADOS
     const secoes: SecaoChecklist[] = [
         {
             titulo: "2. Motor e Combustão",
@@ -69,7 +67,7 @@ export default function ChecklistPage() {
                 { id: "m10", texto: "Aperto do coletor de admissão / escape" },
                 { id: "m11", texto: "Diagnóstico com scanner - leitura de falhas" },
                 { id: "m12", texto: "Verificação da espoleta d'água do cabeçote" },
-                { id: "m13", texto: "Verificação dos sensores de óleo, temperatura e fase" }
+                { id: "m12", texto: "Verificação dos sensores de óleo, temperatura e fase" }
             ]
         },
         {
@@ -269,7 +267,6 @@ export default function ChecklistPage() {
         }
     ];
 
-    // 3. ESTADOS DE CONTROLE DE VALORES DOS CAMPOS
     const [statusItens, setStatusItens] = useState<{ [key: string]: string }>({});
     const [obsItens, setObsItens] = useState<{ [key: string]: string }>({});
     const [observacoesGerais, setObservacoesGerais] = useState('');
@@ -279,7 +276,6 @@ export default function ChecklistPage() {
         setStatusItens(prev => ({ ...prev, [itemId]: prev[itemId] === valor ? '' : valor }));
     };
 
-    // FUNÇÃO QUE DISPARA O SALVAMENTO NO SUPABASE
     const handleSalvarChecklist = async () => {
         setStatusFeed({ tipo: '', texto: '' });
 
@@ -292,7 +288,7 @@ export default function ChecklistPage() {
         setSalvando(true);
 
         try {
-            // 1. Insere os metadados na tabela principal
+            // Primeiro grava o registro pai para obter o ID gerado
             const { data: novaRevisao, error: errorCabecalho } = await supabase
                 .from('revisoes_frota')
                 .insert([{
@@ -307,7 +303,7 @@ export default function ChecklistPage() {
                     data_saida: identificacao.dataSaida || null,
                     mecanico_responsavel: identificacao.mecanico,
                     ajudante: identificacao.ajudante || null,
-                    observacoes_gerais: observacoesGerais || null
+                    observacoes_generais: observacoesGerais || null
                 }])
                 .select('id')
                 .single();
@@ -316,7 +312,7 @@ export default function ChecklistPage() {
 
             const revisaoId = novaRevisao.id;
 
-            // 2. Prepara o lote de itens respondidos
+            // Filtra e encontra apenas as linhas que receberam alguma resposta
             const itensParaInserir = secoes.flatMap(secao =>
                 secao.itens
                     .filter(item => statusItens[item.id])
@@ -328,7 +324,7 @@ export default function ChecklistPage() {
                     }))
             );
 
-            // 3. Faz o bulk insert na tabela filha
+            // Bulk insert da tabela filha caso existam marcações efetuadas
             if (itensParaInserir.length > 0) {
                 const { error: errorItens } = await supabase
                     .from('revisoes_frota_itens')
@@ -353,7 +349,6 @@ export default function ChecklistPage() {
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-orange-500/10 print:bg-white print:p-0 print:text-black">
 
-            {/* TOPO / HEADER */}
             <header className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mb-6 print:border-none print:shadow-none print:p-0">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
                     <div className="space-y-0.5">
@@ -364,7 +359,6 @@ export default function ChecklistPage() {
                         <p className="text-xs text-orange-600 font-bold uppercase tracking-wide">Recesso de Meio de Ano • Frota Escolar &amp; Rodoviária</p>
                     </div>
 
-                    {/* BOTÕES DE AÇÃO COM O NOVO BOTÃO DE HISTÓRICO */}
                     <div className="flex items-center gap-2">
                         <Link
                             href="/dashboard/checklist/lista"
@@ -385,7 +379,6 @@ export default function ChecklistPage() {
                     </div>
                 </div>
 
-                {/* BANNER DE RETORNO / ALERTA */}
                 {statusFeed.texto && (
                     <div className={`mt-4 p-3 rounded-xl text-center text-xs font-bold border transition-all ${
                         statusFeed.tipo === 'sucesso' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-600'
@@ -394,7 +387,6 @@ export default function ChecklistPage() {
                     </div>
                 )}
 
-                {/* LEGENDA */}
                 <div className="mt-4 p-3 bg-[#f5f5f7] rounded-xl text-[10px] font-bold uppercase tracking-wide text-[#86868b] flex flex-wrap gap-4 border border-[#e5e5ea] print:bg-white print:border-black print:text-black">
                     <span className="text-[#1d1d1f] font-black">Legenda:</span>
                     <span>🟢 OK = Conforme</span>
@@ -404,7 +396,6 @@ export default function ChecklistPage() {
                 </div>
             </header>
 
-            {/* FORMULÁRIO DE IDENTIFICAÇÃO DO VEÍCULO */}
             <section className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mb-6 print:border-black print:rounded-none">
                 <div className="border-b border-[#f5f5f7] pb-3 mb-4 print:border-black">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest">1. Identificação do Veículo</h2>
@@ -453,7 +444,6 @@ export default function ChecklistPage() {
                 </div>
             </section>
 
-            {/* GRUPO DE TABELAS DO CHECKLIST */}
             <section className="max-w-4xl mx-auto space-y-4 print:space-y-6">
                 {secoes.map((secao, idxSecao) => (
                     <div key={idxSecao} className="bg-white border border-[#e5e5ea] rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] overflow-hidden print:border-black print:rounded-none print:shadow-none print:break-inside-avoid">
@@ -513,7 +503,6 @@ export default function ChecklistPage() {
                 ))}
             </section>
 
-            {/* SEÇÃO 16: OBSERVAÇÕES GERAIS */}
             <section className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mt-4 print:border-black print:rounded-none print:break-inside-avoid">
                 <div className="border-b border-[#f5f5f7] pb-3 mb-3 print:border-black">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest">16. Observações e Itens fora do Checklist</h2>
@@ -521,7 +510,6 @@ export default function ChecklistPage() {
                 <textarea rows={4} value={observacoesGerais} onChange={e => setObservacoesGerais(e.target.value.toUpperCase())} placeholder="DIGITE AQUI ANOTAÇÕES COMPLEMENTARES CASO OUTROS COMPONENTES ESTEJAM DANIFICADOS NO PÁTIO..." className="w-full bg-[#f5f5f7] border border-[#e5e5ea] p-3 rounded-xl text-xs font-semibold outline-none resize-none uppercase print:bg-white print:border-black" />
             </section>
 
-            {/* SEÇÃO 17: ASSINATURAS E SAÍDA */}
             <section className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] mt-4 mb-4 print:border-black print:rounded-none print:break-inside-avoid">
                 <div className="border-b border-[#f5f5f7] pb-3 mb-6 print:border-black">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest">17. Encerramento e Assinaturas</h2>
@@ -539,7 +527,6 @@ export default function ChecklistPage() {
                 </div>
             </section>
 
-            {/* BARRA FIXA DE AÇÕES NO RODAPÉ DA TELA (MOBILE-FRIENDLY, OCULTA NO PRINT) */}
             <div className="max-w-4xl mx-auto bg-white border border-[#e5e5ea] p-4 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex justify-end items-center gap-3 print:hidden">
                 <Link href="/dashboard/checklist/lista" className="text-xs font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors px-2">
                     Cancelar
