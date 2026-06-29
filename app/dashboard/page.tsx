@@ -6,11 +6,11 @@ import { createBrowserClient } from '@supabase/ssr';
 
 export const dynamic = 'force-dynamic';
 
-// Motor de decriptação em runtime
+// Helper provisório pra decodificar as strings mascaradas em runtime (anti-curiosos)
 const _x = (b: string) => typeof window !== 'undefined' ? decodeURIComponent(escape(atob(b))) : '';
 
 export default function DashboardPage() {
-    // Trava de Domínio (Anti-clonagem)
+    // Validador de licença de uso - trava a execução se não estiver no domínio correto
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const _h = window.location.hostname;
@@ -22,6 +22,7 @@ export default function DashboardPage() {
         }
     }, []);
 
+    // Controle de estado da UI com variáveis anonimizadas
     const [_0x1n, _0x1s] = useState(_x('U2luY3Jvbml6YW5kby4uLg=='));
     const [_0x2r, _0x2s] = useState('...');
     const [_0x3c, _0x3s] = useState(true);
@@ -37,7 +38,8 @@ export default function DashboardPage() {
 
         async function _fetch() {
             try {
-                const { data: { user } } = await client[_x('YXV0aA==')][_x('Z2V0VXNlcg==')]();
+                // (client as any).auth.getUser()
+                const { data: { user } } = await (client as any)[_x('YXV0aA==')][_x('Z2V0VXNlcg==')]();
 
                 if (!user) {
                     if (_active) router.push('/');
@@ -72,7 +74,8 @@ export default function DashboardPage() {
     }, [router, client]);
 
     const _logout = async () => {
-        await client.auth.signOut();
+        // (client as any).auth.signOut()
+        await (client as any)[_x('YXV0aA==')][_x('c2lnbk91dA==')]();
         router.push('/');
         router.refresh();
     };
