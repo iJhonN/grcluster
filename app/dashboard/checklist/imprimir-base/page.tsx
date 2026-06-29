@@ -16,6 +16,7 @@ interface SecaoChecklist {
 }
 
 export default function ImprimirChecklistBasePage() {
+    // delayzinho maroto pro layout carregar 100% antes de abrir a janela de print
     useEffect(() => {
         const timer = setTimeout(() => {
             window.print();
@@ -231,7 +232,7 @@ export default function ImprimirChecklistBasePage() {
                 { id: "doc2", texto: "Licenciamento (validade)" },
                 { id: "doc3", texto: "Tacógrafo/cronotacógrafo aferido" },
                 { id: "doc4", texto: "Documentação do veículo (CRLV)" },
-                { id: "doc5", text: "Sinalização ESCOLAR (frente e traseira)" },
+                { id: "doc5", texto: "Sinalização ESCOLAR (frente e traseira)" },
                 { id: "doc6", texto: "Itinerário (escolares)" },
                 { id: "doc7", texto: "Validade de gás do A/C" },
                 { id: "doc8", texto: "AET - Autorização Especial de Trânsito (se houver)" }
@@ -244,6 +245,7 @@ export default function ImprimirChecklistBasePage() {
             className="min-h-screen bg-white text-black p-4 sm:p-6 md:p-10 font-sans antialiased"
             style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
         >
+            {/* Esconde da impressão pra não gastar folha à toa */}
             <div className="max-w-4xl mx-auto mb-4 print:hidden flex justify-between items-center bg-[#f5f5f7] p-4 rounded-xl border border-[#e5e5ea]">
                 <span className="text-xs font-bold text-[#1d1d1f] uppercase tracking-wide">Preenchimento Físico Padrão</span>
                 <Link href="/dashboard/checklist/lista" className="bg-[#1d1d1f] hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
@@ -268,6 +270,7 @@ export default function ImprimirChecklistBasePage() {
                 </div>
             </header>
 
+            {/* Linhas em branco pro pessoal preencher na prancheta */}
             <section className="max-w-4xl mx-auto border border-gray-300 p-6 rounded-2xl mb-6 print:border-gray-300 print:rounded-none print:p-2 print:mb-2">
                 <div className="border-b border-gray-300 pb-2 mb-4 print:pb-1 print:mb-2">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[10px]">1. Identificação do Veículo</h2>
@@ -316,6 +319,7 @@ export default function ImprimirChecklistBasePage() {
                 </div>
             </section>
 
+            {/* Render das tabelas estáticas sem checagem de estado */}
             <section className="max-w-4xl mx-auto space-y-4 print:space-y-2">
                 {secoes.map((secao, idxSecao) => (
                     <div key={idxSecao} className="bg-white border border-gray-300 rounded-2xl overflow-hidden print:border-gray-300 print:rounded-none print:shadow-none print:break-inside-avoid">
@@ -366,6 +370,7 @@ export default function ImprimirChecklistBasePage() {
                 ))}
             </section>
 
+            {/* Linhas extras pra anotação livre de campo */}
             <section className="max-w-4xl mx-auto border border-gray-300 p-6 rounded-2xl mt-4 print:border-gray-300 print:rounded-none print:break-inside-avoid print:p-2 print:mt-2">
                 <div className="border-b border-gray-300 pb-2 mb-3 print:pb-1 print:mb-1">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[9px]">16. Observações e Itens fora do Checklist</h2>
@@ -377,6 +382,7 @@ export default function ImprimirChecklistBasePage() {
                 </div>
             </section>
 
+            {/* Bloco pras assinaturas coletadas no pátio */}
             <section className="max-w-4xl mx-auto border border-gray-300 p-6 rounded-2xl mt-4 mb-10 print:border-gray-300 print:rounded-none print:break-inside-avoid print:p-2 print:mt-2 print:mb-0">
                 <div className="border-b border-gray-300 pb-3 mb-6 print:border-gray-300 print:pb-1 print:mb-4">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[9px]">17. Encerramento e Assinaturas</h2>
