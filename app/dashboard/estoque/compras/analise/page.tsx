@@ -19,113 +19,128 @@ interface Solicitacao {
     mes_ano: string;
 }
 
+// Dicionário de strings para blindar tabelas e colunas contra rastreio visual direto
+const _0xdb = [
+    "estoque_compras", // [0]
+    "PENDENTE",        // [1]
+    "EM_ANALISE",      // [2]
+    "COMPRADO",        // [3]
+    "EM_TRANSITO",     // [4]
+    "CONCLUIDO",       // [5]
+    "sucesso",         // [6]
+    "erro"             // [7]
+];
+
 export default function AnaliseComprasPage() {
-    const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
-    const [itemSelecionado, setItemSelecionado] = useState<Solicitacao | null>(null);
-    const [carregando, setCarregando] = useState(true);
-    const [salvando, setSalvando] = useState(false);
+    // Gerenciamento de filas e estados da cotação
+    const [_0x1a, _0x2b] = useState<Solicitacao[]>([]);
+    const [_0x3c, _0x4d] = useState<Solicitacao | null>(null);
+    const [_0x5e, _0x6f] = useState(true);
+    const [_0x7a, _0x8b] = useState(false);
 
-    // Campos de edição do Comprador 2
-    const [fornecedor, setFornecedor] = useState('');
-    const [valor, setValor] = useState('');
-    const [prazoEntrega, setPrazoEntrega] = useState('');
-    const [statusItem, setStatusItem] = useState<'PENDENTE' | 'EM_ANALISE' | 'COMPRADO' | 'EM_TRANSITO' | 'CONCLUIDO'>('EM_ANALISE');
-    const [ref1, setRef1] = useState('');
-    const [ref2, setRef2] = useState('');
-    const [ref3, setRef3] = useState('');
+    // Inputs do formulário de faturamento
+    const [_0x9c, _0x1f] = useState('');
+    const [_0x2e, _0x3a] = useState('');
+    const [_0x4b, _0x5c] = useState('');
+    const [_0x6d, _0x7e] = useState<'PENDENTE' | 'EM_ANALISE' | 'COMPRADO' | 'EM_TRANSITO' | 'CONCLUIDO'>(_0xdb[2] as any);
+    const [_0x8f, _0x9a] = useState('');
+    const [_0x1b, _0x2c] = useState('');
+    const [_0x3d, _0x4e] = useState('');
 
-    const [statusFeed, setStatusFeed] = useState({ tipo: '', texto: '' });
+    const [_0x5f, _0x6a] = useState({ tipo: '', texto: '' });
 
-    const supabase = createBrowserClient(
+    const client = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    async function carregarFilaFaturamento() {
-        setCarregando(true);
+    // Puxa fila de compras pendentes na base central
+    async function _0x10f() {
+        _0x6f(true);
         try {
-            const { data, error } = await supabase
-                .from('estoque_compras')
+            const { data, error } = await client
+                .from(_0xdb[0])
                 .select('*')
-                .in('status', ['PENDENTE', 'EM_ANALISE'])
+                .in('status', [_0xdb[1], _0xdb[2]])
                 .order('id', { ascending: true });
 
             if (error) throw error;
-            if (data) setSolicitacoes(data as Solicitacao[]);
+            if (data) _0x2b(data as Solicitacao[]);
         } catch (err) {
-            console.error("Erro ao alimentar fila de cotação:", err);
+            console.error(err);
         } finally {
-            setCarregando(false);
+            _0x6f(false);
         }
     }
 
     useEffect(() => {
-        carregarFilaFaturamento();
+        _0x10f();
     }, []);
 
-    const handleSelecionarItem = (item: Solicitacao) => {
-        setItemSelecionado(item);
-        setFornecedor(item.fornecedor || '');
-        setValor(item.valor ? String(item.valor) : '');
-        setPrazoEntrega(item.prazo_entrega || '');
-        setStatusItem(item.status === 'PENDENTE' ? 'EM_ANALISE' : item.status);
-        setRef1(item.referencia_1 || '');
-        setRef2(item.referencia_2 || '');
-        setRef3(item.referencia_3 || '');
-        setStatusFeed({ tipo: '', texto: '' });
+    // Alimenta o painel com o item clicado na lista lateral
+    const _0x20a = (item: Solicitacao) => {
+        _0x4d(item);
+        _0x1f(item.fornecedor || '');
+        _0x3a(item.valor ? String(item.valor) : '');
+        _0x5c(item.prazo_entrega || '');
+        _0x7e(item.status === _0xdb[1] ? (_0xdb[2] as any) : item.status);
+        _0x9a(item.referencia_1 || '');
+        _0x2c(item.referencia_2 || '');
+        _0x4e(item.referencia_3 || '');
+        _0x6a({ tipo: '', texto: '' });
     };
 
-    const handleSalvarAnalise = async (e: React.FormEvent) => {
+    // Submete a atualização e recalcula a fila local
+    const _0x30b = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!itemSelecionado) return;
+        if (!_0x3c) return;
 
-        setSalvando(true);
-        setStatusFeed({ tipo: '', texto: '' });
+        _0x8b(true);
+        _0x6a({ tipo: '', texto: '' });
 
         try {
-            const payload = {
-                fornecedor: fornecedor.trim().toUpperCase(),
-                valor: parseFloat(valor) || 0,
-                prazo_entrega: prazoEntrega.trim().toUpperCase(),
-                status: statusItem,
-                referencia_1: ref1.trim().toUpperCase(),
-                referencia_2: ref2.trim() ? ref2.trim().toUpperCase() : null,
-                referencia_3: ref3.trim() ? ref3.trim().toUpperCase() : null,
+            const dataPayload = {
+                fornecedor: _0x9c.trim().toUpperCase(),
+                valor: parseFloat(_0x2e) || 0,
+                prazo_entrega: _0x4b.trim().toUpperCase(),
+                status: _0x6d,
+                referencia_1: _0x8f.trim().toUpperCase(),
+                referencia_2: _0x1b.trim() ? _0x1b.trim().toUpperCase() : null,
+                referencia_3: _0x3d.trim() ? _0x3d.trim().toUpperCase() : null,
             };
 
-            const { error } = await supabase
-                .from('estoque_compras')
-                .update(payload)
-                .eq('id', itemSelecionado.id);
+            const { error } = await client
+                .from(_0xdb[0])
+                .update(dataPayload)
+                .eq('id', _0x3c.id);
 
             if (error) throw error;
 
-            setStatusFeed({
-                tipo: 'sucesso',
+            _0x6a({
+                tipo: _0xdb[6],
                 texto: 'Cotação e status atualizados com sucesso na base central.'
             });
 
-            if (statusItem === 'COMPRADO' || statusItem === 'EM_TRANSITO' || statusItem === 'CONCLUIDO') {
-                setSolicitacoes(prev => prev.filter(s => s.id !== itemSelecionado.id));
-                setItemSelecionado(null);
+            // Se mudou de estágio, limpa da fila local de análise
+            if (_0x6d === _0xdb[3] || _0x6d === _0xdb[4] || _0x6d === _0xdb[5]) {
+                _0x2b(prev => prev.filter(s => s.id !== _0x3c.id));
+                _0x4d(null);
             } else {
-                setSolicitacoes(prev => prev.map(s => s.id === itemSelecionado.id ? { ...s, ...payload } : s));
+                _0x2b(prev => prev.map(s => s.id === _0x3c.id ? { ...s, ...dataPayload } : s));
             }
 
         } catch (err: any) {
             console.error(err);
-            setStatusFeed({ tipo: 'erro', texto: err.message || 'Erro ao processar auditoria da cotação.' });
+            _0x6a({ tipo: _0xdb[7], texto: err?.message || 'Erro ao processar auditoria da cotação.' });
         } finally {
-            setSalvando(false);
+            _0x8b(false);
         }
     };
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-black/5 flex flex-col justify-between w-full">
-
             <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col gap-6">
 
-                {/* CABEÇALHO */}
                 <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#e5e5ea] pb-6 pl-1">
                     <div className="space-y-1">
                         <Link href="/dashboard/estoque/compras" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block">
@@ -140,34 +155,32 @@ export default function AnaliseComprasPage() {
                     </div>
                 </header>
 
-                {/* AREA DE TRABALHO DUPLA (COLUNAS) */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
 
-                    {/* COLUNA 1: FILA DE SOLICITAÇÕES EM ABERTO */}
                     <div className="bg-white border border-[#e5e5ea] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.01)] lg:col-span-1 h-[600px] flex flex-col">
                         <h2 className="text-xs font-bold uppercase tracking-wider text-[#86868b] border-b border-[#f5f5f7] pb-3 mb-4 select-none">
                             ⏳ Demandas Aguardando Cotação
                         </h2>
 
-                        {carregando ? (
+                        {_0x5e ? (
                             <div className="text-center py-20 flex flex-col items-center justify-center gap-2 text-[#86868b]">
                                 <div className="w-4 h-4 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
                                 <span className="text-[10px] font-mono uppercase font-bold tracking-wider">Varrendo Fila...</span>
                             </div>
-                        ) : solicitacoes.length === 0 ? (
+                        ) : _0x1a.length === 0 ? (
                             <div className="text-center py-20 text-xs font-semibold text-[#86868b] uppercase tracking-wide">
                                 Fila zerada! Nenhuma solicitação pendente.
                             </div>
                         ) : (
                             <div className="overflow-y-auto flex-1 pr-1 space-y-2 select-none">
-                                {solicitacoes.map((item) => {
-                                    const selecionado = itemSelecionado?.id === item.id;
+                                {_0x1a.map((item) => {
+                                    const isCurrent = _0x3c?.id === item.id;
                                     return (
                                         <button
                                             key={item.id}
-                                            onClick={() => handleSelecionarItem(item)}
+                                            onClick={() => _0x20a(item)}
                                             className={`w-full p-4 rounded-xl border text-left transition-colors flex flex-col gap-2 relative overflow-hidden ${
-                                                selecionado
+                                                isCurrent
                                                     ? 'bg-[#f5f5f7] border-[#b4b4b9] text-[#1d1d1f]'
                                                     : 'bg-white border-[#e5e5ea] hover:bg-[#f5f5f7]/50 text-[#1d1d1f]'
                                             }`}
@@ -183,11 +196,11 @@ export default function AnaliseComprasPage() {
                                             <div className="flex justify-between items-center w-full text-[9px] font-mono uppercase font-semibold text-[#86868b]">
                                                 <span className="truncate max-w-[120px]">REF: {item.referencia_1}</span>
                                                 <span className={`px-1.5 py-0.5 rounded border text-[8px] font-bold ${
-                                                    item.status === 'EM_ANALISE'
+                                                    item.status === _0xdb[2]
                                                         ? 'bg-[#ff9500]/5 border-[#ff9500]/10 text-[#ff9500]'
                                                         : 'bg-[#ff3b30]/5 border-[#ff3b30]/10 text-[#ff3b30]'
                                                 }`}>
-                                                    {item.status === 'EM_ANALISE' ? 'EM ANÁLISE' : 'PENDENTE'}
+                                                    {item.status === _0xdb[2] ? 'EM ANÁLISE' : 'PENDENTE'}
                                                 </span>
                                             </div>
                                         </button>
@@ -197,41 +210,39 @@ export default function AnaliseComprasPage() {
                         )}
                     </div>
 
-                    {/* COLUNA 2 e 3: FORMULÁRIO DE COTAÇÃO FINANCEIRA */}
                     <div className="bg-white border border-[#e5e5ea] rounded-2xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] lg:col-span-2 min-h-[600px] flex flex-col">
-                        {!itemSelecionado ? (
+                        {!_0x3c ? (
                             <div className="flex flex-col justify-center items-center flex-1 text-center py-20 text-[10px] uppercase font-bold text-[#86868b] tracking-wider select-none">
                                 ⚖️ Selecione uma solicitação na fila lateral para aplicar a cotação.
                             </div>
                         ) : (
-                            <form onSubmit={handleSalvarAnalise} className="space-y-5 flex-1 flex flex-col justify-between">
+                            <form onSubmit={_0x30b} className="space-y-5 flex-1 flex flex-col justify-between">
                                 <div className="space-y-4">
                                     <div className="border-b border-[#e5e5ea] pb-3">
-                                        <span className="text-[9px] font-mono font-bold text-[#86868b] uppercase tracking-wider">Tratando Item ID: #{itemSelecionado.id}</span>
+                                        <span className="text-[9px] font-mono font-bold text-[#86868b] uppercase tracking-wider">Tratando Item ID: #{_0x3c.id}</span>
                                         <h3 className="text-base font-bold uppercase tracking-tight text-[#1d1d1f] mt-0.5">
-                                            {itemSelecionado.nome_peca} <span className="text-[#ff9500]">({itemSelecionado.quantidade} UNIDADES)</span>
+                                            {_0x3c.nome_peca} <span className="text-[#ff9500]">({_0x3c.quantidade} UNIDADES)</span>
                                         </h3>
                                     </div>
 
-                                    {statusFeed.texto && (
+                                    {_0x5f.texto && (
                                         <div className={`p-3 rounded-xl text-center text-[11px] font-bold border transition-all ${
-                                            statusFeed.tipo === 'sucesso'
+                                            _0x5f.tipo === _0xdb[6]
                                                 ? 'bg-[#34c759]/5 border-[#34c759]/20 text-[#248a3d]'
                                                 : 'bg-[#ff3b30]/5 border-[#ff3b30]/20 text-[#ff3b30]'
                                         }`}>
-                                            {statusFeed.texto}
+                                            {_0x5f.texto}
                                         </div>
                                     )}
 
-                                    {/* FORNECEDOR E VALOR */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div className="space-y-1 sm:col-span-2">
                                             <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Fornecedor Ganhador *</label>
                                             <input
                                                 type="text"
                                                 placeholder="EX: MERCADO DO MOTOR DISTRIBUIDORA"
-                                                value={fornecedor}
-                                                onChange={e => setFornecedor(e.target.value)}
+                                                value={_0x9c}
+                                                onChange={e => _0x1f(e.target.value)}
                                                 className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2.5 rounded-lg outline-none text-[#1d1d1f] text-xs font-bold uppercase placeholder-[#b4b4b9] transition-colors"
                                                 required
                                             />
@@ -242,23 +253,22 @@ export default function AnaliseComprasPage() {
                                                 type="number"
                                                 step="0.01"
                                                 placeholder="0.00"
-                                                value={valor}
-                                                onChange={e => setValor(e.target.value)}
+                                                value={_0x2e}
+                                                onChange={e => _0x3a(e.target.value)}
                                                 className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2.5 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold placeholder-[#b4b4b9] transition-colors text-center"
                                                 required
                                             />
                                         </div>
                                     </div>
 
-                                    {/* PRAZO E STATUS DO ITEM */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-1">
                                             <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Prazo de Entrega Estimado *</label>
                                             <input
                                                 type="text"
                                                 placeholder="EX: 4 DIAS ÚTEIS / ENTREGA IMEDIATA"
-                                                value={prazoEntrega}
-                                                onChange={e => setPrazoEntrega(e.target.value)}
+                                                value={_0x4b}
+                                                onChange={e => _0x5c(e.target.value)}
                                                 className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2.5 rounded-lg outline-none text-[#1d1d1f] text-xs font-bold uppercase placeholder-[#b4b4b9] transition-colors"
                                                 required
                                             />
@@ -267,8 +277,8 @@ export default function AnaliseComprasPage() {
                                             <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Alterar Status Operacional *</label>
                                             <div className="relative">
                                                 <select
-                                                    value={statusItem}
-                                                    onChange={e => setStatusItem(e.target.value as any)}
+                                                    value={_0x6d}
+                                                    onChange={e => _0x7e(e.target.value as any)}
                                                     className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] pl-3 pr-8 py-2.5 rounded-lg outline-none text-[#1d1d1f] text-xs font-bold uppercase cursor-pointer appearance-none transition-colors"
                                                     required
                                                 >
@@ -287,21 +297,20 @@ export default function AnaliseComprasPage() {
                                         </div>
                                     </div>
 
-                                    {/* AUDITORIA DE REFERÊNCIAS CRUZADAS */}
                                     <div className="border-t border-[#e5e5ea] pt-4 mt-2">
                                         <span className="block text-[8px] font-mono font-bold text-[#86868b] uppercase tracking-wider mb-3">Refinamento de Códigos (Opcional)</span>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             <div className="space-y-1">
                                                 <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Referência 1</label>
-                                                <input type="text" value={ref1} onChange={e => setRef1(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold uppercase transition-colors" required />
+                                                <input type="text" value={_0x8f} onChange={e => _0x9a(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold uppercase transition-colors" required />
                                             </div>
                                             <div className="space-y-1">
                                                 <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Referência 2</label>
-                                                <input type="text" value={ref2} onChange={e => setRef2(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold uppercase transition-colors" placeholder="N/A" />
+                                                <input type="text" value={_0x1b} onChange={e => _0x2c(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold uppercase transition-colors" placeholder="N/A" />
                                             </div>
                                             <div className="space-y-1">
                                                 <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Referência 3</label>
-                                                <input type="text" value={ref3} onChange={e => setRef3(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold uppercase transition-colors" placeholder="N/A" />
+                                                <input type="text" value={_0x3d} onChange={e => _0x4e(e.target.value)} className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold uppercase transition-colors" placeholder="N/A" />
                                             </div>
                                         </div>
                                     </div>
@@ -310,10 +319,10 @@ export default function AnaliseComprasPage() {
                                 <div className="pt-4">
                                     <button
                                         type="submit"
-                                        disabled={salvando}
+                                        disabled={_0x7a}
                                         className="w-full bg-[#1d1d1f] active:bg-black text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
                                     >
-                                        {salvando ? "Consolidando Cotação..." : "Salvar e Atualizar Fluxo"}
+                                        {_0x7a ? "Consolidando Cotação..." : "Salvar e Atualizar Fluxo"}
                                     </button>
                                 </div>
                             </form>
@@ -322,7 +331,6 @@ export default function AnaliseComprasPage() {
                 </div>
             </div>
 
-            {/* FOOTER */}
             <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
                 <div>GR Autopeças &amp; Logística Corporativa</div>
                 <div className="font-mono text-[#b4b4b9]">Procurement Pricing Analysis v2.0</div>
