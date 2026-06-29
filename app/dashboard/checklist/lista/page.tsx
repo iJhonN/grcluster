@@ -103,7 +103,6 @@ export default function ListaChecklistsPage() {
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-orange-500/10">
             <div className="max-w-4xl mx-auto space-y-6">
 
-                {/* TOPO OPERACIONAL */}
                 <header className="bg-white border border-[#e5e5ea] p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="space-y-0.5">
                         <Link href="/dashboard" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block">
@@ -113,7 +112,6 @@ export default function ListaChecklistsPage() {
                         <p className="text-xs text-orange-600 font-bold uppercase tracking-wide">Gerenciamento e Auditoria de Checklists</p>
                     </div>
 
-                    {/* BOTÕES SUPERIORES: NOVO BOTÃO DE IMPRESSÃO DA BASE VAZIA ADICIONADO */}
                     <div className="flex flex-wrap items-center gap-2">
                         <Link
                             href="/dashboard/checklist/imprimir-base"
@@ -130,7 +128,6 @@ export default function ListaChecklistsPage() {
                     </div>
                 </header>
 
-                {/* FILTROS E CONTROLES DE ORDENAÇÃO */}
                 <div className="bg-white border border-[#e5e5ea] p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.01)] space-y-3">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         <input
@@ -168,7 +165,6 @@ export default function ListaChecklistsPage() {
                     </div>
                 </div>
 
-                {/* LISTAGEM PRINCIPAL */}
                 <section className="space-y-3">
                     {carregando ? (
                         <div className="py-20 flex flex-col items-center justify-center gap-2 text-[#86868b]">

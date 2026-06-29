@@ -16,7 +16,6 @@ interface SecaoChecklist {
 }
 
 export default function ImprimirChecklistBasePage() {
-    // Dispara a janela de impressão automaticamente ao carregar
     useEffect(() => {
         const timer = setTimeout(() => {
             window.print();
@@ -50,7 +49,7 @@ export default function ImprimirChecklistBasePage() {
                 { id: "c2", texto: "Verificação da bomba de combustível" },
                 { id: "c3", texto: "Limpeza do TBI/corpo de borboleta" },
                 { id: "c4", texto: "Verificação de Arla 32 e módulo do motor (se aplicável)" },
-                { id: "c5", texto: "Inspeção de mangueiras e lines de combustível" },
+                { id: "c5", texto: "Inspeção de mangueiras e linhas de combustível" },
                 { id: "c6", texto: "Verificação do reservatório / tanque (vedação)" }
             ]
         },
@@ -232,7 +231,7 @@ export default function ImprimirChecklistBasePage() {
                 { id: "doc2", texto: "Licenciamento (validade)" },
                 { id: "doc3", texto: "Tacógrafo/cronotacógrafo aferido" },
                 { id: "doc4", texto: "Documentação do veículo (CRLV)" },
-                { id: "doc5", texto: "Sinalização ESCOLAR (frente e traseira)" },
+                { id: "doc5", text: "Sinalização ESCOLAR (frente e traseira)" },
                 { id: "doc6", texto: "Itinerário (escolares)" },
                 { id: "doc7", texto: "Validade de gás do A/C" },
                 { id: "doc8", texto: "AET - Autorização Especial de Trânsito (se houver)" }
@@ -245,7 +244,6 @@ export default function ImprimirChecklistBasePage() {
             className="min-h-screen bg-white text-black p-4 sm:p-6 md:p-10 font-sans antialiased"
             style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
         >
-            {/* BOTÃO DE RETORNO (OCULTO NA IMPRESSÃO) */}
             <div className="max-w-4xl mx-auto mb-4 print:hidden flex justify-between items-center bg-[#f5f5f7] p-4 rounded-xl border border-[#e5e5ea]">
                 <span className="text-xs font-bold text-[#1d1d1f] uppercase tracking-wide">Preenchimento Físico Padrão</span>
                 <Link href="/dashboard/checklist/lista" className="bg-[#1d1d1f] hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
@@ -253,7 +251,6 @@ export default function ImprimirChecklistBasePage() {
                 </Link>
             </div>
 
-            {/* TOPO / HEADER */}
             <header className="max-w-4xl mx-auto border border-gray-300 p-5 rounded-2xl mb-6 print:border-none print:p-0 print:mb-2">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="space-y-0.5">
@@ -262,7 +259,6 @@ export default function ImprimirChecklistBasePage() {
                     </div>
                 </div>
 
-                {/* LEGENDA */}
                 <div className="mt-4 p-3 bg-[#f5f5f7] rounded-xl text-[10px] font-bold uppercase tracking-wide text-gray-500 flex flex-wrap gap-4 border border-gray-300 print:bg-white print:p-1 print:mt-1 print:gap-2 print:text-[8px] print:border-gray-300">
                     <span className="text-black font-black">Mecânico: Marque com um [ X ]</span>
                     <span>🟢 OK = Conforme</span>
@@ -272,7 +268,6 @@ export default function ImprimirChecklistBasePage() {
                 </div>
             </header>
 
-            {/* FORMULÁRIO DE IDENTIFICAÇÃO DO VEÍCULO (LINHAS VAZIAS) */}
             <section className="max-w-4xl mx-auto border border-gray-300 p-6 rounded-2xl mb-6 print:border-gray-300 print:rounded-none print:p-2 print:mb-2">
                 <div className="border-b border-gray-300 pb-2 mb-4 print:pb-1 print:mb-2">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[10px]">1. Identificação do Veículo</h2>
@@ -321,7 +316,6 @@ export default function ImprimirChecklistBasePage() {
                 </div>
             </section>
 
-            {/* GRUPO DE TABELAS DO CHECKLIST COMPACTO */}
             <section className="max-w-4xl mx-auto space-y-4 print:space-y-2">
                 {secoes.map((secao, idxSecao) => (
                     <div key={idxSecao} className="bg-white border border-gray-300 rounded-2xl overflow-hidden print:border-gray-300 print:rounded-none print:shadow-none print:break-inside-avoid">
@@ -372,7 +366,6 @@ export default function ImprimirChecklistBasePage() {
                 ))}
             </section>
 
-            {/* SEÇÃO 16: OBSERVAÇÕES GERAIS (LINHAS PARA ESCREVER) */}
             <section className="max-w-4xl mx-auto border border-gray-300 p-6 rounded-2xl mt-4 print:border-gray-300 print:rounded-none print:break-inside-avoid print:p-2 print:mt-2">
                 <div className="border-b border-gray-300 pb-2 mb-3 print:pb-1 print:mb-1">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[9px]">16. Observações e Itens fora do Checklist</h2>
@@ -384,7 +377,6 @@ export default function ImprimirChecklistBasePage() {
                 </div>
             </section>
 
-            {/* SEÇÃO 17: ASSINATURAS */}
             <section className="max-w-4xl mx-auto border border-gray-300 p-6 rounded-2xl mt-4 mb-10 print:border-gray-300 print:rounded-none print:break-inside-avoid print:p-2 print:mt-2 print:mb-0">
                 <div className="border-b border-gray-300 pb-3 mb-6 print:border-gray-300 print:pb-1 print:mb-4">
                     <h2 className="text-xs font-black uppercase text-orange-600 font-mono tracking-widest print:text-[9px]">17. Encerramento e Assinaturas</h2>
