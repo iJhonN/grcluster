@@ -17,7 +17,6 @@ interface SecaoChecklist {
     itens: ItemChecklist[];
 }
 
-// 1. O componente principal vira apenas uma função interna
 function EditarChecklistForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -206,7 +205,7 @@ function EditarChecklistForm() {
                 { id: "ac6", texto: "Inspeção da condensadora (limpeza, aletas)" },
                 { id: "ac7", texto: "Verificação da válvula de expansão" },
                 { id: "ac8", texto: "Inspeção das mangueiras (vazamento)" },
-                { id: "ac9", texto: "Verificação dos drenos de água" },
+                { id: "ac9", text: "Verificação dos drenos de água" },
                 { id: "ac10", texto: "Troca da correia do compressor" }
             ]
         },
@@ -331,7 +330,7 @@ function EditarChecklistForm() {
                 setObsItens(mapaObs);
 
             } catch (err) {
-                console.error("Erro ao carregar checklist:", err);
+                console.error(err);
             } finally {
                 setCarregando(false);
             }
@@ -406,10 +405,10 @@ function EditarChecklistForm() {
             }, 1500);
 
         } catch (err: any) {
-            console.error("❌ ERRO INTEGRAL:", err);
+            console.error(err);
             setStatusFeed({
                 tipo: 'erro',
-                texto: err?.message || 'Falha ao sincronizar dados. Verifique o terminal.'
+                texto: 'Falha ao sincronizar dados.'
             });
             setSalvando(false);
         }
@@ -595,7 +594,6 @@ function EditarChecklistForm() {
     );
 }
 
-// 2. EXPORTAÇÃO ENVOLVIDA NO SUSPENSE PARA RESOLVER O ERRO DA VERCEL
 export default function EditarChecklistPage() {
     return (
         <Suspense fallback={<div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center font-mono text-[10px] font-bold uppercase tracking-widest text-[#86868b]">Carregando Laudo...</div>}>
