@@ -205,7 +205,7 @@ function EditarChecklistForm() {
                 { id: "ac6", texto: "Inspeção da condensadora (limpeza, aletas)" },
                 { id: "ac7", texto: "Verificação da válvula de expansão" },
                 { id: "ac8", texto: "Inspeção das mangueiras (vazamento)" },
-                { id: "ac9", text: "Verificação dos drenos de água" },
+                { id: "ac9", texto: "Verificação dos drenos de água" },
                 { id: "ac10", texto: "Troca da correia do compressor" }
             ]
         },
@@ -220,7 +220,7 @@ function EditarChecklistForm() {
                 { id: "car5", texto: "Funcionamento das portas e da automação (porta elétrica)" },
                 { id: "car6", texto: "Travamento e fixação dos bancos do salão" },
                 { id: "car7", texto: "Cintos de segurança (motorista e passageiros, se aplicável)" },
-                { id: "car8", texto: "Marcação de saída de emergência" },
+                { id: "car8", texto: "Marcação de acesso de emergência" },
                 { id: "car9", texto: "Martelo de emergência (presença e fixação)" },
                 { id: "car10", texto: "Extintor (validade, pressão, fixação)" },
                 { id: "car11", texto: "Triângulo de sinalização" },
@@ -405,7 +405,6 @@ function EditarChecklistForm() {
             }, 1500);
 
         } catch (err: any) {
-            console.error(err);
             setStatusFeed({
                 tipo: 'erro',
                 texto: 'Falha ao sincronizar dados.'
