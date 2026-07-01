@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="77c8bc44-128e-4015-b348-a169b79978b9" name="Changes" comment="" />
+    <list default="true" id="77c8bc44-128e-4015-b348-a169b79978b9" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/dashboard/frota/veiculo/lista/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/dashboard/frota/veiculo/lista/page.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -45,7 +48,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Applications/WebStorm.app/Contents/plugins/javascript-plugin/jsLanguageServicesImpl/external",
+    "ts.external.directory.path": "/Users/jhon/Documents/grcluster/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -90,6 +93,7 @@
       <workItem from="1779897729017" duration="8179000" />
       <workItem from="1781100689664" duration="2006000" />
       <workItem from="1781104250065" duration="75604000" />
+      <workItem from="1782818689101" duration="1222000" />
     </task>
     <servers />
   </component>
