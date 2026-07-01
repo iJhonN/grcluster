@@ -11,6 +11,8 @@ interface Funcionario {
     sobrenome: string;
     cargo: string;
     data_cadastro: string;
+    matricula_contabil: string | null;
+    salario: number | null;
 }
 
 export default function CentralFuncionariosPage() {
@@ -74,7 +76,7 @@ export default function CentralFuncionariosPage() {
         carregarFuncionarios();
     }, []);
 
-    // Rotina de Atualização Cadastral Protegida (Trava Estrita de ID e Enum de Cargo)
+    // Rotina de Atualização Cadastral Protegida
     const handleAtualizarFuncionario = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!funcionarioParaEditar) return;
@@ -86,7 +88,9 @@ export default function CentralFuncionariosPage() {
                 .update({
                     nome: funcionarioParaEditar.nome.trim(),
                     sobrenome: funcionarioParaEditar.sobrenome.trim(),
-                    cargo: funcionarioParaEditar.cargo // Enviado exatamente como o Enum espera
+                    cargo: funcionarioParaEditar.cargo, // Enviado exatamente como o Enum espera
+                    matricula_contabil: funcionarioParaEditar.matricula_contabil ? String(funcionarioParaEditar.matricula_contabil).trim() : null,
+                    salario: funcionarioParaEditar.salario ? Number(funcionarioParaEditar.salario) : null
                 })
                 .eq('id', funcionarioParaEditar.id);
 
@@ -112,9 +116,16 @@ export default function CentralFuncionariosPage() {
             const nomeCompleto = `${f.nome || ''} ${f.sobrenome || ''}`.toLowerCase();
             const idCracha = String(f.id || '').toLowerCase();
             const cargoFunc = String(f.cargo || '').toLowerCase();
-            return nomeCompleto.includes(termo) || idCracha.includes(termo) || cargoFunc.includes(termo);
+            const matricula = String(f.matricula_contabil || '').toLowerCase();
+            return nomeCompleto.includes(termo) || idCracha.includes(termo) || cargoFunc.includes(termo) || matricula.includes(termo);
         });
     }, [funcionarios, pesquisa]);
+
+    // Formatador de Moeda BRL
+    const formatarMoeda = (valor: number | null) => {
+        if (!valor) return '---';
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+    };
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased selection:bg-black/5 flex flex-col justify-between w-full">
@@ -173,7 +184,7 @@ export default function CentralFuncionariosPage() {
                             </div>
                             <input
                                 type="text"
-                                placeholder="Filtrar por nome, cargo ou ID do crachá..."
+                                placeholder="Filtrar por nome, cargo ou matrículas..."
                                 value={pesquisa}
                                 onChange={e => setPesquisa(e.target.value)}
                                 className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] pl-10 pr-4 py-2.5 rounded-xl outline-none text-[#1d1d1f] text-xs font-medium transition-colors placeholder-[#b4b4b9] uppercase shadow-[0_1px_2px_rgba(0,0,0,0.005)]"
@@ -197,14 +208,16 @@ export default function CentralFuncionariosPage() {
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs border-collapse">
+                            <table className="w-full text-left text-xs border-collapse min-w-[800px]">
                                 <thead>
                                 <tr className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider text-[8px] font-bold select-none">
                                     <th className="pb-3 pl-1 w-[80px]">Editar</th>
-                                    <th className="pb-3 w-1/4">ID (Crachá)</th>
-                                    <th className="pb-3 w-2/4">Colaborador / Operador</th>
-                                    <th className="pb-3 w-1/4">Cargo / Função</th>
-                                    <th className="pb-3 text-right pr-1">Data Admissão</th>
+                                    <th className="pb-3 w-[120px]">Crachá (ID)</th>
+                                    <th className="pb-3 w-[120px]">Matrícula (RF)</th>
+                                    <th className="pb-3 min-w-[200px]">Colaborador / Operador</th>
+                                    <th className="pb-3 w-[150px]">Cargo / Função</th>
+                                    <th className="pb-3 w-[120px]">Salário Base</th>
+                                    <th className="pb-3 text-right pr-1 w-[120px]">Admissão</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#f5f5f7]">
@@ -221,11 +234,17 @@ export default function CentralFuncionariosPage() {
                                         <td className="py-3.5 font-mono font-bold text-[#ff9500] tracking-widest text-xs">
                                             {f.id}
                                         </td>
+                                        <td className="py-3.5 font-mono font-bold text-[#1d1d1f] tracking-widest text-xs">
+                                            {f.matricula_contabil || '---'}
+                                        </td>
                                         <td className="py-3.5 font-bold text-[#1d1d1f] uppercase tracking-tight text-xs">
                                             {f.nome} {f.sobrenome}
                                         </td>
                                         <td className="py-3.5 text-[#86868b] font-semibold uppercase text-[10px] tracking-wide">
                                             {f.cargo}
+                                        </td>
+                                        <td className="py-3.5 font-mono font-bold text-[#34c759] text-[11px]">
+                                            {formatarMoeda(f.salario)}
                                         </td>
                                         <td className="py-3.5 text-right pr-1 font-mono text-[#86868b] font-bold text-[11px]">
                                             {f.data_cadastro ? new Date(f.data_cadastro).toLocaleDateString('pt-BR') : '---'}
@@ -244,7 +263,7 @@ export default function CentralFuncionariosPage() {
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <form
                         onSubmit={handleAtualizarFuncionario}
-                        className="bg-white border border-[#e5e5ea] p-6 rounded-2xl max-w-md w-full space-y-4 shadow-xl"
+                        className="bg-white border border-[#e5e5ea] p-6 rounded-2xl max-w-lg w-full space-y-5 shadow-xl"
                     >
                         <div className="border-b border-[#e5e5ea] pb-3">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-[#1d1d1f]">Modificar Cadastro</h3>
@@ -282,7 +301,6 @@ export default function CentralFuncionariosPage() {
                             </div>
                         </div>
 
-                        {/* AJUSTADO AQUI: Substituído input por select oficial do enum */}
                         <div className="space-y-1">
                             <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Cargo / Atribuição de Pátio</label>
                             <div className="relative">
@@ -301,6 +319,31 @@ export default function CentralFuncionariosPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* NOVOS CAMPOS: MATRÍCULA E SALÁRIO */}
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#f5f5f7]">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Matrícula (Contábil RF)</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ex: 00006"
+                                    value={funcionarioParaEditar.matricula_contabil || ''}
+                                    onChange={e => setFuncionarioParaEditar({...funcionarioParaEditar, matricula_contabil: e.target.value || null})}
+                                    className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-xl text-xs font-mono font-bold text-[#1d1d1f] outline-none placeholder-[#d1d1d6]"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Salário Base Mensal (R$)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Ex: 1621.00"
+                                    value={funcionarioParaEditar.salario || ''}
+                                    onChange={e => setFuncionarioParaEditar({...funcionarioParaEditar, salario: e.target.value ? Number(e.target.value) : null})}
+                                    className="w-full bg-white border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-xl text-xs font-mono font-bold text-[#1d1d1f] outline-none placeholder-[#d1d1d6]"
+                                />
                             </div>
                         </div>
 
@@ -327,7 +370,7 @@ export default function CentralFuncionariosPage() {
             {/* RODAPÉ */}
             <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
                 <div>GR Autopeças &amp; Serviços</div>
-                <div className="font-mono text-[#b4b4b9]">Módulo de Varredura Operacional v2.6</div>
+                <div className="font-mono text-[#b4b4b9]">Módulo de Varredura Operacional v2.7</div>
             </footer>
         </main>
     );

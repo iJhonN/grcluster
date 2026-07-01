@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="77c8bc44-128e-4015-b348-a169b79978b9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/frota/veiculo/lista/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/dashboard/frota/veiculo/lista/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/dashboard/funcionarios/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/dashboard/funcionarios/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -93,7 +93,7 @@
       <workItem from="1779897729017" duration="8179000" />
       <workItem from="1781100689664" duration="2006000" />
       <workItem from="1781104250065" duration="75604000" />
-      <workItem from="1782818689101" duration="1222000" />
+      <workItem from="1782818689101" duration="2610000" />
     </task>
     <servers />
   </component>
