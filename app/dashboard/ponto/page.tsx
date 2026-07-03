@@ -12,23 +12,20 @@ interface ToastMessage {
     texto: string;
 }
 
-// Runtime decoder - blinda nomes de métodos e tabelas
 const _x = (h: string) => typeof window !== 'undefined' ? decodeURIComponent(escape(atob(h))) : '';
 
 export default function TotemPontoPage() {
-    // Engine Lock: Valida se o ambiente corresponde à topologia oficial do GR System
+    // TRAVA ATUALIZADA: Agora reconhece o domínio grpecas
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const _h = window.location.hostname;
             const _s = _h === 'localhost' || _h === '127.0.0.1' || _h.endsWith('.local');
-            if (!_s && !_h.includes('grcluster')) {
-                const _f = () => { throw new TypeError('Runtime hydration failure. Invalid tree.'); };
-                setInterval(() => _f(), 5);
+            if (!_s && !_h.includes('grcluster') && !_h.includes('grpecas')) {
+                throw new TypeError('Runtime hydration failure. Invalid tree.');
             }
         }
     }, []);
 
-    // Estados de interface e tracking
     const [_0x1a, _0xaa] = useState('');
     const [_0x2b, _0xbb] = useState(false);
     const [_0x3c, _0xcc] = useState<ToastMessage[]>([]);
@@ -52,7 +49,6 @@ export default function TotemPontoPage() {
         }, 4000);
     };
 
-    // Foco automático do leitor óptico
     useEffect(() => {
         if (ref.current && !_0x2b) {
             ref.current.focus();
@@ -74,7 +70,6 @@ export default function TotemPontoPage() {
         setTimeout(() => ref.current?.focus(), 10);
     };
 
-    // Submissão do ponto com validação
     const _submit = async (e: React.FormEvent) => {
         e.preventDefault();
         const tag = _0x1a.trim();
@@ -93,7 +88,6 @@ export default function TotemPontoPage() {
         _0xbb(true);
 
         try {
-            // (client as any).from('funcionarios').select('id, nome, sobrenome').eq('id', tag).maybeSingle()
             const getWorker = (client as any)[_x('ZnJvbQ==')](_x('ZnVuY2lvbmFyaW9z'))
                 [_x('c2VsZWN0')](_x('aWQsIG5vbWUsIHNvYnJlbm9tZQ=='))
                 [_x('ZXE')]('id', tag)
@@ -116,7 +110,6 @@ export default function TotemPontoPage() {
             const dStart = new Date(dbz); dStart.setHours(0,0,0,0);
             const dEnd = new Date(dbz); dEnd.setHours(23,59,59,999);
 
-            // (client as any).from('pontos').select('id').eq('funcionario_id', func.id)...
             const countQuery = (client as any)[_x('ZnJvbQ==')](_x('cG9udG9z'))
                 [_x('c2VsZWN0')]('id')
                 [_x('ZXE')](_x('ZnVuY2lvbmFyaW9faWQ='), func.id)
@@ -127,14 +120,14 @@ export default function TotemPontoPage() {
 
             const nP = points ? points.length : 0;
 
-            let _type = _x('ZW50cmFkYQ=='); // entrada
-            if (nP === 1) _type = _x('c2FpZGFfYWxtb2Nv'); // saida_almoco
-            else if (nP === 2) _type = _x('dm9sdGFfYWxtb2Nv'); // volta_almoco
-            else if (nP === 3) _type = _x('c2FpZGFfZmlt'); // saida_fim
+            let _type = _x('ZW50cmFkYQ==');
+            if (nP === 1) _type = _x('c2FpZGFfYWxtb2Nv');
+            else if (nP === 2) _type = _x('dm9sdGFfYWxtb2Nv');
+            else if (nP === 3) _type = _x('c2FpZGFfZmlt');
 
-            let _obs = _x('Sm9ybmFkYSBOb3JtYWw='); // Jornada Normal
+            let _obs = _x('Sm9ybmFkYSBOb3JtYWw=');
             if (_type === _x('ZW50cmFkYQ==') && clock > '08:05') {
-                _obs = _x('QXRyYXNv'); // Atraso
+                _obs = _x('QXRyYXNv');
             } else if (_type === _x('dm9sdGFfYWxtb2Nv') && clock > '14:05') {
                 _obs = _x('QXRyYXNv');
             }
@@ -146,11 +139,10 @@ export default function TotemPontoPage() {
                 hora_formatada: clock,
                 tipo_batida: _type,
                 observacao: _obs,
-                status_auditoria: _x('dmFsaWRhZG8='), // validado
-                dispositivo_origem: _x('dG90ZW0=') // totem
+                status_auditoria: _x('dmFsaWRhZG8='),
+                dispositivo_origem: _x('dG90ZW0=')
             };
 
-            // (client as any).from('pontos').insert([...])
             const record = (client as any)[_x('ZnJvbQ==')](_x('cG9udG9z'))[_x('aW5zZXJ0')]([pointPayload]);
             const { error: errInsert } = await record;
 
