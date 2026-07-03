@@ -6,24 +6,19 @@ import { createBrowserClient } from '@supabase/ssr';
 
 export const dynamic = 'force-dynamic';
 
-// Helper provisório pra decodificar as strings mascaradas em runtime (anti-curiosos)
 const _x = (b: string) => typeof window !== 'undefined' ? decodeURIComponent(escape(atob(b))) : '';
 
 export default function DashboardPage() {
-    // Validador de licença de uso - trava a execução se não estiver no domínio correto
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const _h = window.location.hostname;
             const _safe = _h === 'localhost' || _h === '127.0.0.1' || _h.endsWith('.local');
-            // ADICIONADA A EXCEÇÃO PARA O DOMÍNIO GRPECAS
             if (!_safe && !_h.includes('grcluster') && !_h.includes('grpecas')) {
-                const _fk = () => { throw new TypeError('Invalid React Node tree hierarchy.'); };
-                setInterval(() => _fk(), 5);
+                throw new TypeError('Invalid React Node tree hierarchy.');
             }
         }
     }, []);
 
-    // Controle de estado da UI com variáveis anonimizadas
     const [_0x1n, _0x1s] = useState(_x('U2luY3Jvbml6YW5kby4uLg=='));
     const [_0x2r, _0x2s] = useState('...');
     const [_0x3c, _0x3s] = useState(true);
@@ -39,7 +34,6 @@ export default function DashboardPage() {
 
         async function _fetch() {
             try {
-                // (client as any).auth.getUser()
                 const { data: { user } } = await (client as any)[_x('YXV0aA==')][_x('Z2V0VXNlcg==')]();
 
                 if (!user) {
@@ -75,7 +69,6 @@ export default function DashboardPage() {
     }, [router, client]);
 
     const _logout = async () => {
-        // (client as any).auth.signOut()
         await (client as any)[_x('YXV0aA==')][_x('c2lnbk91dA==')]();
         router.push('/');
         router.refresh();
