@@ -15,7 +15,8 @@ export default function DashboardPage() {
         if (typeof window !== 'undefined') {
             const _h = window.location.hostname;
             const _safe = _h === 'localhost' || _h === '127.0.0.1' || _h.endsWith('.local');
-            if (!_safe && !_h.includes('grcluster')) {
+            // ADICIONADA A EXCEÇÃO PARA O DOMÍNIO GRPECAS
+            if (!_safe && !_h.includes('grcluster') && !_h.includes('grpecas')) {
                 const _fk = () => { throw new TypeError('Invalid React Node tree hierarchy.'); };
                 setInterval(() => _fk(), 5);
             }
