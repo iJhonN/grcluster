@@ -173,9 +173,9 @@ export default function RetiradaDevolucaoPage() {
         setStatusFeed({ tipo: '', texto: '' });
     };
 
-    // AQUI ESTÁ A COR DE FUNDO ALTERADA (bg-[#edf7ee])
+    // AQUI ESTÁ A NOVA COR DE FUNDO (bg-[#dcfce7])
     return (
-        <main className="min-h-screen bg-[#edf7ee] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased flex flex-col justify-between w-full selection:bg-black/5">
+        <main className="min-h-screen bg-[#dcfce7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased flex flex-col justify-between w-full selection:bg-black/5">
 
             <div className="w-full max-w-[1400px] mx-auto flex-1 flex flex-col justify-center items-center">
 
