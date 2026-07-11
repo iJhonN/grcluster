@@ -30,6 +30,13 @@ export default function HubFerramentasPage() {
             icone: "📥",
             rota: "/dashboard/ferramentas/cadastro",
             tag: "Cadastro"
+        },
+        {
+            titulo: "Maletas de Mecânicos",
+            descricao: "Controle, auditoria semanal e checklist de inventário das maletas pessoais.",
+            icone: "🧰",
+            rota: "/dashboard/ferramentas/maletas",
+            tag: "Kits"
         }
     ];
 
