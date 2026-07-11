@@ -18,6 +18,7 @@ interface Maleta {
     identificacao: string;
     observacoes: string | null;
     ultima_auditoria: string | null;
+    foto_url: string | null; // ADICIONADO NO INTERFACE
     funcionarios: {
         nome: string;
         sobrenome: string;
@@ -43,9 +44,10 @@ export default function MaletaChecklistPage() {
         if (!id) return;
         const carregarDados = async () => {
             try {
+                // INCLUÍDO O FOTO_URL NO SELECT ABAIXO
                 const { data: maletaData, error: errMaleta } = await supabase
                     .from('maletas')
-                    .select('id, identificacao, observacoes, ultima_auditoria, funcionarios(nome, sobrenome)')
+                    .select('id, identificacao, observacoes, ultima_auditoria, foto_url, funcionarios(nome, sobrenome)')
                     .eq('id', id)
                     .single();
 
@@ -59,7 +61,6 @@ export default function MaletaChecklistPage() {
                     .order('nome');
 
                 if (errItens) throw errItens;
-                // Garante que se o status vier vazio, assume 'ok'
                 setItens((itensData as MaletaItem[]).map(i => ({ ...i, status: i.status || 'ok' })));
             } catch (error) {
                 console.error("Erro ao carregar dados:", error);
@@ -81,7 +82,6 @@ export default function MaletaChecklistPage() {
     const handleSalvarAuditoria = async () => {
         setSalvando(true);
         try {
-            // Atualiza o status de todos os itens no banco
             for (const item of itens) {
                 const { error } = await supabase
                     .from('maleta_itens')
@@ -90,7 +90,6 @@ export default function MaletaChecklistPage() {
                 if (error) throw error;
             }
 
-            // Atualiza a data da última auditoria na maleta principal
             const { error: errMaleta } = await supabase
                 .from('maletas')
                 .update({ ultima_auditoria: new Date().toISOString() })
@@ -121,7 +120,6 @@ export default function MaletaChecklistPage() {
 
     if (!maleta) return null;
 
-    // Contadores para o resumo
     const qtdOk = itens.filter(i => i.status === 'ok').length;
     const qtdFaltando = itens.filter(i => i.status === 'ausente').length;
     const qtdDanificado = itens.filter(i => i.status === 'danificado').length;
@@ -131,21 +129,36 @@ export default function MaletaChecklistPage() {
 
             <div className="w-full max-w-4xl mt-4 sm:mt-8 flex flex-col gap-6">
 
-                {/* CABEÇALHO */}
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-[#e5e5ea] pb-6">
-                    <div>
-                        <Link href="/dashboard/ferramentas/maletas" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block mb-1.5">
-                            ← Voltar para Lista
-                        </Link>
-                        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] leading-tight">
-                            Auditoria: {maleta.identificacao}
-                        </h1>
-                        <p className="text-xs font-bold text-[#007aff] uppercase tracking-wide mt-1">
-                            👤 {maleta.funcionarios?.nome} {maleta.funcionarios?.sobrenome}
-                        </p>
+                {/* CABEÇALHO COM PREVISUALIZAÇÃO DA FOTO */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 border-b border-[#e5e5ea] pb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 min-w-0 w-full md:w-auto">
+
+                        {/* BOX DA FOTO */}
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white border border-[#e5e5ea] rounded-2xl overflow-hidden shrink-0 flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            {maleta.foto_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={maleta.foto_url} alt="Foto da Maleta" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-3xl opacity-30 select-none">🧰</span>
+                            )}
+                        </div>
+
+                        {/* TEXTOS INFORMATIVOS */}
+                        <div className="min-w-0">
+                            <Link href="/dashboard/ferramentas/maletas" className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] hover:text-[#1d1d1f] transition-colors block mb-1">
+                                ← Voltar para Lista
+                            </Link>
+                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1d1d1f] leading-tight truncate">
+                                Auditoria: {maleta.identificacao}
+                            </h1>
+                            <p className="text-xs font-bold text-[#007aff] uppercase tracking-wide mt-1">
+                                👤 {maleta.funcionarios?.nome} {maleta.funcionarios?.sobrenome}
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="bg-white border border-[#e5e5ea] px-4 py-3 rounded-xl flex gap-6 shadow-[0_1px_2px_rgba(0,0,0,0.01)] w-full md:w-auto">
+                    {/* CONTADORES */}
+                    <div className="bg-white border border-[#e5e5ea] px-4 py-3 rounded-xl flex gap-6 shadow-[0_1px_2px_rgba(0,0,0,0.01)] w-full md:w-auto shrink-0 justify-around">
                         <div className="text-center">
                             <span className="block text-lg font-black text-[#34c759] leading-none">{qtdOk}</span>
                             <span className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider">OK</span>
