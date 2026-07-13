@@ -18,6 +18,56 @@ interface ItemMaleta {
     quantidade: number;
 }
 
+// FUNÇÃO NATIVA PARA COMPRIMIR A IMAGEM NO NAVEGADOR ANTES DO UPLOAD
+const comprimirImagem = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.7): Promise<File> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Mantém a proporção da imagem
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+
+                // Converte de volta para File
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                        });
+                        resolve(newFile);
+                    } else {
+                        reject(new Error('Erro ao gerar blob da imagem comprimida.'));
+                    }
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+};
+
 export default function CadastroMaletaPage() {
     const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
 
@@ -77,14 +127,17 @@ export default function CadastroMaletaPage() {
         try {
             let foto_url = null;
 
-            // 1. Upload da Foto
+            // 1. Upload da Foto com Compressão Automática
             if (fotoArquivo) {
-                const extensao = fotoArquivo.name.split('.').pop();
-                const nomeArquivo = `${Date.now()}_${Math.floor(Math.random() * 10000)}.${extensao}`;
+                // Aqui a mágica acontece: compacta antes de mandar pro Supabase
+                const fotoComprimida = await comprimirImagem(fotoArquivo);
+
+                // Forçamos a extensão .jpg porque nossa compressão sempre gera jpeg
+                const nomeArquivo = `${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
 
                 const { error: erroUpload } = await supabase.storage
                     .from('maletas')
-                    .upload(nomeArquivo, fotoArquivo);
+                    .upload(nomeArquivo, fotoComprimida);
 
                 if (erroUpload) throw new Error("Erro ao enviar a imagem da maleta.");
 

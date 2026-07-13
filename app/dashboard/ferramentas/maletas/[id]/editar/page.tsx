@@ -10,6 +10,56 @@ interface Funcionario { id: string; nome: string; sobrenome: string; cargo: stri
 interface MaletaFoto { id: string; foto_url: string; }
 interface MaletaItem { id?: string; nome: string; quantidade: number; status?: string; _deletado?: boolean; }
 
+// FUNÇÃO NATIVA PARA COMPRIMIR A IMAGEM NO NAVEGADOR ANTES DO UPLOAD
+const comprimirImagem = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.7): Promise<File> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Mantém a proporção da imagem
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+
+                // Converte de volta para File
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                        });
+                        resolve(newFile);
+                    } else {
+                        reject(new Error('Erro ao gerar blob da imagem comprimida.'));
+                    }
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+};
+
 export default function EditarMaletaPage() {
     const params = useParams();
     const id = params.id as string;
@@ -106,11 +156,14 @@ export default function EditarMaletaPage() {
         setItens(novaLista);
     };
 
-    // UPLOAD HELPER
-    const fazerUpload = async (arquivo: File) => {
-        const extensao = arquivo.name.split('.').pop();
-        const nomeArquivo = `${Date.now()}_${Math.floor(Math.random() * 10000)}.${extensao}`;
-        const { error } = await supabase.storage.from('maletas').upload(nomeArquivo, arquivo);
+    // UPLOAD HELPER COM COMPRESSÃO INTEGRADA
+    const fazerUpload = async (arquivoOriginal: File) => {
+        // Comprime a imagem antes de fazer o envio
+        const arquivoComprimido = await comprimirImagem(arquivoOriginal);
+
+        // Forçamos a extensão .jpg pois nossa compressão sempre gera jpeg
+        const nomeArquivo = `${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
+        const { error } = await supabase.storage.from('maletas').upload(nomeArquivo, arquivoComprimido);
         if (error) throw error;
         const { data } = supabase.storage.from('maletas').getPublicUrl(nomeArquivo);
         return data.publicUrl;
