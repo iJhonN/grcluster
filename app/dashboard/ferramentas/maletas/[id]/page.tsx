@@ -11,6 +11,7 @@ interface MaletaItem {
     nome: string;
     quantidade: number;
     status: string; // 'ok' | 'ausente' | 'danificado'
+    foto_url?: string | null; // <-- Adicionado para a foto da ferramenta
 }
 
 interface Maleta {
@@ -35,8 +36,8 @@ export default function MaletaChecklistPage() {
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
 
-    // Novo estado para controlar a foto em tela cheia
-    const [fotoAberta, setFotoAberta] = useState(false);
+    // Estado inteligente do modal que serve tanto para a Maleta quanto para as Ferramentas
+    const [modalFoto, setModalFoto] = useState<{ url: string, titulo: string } | null>(null);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,6 +57,7 @@ export default function MaletaChecklistPage() {
                 if (errMaleta) throw errMaleta;
                 setMaleta(maletaData as unknown as Maleta);
 
+                // O Select '*' já puxa a foto_url dos itens automaticamente
                 const { data: itensData, error: errItens } = await supabase
                     .from('maleta_itens')
                     .select('*')
@@ -111,13 +113,13 @@ export default function MaletaChecklistPage() {
 
     // Previne rolagem da página quando o modal da foto está aberto
     useEffect(() => {
-        if (fotoAberta) {
+        if (modalFoto) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
         }
         return () => { document.body.style.overflow = 'unset'; }
-    }, [fotoAberta]);
+    }, [modalFoto]);
 
     if (carregando) {
         return (
@@ -139,18 +141,18 @@ export default function MaletaChecklistPage() {
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 sm:p-6 md:p-10 font-sans antialiased flex flex-col items-center">
 
-            {/* MODAL DE FOTO EM TELA CHEIA */}
-            {fotoAberta && maleta.foto_url && (
+            {/* MODAL DE FOTO EM TELA CHEIA (REUTILIZÁVEL PARA MALETA E FERRAMENTAS) */}
+            {modalFoto && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-                    onClick={() => setFotoAberta(false)}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200"
+                    onClick={() => setModalFoto(null)}
                 >
                     <div className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center gap-4">
                         <button
                             className="absolute top-4 right-4 sm:top-8 sm:right-8 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 backdrop-blur-md transition-colors"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setFotoAberta(false);
+                                setModalFoto(null);
                             }}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
@@ -159,13 +161,13 @@ export default function MaletaChecklistPage() {
                         </button>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                            src={maleta.foto_url}
-                            alt="Foto da Maleta Ampliada"
+                            src={modalFoto.url}
+                            alt="Foto Ampliada"
                             className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         />
-                        <span className="text-white/60 text-xs uppercase tracking-widest font-bold bg-black/50 px-4 py-1.5 rounded-full">
-                            {maleta.identificacao}
+                        <span className="text-white/80 text-xs uppercase tracking-widest font-bold bg-black/50 px-5 py-2 rounded-full border border-white/10">
+                            {modalFoto.titulo}
                         </span>
                     </div>
                 </div>
@@ -177,9 +179,9 @@ export default function MaletaChecklistPage() {
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-[#e5e5ea] pb-8">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 min-w-0 w-full md:w-auto">
 
-                        {/* BOX DA FOTO CLICÁVEL */}
+                        {/* BOX DA FOTO DA MALETA CLICÁVEL */}
                         <div
-                            onClick={() => maleta.foto_url && setFotoAberta(true)}
+                            onClick={() => maleta.foto_url && setModalFoto({ url: maleta.foto_url, titulo: `Maleta: ${maleta.identificacao}` })}
                             className={`w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 bg-white border border-[#e5e5ea] rounded-3xl overflow-hidden shrink-0 flex items-center justify-center shadow-sm relative group ${maleta.foto_url ? 'cursor-pointer' : ''}`}
                             title={maleta.foto_url ? "Clique para ampliar a foto" : ""}
                         >
@@ -191,7 +193,6 @@ export default function MaletaChecklistPage() {
                                         alt="Foto da Maleta"
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
-                                    {/* Ícone de Lupa que aparece no hover */}
                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                         <div className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg text-[#1d1d1f]">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
@@ -259,12 +260,34 @@ export default function MaletaChecklistPage() {
                             </li>
                         ) : (
                             itens.map((item) => (
-                                <li key={item.id} className="p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-[#f5f5f7]/40 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <span className="font-mono font-black text-[#1d1d1f] bg-[#e5e5ea] px-2 py-1 rounded text-xs">
+                                <li key={item.id} className="p-3 sm:p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-[#f5f5f7]/40 transition-colors">
+
+                                    <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto">
+                                        {/* MINIATURA DA FERRAMENTA */}
+                                        <div
+                                            onClick={() => item.foto_url && setModalFoto({ url: item.foto_url, titulo: `Ferramenta: ${item.nome}` })}
+                                            className={`w-12 h-12 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl overflow-hidden flex items-center justify-center shrink-0 ${item.foto_url ? 'cursor-pointer group relative shadow-sm' : ''}`}
+                                            title={item.foto_url ? "Ver foto da ferramenta" : "Sem foto cadastrada"}
+                                        >
+                                            {item.foto_url ? (
+                                                <>
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img src={item.foto_url} alt={item.nome} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="white" className="w-4 h-4 opacity-0 group-hover:opacity-100 drop-shadow-md">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+                                                        </svg>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <span className="text-[10px] opacity-30">🔧</span>
+                                            )}
+                                        </div>
+
+                                        <span className="font-mono font-black text-[#1d1d1f] bg-[#e5e5ea] px-2 py-1 rounded text-xs shrink-0">
                                             {item.quantidade}x
                                         </span>
-                                        <span className="font-bold text-[#1d1d1f] text-sm uppercase">{item.nome}</span>
+                                        <span className="font-bold text-[#1d1d1f] text-sm uppercase leading-snug">{item.nome}</span>
                                     </div>
 
                                     {/* CONTROLES DE STATUS */}

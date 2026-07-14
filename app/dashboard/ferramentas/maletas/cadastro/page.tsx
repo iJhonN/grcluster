@@ -16,6 +16,8 @@ interface Funcionario {
 interface ItemMaleta {
     nome: string;
     quantidade: number;
+    fotoArquivo?: File | null;
+    fotoPreview?: string; // Usado para mostrar a miniatura na tela antes de salvar
 }
 
 // FUNÇÃO NATIVA PARA COMPRIMIR A IMAGEM NO NAVEGADOR ANTES DO UPLOAD
@@ -75,12 +77,13 @@ export default function CadastroMaletaPage() {
     const [mecanicoId, setMecanicoId] = useState('');
     const [identificacao, setIdentificacao] = useState('');
     const [observacoes, setObservacoes] = useState('');
-    const [fotoArquivo, setFotoArquivo] = useState<File | null>(null);
+    const [fotoArquivo, setFotoArquivo] = useState<File | null>(null); // Foto da Maleta por fora
 
     // Estados da Lista de Ferramentas (Inventário da Maleta)
     const [itens, setItens] = useState<ItemMaleta[]>([]);
     const [nomeItemTemp, setNomeItemTemp] = useState('');
     const [qtdItemTemp, setQtdItemTemp] = useState(1);
+    const [fotoItemTemp, setFotoItemTemp] = useState<File | null>(null); // Foto individual da ferramenta
 
     const [salvando, setSalvando] = useState(false);
     const router = useRouter();
@@ -105,9 +108,23 @@ export default function CadastroMaletaPage() {
     const handleAdicionarItem = () => {
         if (!nomeItemTemp.trim() || qtdItemTemp < 1) return;
 
-        setItens([...itens, { nome: nomeItemTemp.trim(), quantidade: qtdItemTemp }]);
+        // Gera uma URL temporária para mostrar a miniatura na lista
+        const preview = fotoItemTemp ? URL.createObjectURL(fotoItemTemp) : undefined;
+
+        setItens([
+            ...itens,
+            {
+                nome: nomeItemTemp.trim(),
+                quantidade: qtdItemTemp,
+                fotoArquivo: fotoItemTemp,
+                fotoPreview: preview
+            }
+        ]);
+
+        // Limpa os campos após adicionar na lista
         setNomeItemTemp('');
         setQtdItemTemp(1);
+        setFotoItemTemp(null);
     };
 
     const handleRemoverItem = (index: number) => {
@@ -127,13 +144,10 @@ export default function CadastroMaletaPage() {
         try {
             let foto_url = null;
 
-            // 1. Upload da Foto com Compressão Automática
+            // 1. Upload da Foto da Maleta (Externa) com Compressão
             if (fotoArquivo) {
-                // Aqui a mágica acontece: compacta antes de mandar pro Supabase
                 const fotoComprimida = await comprimirImagem(fotoArquivo);
-
-                // Forçamos a extensão .jpg porque nossa compressão sempre gera jpeg
-                const nomeArquivo = `${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
+                const nomeArquivo = `capa_${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
 
                 const { error: erroUpload } = await supabase.storage
                     .from('maletas')
@@ -159,19 +173,40 @@ export default function CadastroMaletaPage() {
 
             if (erroInsert) throw erroInsert;
 
-            // 3. Salva os Itens (Ferramentas) vinculados à Maleta
+            // 3. Salva os Itens (Ferramentas) e Faz Upload das Fotos Individuais
             if (itens.length > 0 && maletaSalva) {
-                const itensPayload = itens.map(item => ({
-                    maleta_id: maletaSalva.id,
-                    nome: item.nome,
-                    quantidade: item.quantidade
+
+                // Usamos Promise.all para subir todas as fotos das ferramentas ao mesmo tempo, de forma paralela (muito mais rápido)
+                const itensPayload = await Promise.all(itens.map(async (item) => {
+                    let itemFotoUrl = null;
+
+                    if (item.fotoArquivo) {
+                        const fotoItemComprimida = await comprimirImagem(item.fotoArquivo);
+                        const nomeArquivoItem = `item_${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
+
+                        const { error: erroUploadItem } = await supabase.storage
+                            .from('maletas')
+                            .upload(nomeArquivoItem, fotoItemComprimida);
+
+                        if (!erroUploadItem) {
+                            const { data: urlDataItem } = supabase.storage.from('maletas').getPublicUrl(nomeArquivoItem);
+                            itemFotoUrl = urlDataItem.publicUrl;
+                        }
+                    }
+
+                    return {
+                        maleta_id: maletaSalva.id,
+                        nome: item.nome,
+                        quantidade: item.quantidade,
+                        foto_url: itemFotoUrl // Salva a foto individual da ferramenta!
+                    };
                 }));
 
                 const { error: erroItens } = await supabase.from('maleta_itens').insert(itensPayload);
                 if (erroItens) throw erroItens;
             }
 
-            alert("Maleta e inventário cadastrados com sucesso!");
+            alert("Maleta e ferramentas cadastradas com sucesso!");
             router.push('/dashboard/ferramentas/maletas');
 
         } catch (error: any) {
@@ -232,58 +267,88 @@ export default function CadastroMaletaPage() {
                             </div>
                         </div>
 
-                        {/* SEÇÃO 2: INVENTÁRIO (FERRAMENTAS) */}
+                        {/* SEÇÃO 2: INVENTÁRIO (FERRAMENTAS E FOTOS) */}
                         <div className="space-y-5">
-                            <h3 className="text-xs font-black text-[#1d1d1f] uppercase tracking-widest border-b border-[#f5f5f7] pb-2">2. Inventário da Maleta</h3>
+                            <h3 className="text-xs font-black text-[#1d1d1f] uppercase tracking-widest border-b border-[#f5f5f7] pb-2">2. Inventário de Ferramentas</h3>
 
                             <div className="bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl p-4 space-y-4">
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <div className="flex-1 space-y-1">
-                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Ferramenta</label>
+
+                                {/* Campos de Adição com a Câmera */}
+                                <div className="flex flex-col sm:flex-row items-end gap-3">
+                                    <div className="w-full sm:w-auto">
+                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5 block mb-1">Foto (Opcional)</label>
+                                        <div className="w-full sm:w-12 h-10 bg-white border border-[#e5e5ea] rounded-lg relative flex items-center justify-center overflow-hidden hover:bg-[#e8e8ed] transition-colors cursor-pointer group shadow-sm">
+                                            {fotoItemTemp ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img src={URL.createObjectURL(fotoItemTemp)} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-sm opacity-60 group-hover:opacity-100">📸</span>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={e => setFotoItemTemp(e.target.files?.[0] || null)}
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 w-full">
+                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5 block mb-1">Ferramenta</label>
                                         <input
                                             type="text"
                                             placeholder="Ex: Chave Combinada 10mm"
                                             value={nomeItemTemp}
                                             onChange={e => setNomeItemTemp(e.target.value)}
                                             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdicionarItem())}
-                                            className="w-full bg-white border border-[#e5e5ea] px-3 py-2 rounded-lg text-xs font-bold text-[#1d1d1f] outline-none"
+                                            className="w-full bg-white border border-[#e5e5ea] px-3 h-10 rounded-lg text-xs font-bold text-[#1d1d1f] outline-none shadow-sm"
                                         />
                                     </div>
-                                    <div className="w-full sm:w-24 space-y-1">
-                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Qtd.</label>
+
+                                    <div className="w-full sm:w-20">
+                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5 block mb-1">Qtd.</label>
                                         <input
                                             type="number"
                                             min="1"
                                             value={qtdItemTemp}
                                             onChange={e => setQtdItemTemp(Number(e.target.value))}
                                             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdicionarItem())}
-                                            className="w-full bg-white border border-[#e5e5ea] px-3 py-2 rounded-lg text-xs font-mono font-bold text-center text-[#1d1d1f] outline-none"
+                                            className="w-full bg-white border border-[#e5e5ea] px-3 h-10 rounded-lg text-xs font-mono font-bold text-center text-[#1d1d1f] outline-none shadow-sm"
                                         />
                                     </div>
-                                    <div className="flex items-end">
-                                        <button
-                                            type="button"
-                                            onClick={handleAdicionarItem}
-                                            className="w-full sm:w-auto bg-[#1d1d1f] hover:bg-black text-white px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors h-[34px]"
-                                        >
-                                            Adicionar
-                                        </button>
-                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleAdicionarItem}
+                                        className="w-full sm:w-auto bg-[#1d1d1f] hover:bg-black text-white px-5 h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm"
+                                    >
+                                        Adicionar
+                                    </button>
                                 </div>
 
+                                {/* Lista Visual das Ferramentas */}
                                 {itens.length > 0 && (
                                     <div className="border-t border-[#e5e5ea] pt-3">
                                         <ul className="space-y-2">
                                             {itens.map((item, idx) => (
-                                                <li key={idx} className="flex justify-between items-center bg-white border border-[#e5e5ea] px-3 py-2 rounded-lg text-xs">
+                                                <li key={idx} className="flex justify-between items-center bg-white border border-[#e5e5ea] p-2 rounded-lg text-xs shadow-sm">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="font-mono font-black text-[#007aff] bg-blue-50 px-1.5 py-0.5 rounded">{item.quantidade}x</span>
+                                                        {/* Miniatura da Foto do Item */}
+                                                        <div className="w-10 h-10 bg-[#f5f5f7] border border-[#e5e5ea] rounded-md overflow-hidden flex items-center justify-center shrink-0">
+                                                            {item.fotoPreview ? (
+                                                                // eslint-disable-next-line @next/next/no-img-element
+                                                                <img src={item.fotoPreview} alt="Ferramenta" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-[10px] opacity-30">🔧</span>
+                                                            )}
+                                                        </div>
+                                                        <span className="font-mono font-black text-[#007aff] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{item.quantidade}x</span>
                                                         <span className="font-bold text-[#1d1d1f] uppercase">{item.nome}</span>
                                                     </div>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoverItem(idx)}
-                                                        className="text-red-500 hover:text-red-700 font-bold text-[10px] uppercase tracking-wider transition-colors"
+                                                        className="text-red-500 hover:text-red-700 font-bold text-[10px] uppercase tracking-wider transition-colors px-3 py-2"
                                                     >
                                                         Remover
                                                     </button>
@@ -295,9 +360,9 @@ export default function CadastroMaletaPage() {
                             </div>
                         </div>
 
-                        {/* SEÇÃO 3: FOTO E OBSERVAÇÕES */}
+                        {/* SEÇÃO 3: FOTO DA MALETA (EXTERNA) E OBSERVAÇÕES */}
                         <div className="space-y-5">
-                            <h3 className="text-xs font-black text-[#1d1d1f] uppercase tracking-widest border-b border-[#f5f5f7] pb-2">3. Detalhes Adicionais</h3>
+                            <h3 className="text-xs font-black text-[#1d1d1f] uppercase tracking-widest border-b border-[#f5f5f7] pb-2">3. Detalhes Adicionais da Maleta</h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1.5">
@@ -312,7 +377,7 @@ export default function CadastroMaletaPage() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Anexar Foto da Maleta</label>
+                                    <label className="text-[10px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Foto Principal (Maleta Fechada)</label>
                                     <div className="w-full border-2 border-dashed border-[#d1d1d6] bg-[#f5f5f7]/50 rounded-xl flex items-center justify-center text-center hover:bg-[#f5f5f7] transition-colors relative h-[112px]">
                                         <input
                                             type="file" accept="image/*"
@@ -324,7 +389,7 @@ export default function CadastroMaletaPage() {
                                             {fotoArquivo ? (
                                                 <p className="text-[10px] font-bold text-[#34c759] truncate w-full px-2">{fotoArquivo.name}</p>
                                             ) : (
-                                                <p className="text-[10px] font-semibold text-[#86868b]">Clique ou arraste uma imagem aqui</p>
+                                                <p className="text-[10px] font-semibold text-[#86868b]">Clique ou arraste a capa aqui</p>
                                             )}
                                         </div>
                                     </div>
@@ -345,7 +410,7 @@ export default function CadastroMaletaPage() {
                                 disabled={salvando}
                                 className="bg-[#1d1d1f] active:bg-black text-white px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center gap-2 shadow-md"
                             >
-                                {salvando ? 'Processando...' : 'Salvar Registro Completo'}
+                                {salvando ? 'Processando e Comprimindo...' : 'Salvar Maleta Completa'}
                             </button>
                         </div>
                     </form>

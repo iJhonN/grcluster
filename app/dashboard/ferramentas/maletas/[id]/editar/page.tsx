@@ -8,7 +8,18 @@ export const dynamic = 'force-dynamic';
 
 interface Funcionario { id: string; nome: string; sobrenome: string; cargo: string; }
 interface MaletaFoto { id: string; foto_url: string; }
-interface MaletaItem { id?: string; nome: string; quantidade: number; status?: string; _deletado?: boolean; }
+
+// Interface atualizada para conter informações da foto da ferramenta
+interface MaletaItem {
+    id?: string;
+    nome: string;
+    quantidade: number;
+    status?: string;
+    foto_url?: string | null;
+    fotoArquivo?: File | null; // Caso o usuário escolha uma nova foto
+    fotoPreview?: string;      // Pré-visualização local antes de salvar
+    _deletado?: boolean;
+}
 
 // FUNÇÃO NATIVA PARA COMPRIMIR A IMAGEM NO NAVEGADOR ANTES DO UPLOAD
 const comprimirImagem = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.7): Promise<File> => {
@@ -23,7 +34,6 @@ const comprimirImagem = (file: File, maxWidth = 1024, maxHeight = 1024, quality 
                 let width = img.width;
                 let height = img.height;
 
-                // Mantém a proporção da imagem
                 if (width > height) {
                     if (width > maxWidth) {
                         height = Math.round((height * maxWidth) / width);
@@ -41,7 +51,6 @@ const comprimirImagem = (file: File, maxWidth = 1024, maxHeight = 1024, quality 
                 const ctx = canvas.getContext('2d');
                 ctx?.drawImage(img, 0, 0, width, height);
 
-                // Converte de volta para File
                 canvas.toBlob((blob) => {
                     if (blob) {
                         const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
@@ -83,6 +92,7 @@ export default function EditarMaletaPage() {
     const [itens, setItens] = useState<MaletaItem[]>([]);
     const [nomeItemTemp, setNomeItemTemp] = useState('');
     const [qtdItemTemp, setQtdItemTemp] = useState(1);
+    const [fotoItemTemp, setFotoItemTemp] = useState<File | null>(null); // Foto para o novo item
 
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
@@ -97,11 +107,9 @@ export default function EditarMaletaPage() {
         if (!id) return;
         const inicializar = async () => {
             try {
-                // 1. Traz funcionários
                 const { data: funcs } = await supabase.from('funcionarios').select('id, nome, sobrenome, cargo').order('nome');
                 if (funcs) setFuncionarios(funcs as Funcionario[]);
 
-                // 2. Traz a Maleta
                 const { data: maleta, error: errMaleta } = await supabase.from('maletas').select('*').eq('id', id).single();
                 if (errMaleta) throw errMaleta;
 
@@ -110,11 +118,17 @@ export default function EditarMaletaPage() {
                 setObservacoes(maleta.observacoes || '');
                 setFotoPrincipalAtual(maleta.foto_url);
 
-                // 3. Traz os Itens
                 const { data: itensDb } = await supabase.from('maleta_itens').select('*').eq('maleta_id', id).order('nome');
-                if (itensDb) setItens(itensDb.map(i => ({ id: i.id, nome: i.nome, quantidade: i.quantidade, status: i.status })));
+                if (itensDb) {
+                    setItens(itensDb.map(i => ({
+                        id: i.id,
+                        nome: i.nome,
+                        quantidade: i.quantidade,
+                        status: i.status,
+                        foto_url: i.foto_url
+                    })));
+                }
 
-                // 4. Traz as Fotos Extras
                 const { data: fotosDb } = await supabase.from('maleta_fotos').select('*').eq('maleta_id', id);
                 if (fotosDb) setFotosExtrasAtuais(fotosDb as MaletaFoto[]);
 
@@ -132,18 +146,30 @@ export default function EditarMaletaPage() {
     // FUNÇÕES DE INVENTÁRIO
     const handleAdicionarItem = () => {
         if (!nomeItemTemp.trim() || qtdItemTemp < 1) return;
-        setItens([{ nome: nomeItemTemp.trim(), quantidade: qtdItemTemp, status: 'ok' }, ...itens]);
+
+        const preview = fotoItemTemp ? URL.createObjectURL(fotoItemTemp) : undefined;
+
+        setItens([
+            {
+                nome: nomeItemTemp.trim(),
+                quantidade: qtdItemTemp,
+                status: 'ok',
+                fotoArquivo: fotoItemTemp,
+                fotoPreview: preview
+            },
+            ...itens
+        ]);
+
         setNomeItemTemp('');
         setQtdItemTemp(1);
+        setFotoItemTemp(null);
     };
 
     const handleMarcarRemocaoItem = (index: number) => {
         const novaLista = [...itens];
         if (novaLista[index].id) {
-            // Se já existe no banco, marca para deletar no salvamento final
             novaLista[index]._deletado = true;
         } else {
-            // Se foi recém adicionado (ainda não salvou), só tira do array
             novaLista.splice(index, 1);
         }
         setItens(novaLista);
@@ -156,13 +182,18 @@ export default function EditarMaletaPage() {
         setItens(novaLista);
     };
 
-    // UPLOAD HELPER COM COMPRESSÃO INTEGRADA
-    const fazerUpload = async (arquivoOriginal: File) => {
-        // Comprime a imagem antes de fazer o envio
-        const arquivoComprimido = await comprimirImagem(arquivoOriginal);
+    // Alterar foto de um item que já existe na lista
+    const handleAlterarFotoItemExistente = (index: number, arquivo: File) => {
+        const novaLista = [...itens];
+        novaLista[index].fotoArquivo = arquivo;
+        novaLista[index].fotoPreview = URL.createObjectURL(arquivo);
+        setItens(novaLista);
+    };
 
-        // Forçamos a extensão .jpg pois nossa compressão sempre gera jpeg
-        const nomeArquivo = `${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
+    // UPLOAD HELPER COM COMPRESSÃO INTEGRADA
+    const fazerUpload = async (arquivoOriginal: File, prefixo = 'img') => {
+        const arquivoComprimido = await comprimirImagem(arquivoOriginal);
+        const nomeArquivo = `${prefixo}_${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
         const { error } = await supabase.storage.from('maletas').upload(nomeArquivo, arquivoComprimido);
         if (error) throw error;
         const { data } = supabase.storage.from('maletas').getPublicUrl(nomeArquivo);
@@ -178,12 +209,10 @@ export default function EditarMaletaPage() {
         try {
             let urlPrincipalFinal = fotoPrincipalAtual;
 
-            // 1. Atualiza foto principal se houver nova
             if (novaFotoPrincipal) {
-                urlPrincipalFinal = await fazerUpload(novaFotoPrincipal);
+                urlPrincipalFinal = await fazerUpload(novaFotoPrincipal, 'capa');
             }
 
-            // 2. Atualiza dados principais da Maleta
             const { error: errMaleta } = await supabase.from('maletas').update({
                 mecanico_id: mecanicoId,
                 identificacao: identificacao.trim(),
@@ -192,34 +221,49 @@ export default function EditarMaletaPage() {
             }).eq('id', id);
             if (errMaleta) throw errMaleta;
 
-            // 3. Deleta fotos extras removidas
             if (fotosParaDeletar.length > 0) {
                 await supabase.from('maleta_fotos').delete().in('id', fotosParaDeletar);
             }
 
-            // 4. Sobe novas fotos extras
             if (novasFotosExtras.length > 0) {
                 for (const foto of novasFotosExtras) {
-                    const urlExtra = await fazerUpload(foto);
+                    const urlExtra = await fazerUpload(foto, 'extra');
                     await supabase.from('maleta_fotos').insert([{ maleta_id: id, foto_url: urlExtra }]);
                 }
             }
 
-            // 5. Atualiza o Inventário (Itens)
+            // Atualização do Inventário com suporte a uploads individuais por ferramenta
             for (const item of itens) {
                 if (item._deletado && item.id) {
-                    // Item deletado
                     await supabase.from('maleta_itens').delete().eq('id', item.id);
                 } else if (!item.id && !item._deletado) {
-                    // Item novo
-                    await supabase.from('maleta_itens').insert([{ maleta_id: id, nome: item.nome, quantidade: item.quantidade, status: 'ok' }]);
+                    // Item inteiramente novo
+                    let itemFotoUrl = null;
+                    if (item.fotoArquivo) {
+                        itemFotoUrl = await fazerUpload(item.fotoArquivo, 'item');
+                    }
+                    await supabase.from('maleta_itens').insert([{
+                        maleta_id: id,
+                        nome: item.nome,
+                        quantidade: item.quantidade,
+                        status: 'ok',
+                        foto_url: itemFotoUrl
+                    }]);
                 } else if (item.id && !item._deletado) {
-                    // Atualizar item existente (nome ou quantidade)
-                    await supabase.from('maleta_itens').update({ nome: item.nome, quantidade: item.quantidade }).eq('id', item.id);
+                    // Item existente sendo atualizado (pode conter nova foto ou alteração de texto/quantidade)
+                    let itemFotoUrl = item.foto_url;
+                    if (item.fotoArquivo) {
+                        itemFotoUrl = await fazerUpload(item.fotoArquivo, 'item');
+                    }
+                    await supabase.from('maleta_itens').update({
+                        nome: item.nome,
+                        quantidade: item.quantidade,
+                        foto_url: itemFotoUrl
+                    }).eq('id', item.id);
                 }
             }
 
-            alert("Maleta atualizada com sucesso!");
+            alert("Maleta e inventário atualizados com sucesso!");
             router.push(`/dashboard/ferramentas/maletas/${id}`);
 
         } catch (error: any) {
@@ -280,40 +324,70 @@ export default function EditarMaletaPage() {
                             </div>
                         </div>
 
-                        {/* SEÇÃO 2: INVENTÁRIO (ADICIONAR/REMOVER) */}
+                        {/* SEÇÃO 2: INVENTÁRIO COM ADIÇÃO E EDIÇÃO DE FOTO POR ITEM */}
                         <div className="space-y-5">
                             <h3 className="text-xs font-black text-[#1d1d1f] uppercase tracking-widest border-b border-[#f5f5f7] pb-2">2. Atualizar Inventário ({itensAtivos.length} Itens)</h3>
                             <div className="bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl p-4 space-y-4">
 
-                                {/* Barra de Adicionar */}
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <div className="flex-1 space-y-1">
-                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Nova Ferramenta</label>
-                                        <input type="text" placeholder="Ex: Alicate de Pressão" value={nomeItemTemp} onChange={e => setNomeItemTemp(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdicionarItem())} className="w-full bg-white border border-[#e5e5ea] px-3 py-2 rounded-lg text-xs font-bold text-[#1d1d1f] outline-none" />
+                                {/* Barra para criar novo Item com foto */}
+                                <div className="flex flex-col sm:flex-row items-end gap-3">
+                                    <div className="w-full sm:w-auto">
+                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5 block mb-1">Foto Item</label>
+                                        <div className="w-full sm:w-12 h-10 bg-white border border-[#e5e5ea] rounded-lg relative flex items-center justify-center overflow-hidden hover:bg-[#e8e8ed] transition-colors cursor-pointer group shadow-sm">
+                                            {fotoItemTemp ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img src={URL.createObjectURL(fotoItemTemp)} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-sm opacity-60 group-hover:opacity-100">📸</span>
+                                            )}
+                                            <input type="file" accept="image/*" onChange={e => setFotoItemTemp(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        </div>
                                     </div>
-                                    <div className="w-full sm:w-24 space-y-1">
-                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Qtd.</label>
-                                        <input type="number" min="1" value={qtdItemTemp} onChange={e => setQtdItemTemp(Number(e.target.value))} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdicionarItem())} className="w-full bg-white border border-[#e5e5ea] px-3 py-2 rounded-lg text-xs font-mono font-bold text-center text-[#1d1d1f] outline-none" />
+
+                                    <div className="flex-1 w-full">
+                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5 block mb-1">Nova Ferramenta</label>
+                                        <input type="text" placeholder="Ex: Alicate de Pressão" value={nomeItemTemp} onChange={e => setNomeItemTemp(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdicionarItem())} className="w-full bg-white border border-[#e5e5ea] px-3 h-10 rounded-lg text-xs font-bold text-[#1d1d1f] outline-none shadow-sm" />
                                     </div>
-                                    <div className="flex items-end">
-                                        <button type="button" onClick={handleAdicionarItem} className="w-full sm:w-auto bg-[#1d1d1f] hover:bg-black text-white px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors h-[34px]">Incluir</button>
+                                    <div className="w-full sm:w-24">
+                                        <label className="text-[9px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5 block mb-1">Qtd.</label>
+                                        <input type="number" min="1" value={qtdItemTemp} onChange={e => setQtdItemTemp(Number(e.target.value))} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdicionarItem())} className="w-full bg-white border border-[#e5e5ea] px-3 h-10 rounded-lg text-xs font-mono font-bold text-center text-[#1d1d1f] outline-none shadow-sm" />
                                     </div>
+                                    <button type="button" onClick={handleAdicionarItem} className="w-full sm:w-auto bg-[#1d1d1f] hover:bg-black text-white px-5 h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">Incluir</button>
                                 </div>
 
-                                {/* Lista de Itens Editáveis */}
+                                {/* Lista de Ferramentas Ativas para Edição de Quantidade e Imagem */}
                                 {itensAtivos.length > 0 && (
                                     <div className="border-t border-[#e5e5ea] pt-3">
                                         <ul className="space-y-2">
                                             {itens.map((item, idx) => !item._deletado && (
-                                                <li key={idx} className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white border border-[#e5e5ea] px-4 py-2.5 rounded-lg text-xs">
-                                                    <div className="flex-1 font-bold text-[#1d1d1f] uppercase">{item.nome}</div>
-                                                    <div className="flex items-center gap-4 justify-between sm:justify-end">
+                                                <li key={idx} className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white border border-[#e5e5ea] p-2.5 rounded-lg text-xs shadow-sm">
+
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        {/* Preview ou alteração da foto individual do item cadastrado */}
+                                                        <div className="w-12 h-12 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl overflow-hidden flex items-center justify-center shrink-0 relative hover:opacity-80 transition-opacity cursor-pointer group">
+                                                            {item.fotoPreview ? (
+                                                                // eslint-disable-next-line @next/next/no-img-element
+                                                                <img src={item.fotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                                                            ) : item.foto_url ? (
+                                                                // eslint-disable-next-line @next/next/no-img-element
+                                                                <img src={item.foto_url} alt={item.nome} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-xs opacity-40 group-hover:hidden">📸</span>
+                                                            )}
+                                                            <div className="absolute inset-0 bg-black/40 text-[8px] text-white font-bold opacity-0 group-hover:flex items-center justify-center text-center uppercase p-0.5 leading-tight">Trocar</div>
+                                                            <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleAlterarFotoItemExistente(idx, e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                        </div>
+                                                        <div className="font-bold text-[#1d1d1f] uppercase truncate">{item.nome}</div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-4 justify-between md:justify-end shrink-0 w-full md:w-auto border-t md:border-0 pt-2 md:pt-0">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[9px] font-bold text-[#86868b] uppercase">Qtd:</span>
                                                             <input type="number" min="1" value={item.quantidade} onChange={(e) => handleAtualizarQtdItem(idx, Number(e.target.value))} className="w-16 bg-[#f5f5f7] border border-[#e5e5ea] text-center py-1 rounded font-mono font-black text-[#007aff] outline-none" />
                                                         </div>
-                                                        <button type="button" onClick={() => handleMarcarRemocaoItem(idx)} className="text-red-500 hover:text-red-700 font-bold text-[10px] uppercase tracking-wider transition-colors">Remover</button>
+                                                        <button type="button" onClick={() => handleMarcarRemocaoItem(idx)} className="text-red-500 hover:text-red-700 font-bold text-[10px] uppercase tracking-wider transition-colors px-2 py-1">Remover</button>
                                                     </div>
+
                                                 </li>
                                             ))}
                                         </ul>
@@ -322,11 +396,10 @@ export default function EditarMaletaPage() {
                             </div>
                         </div>
 
-                        {/* SEÇÃO 3: GALERIA DE FOTOS */}
+                        {/* SEÇÃO 3: GALERIA DE FOTOS EXTERNAS */}
                         <div className="space-y-5">
-                            <h3 className="text-xs font-black text-[#1d1d1f] uppercase tracking-widest border-b border-[#f5f5f7] pb-2">3. Galeria e Fotos de Apoio</h3>
+                            <h3 className="text-xs font-black text-[#1d1d1f] uppercase tracking-widest border-b border-[#f5f5f7] pb-2">3. Galeria e Fotos de Apoio (Maleta)</h3>
 
-                            {/* Trocar Foto Principal */}
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Substituir Foto Principal (Capa)</label>
                                 <div className="flex items-center gap-4">
@@ -342,14 +415,11 @@ export default function EditarMaletaPage() {
                                 </div>
                             </div>
 
-                            {/* Fotos Adicionais */}
                             <div className="space-y-2 pt-4 border-t border-[#f5f5f7]">
-                                <label className="text-[10px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Fotos Adicionais (Detalhes e Avarias)</label>
+                                <label className="text-[10px] font-bold uppercase text-[#86868b] tracking-wider ml-0.5">Fotos Adicionais (Detalhes da Caixa)</label>
                                 <input type="file" accept="image/*" multiple onChange={e => setNovasFotosExtras(Array.from(e.target.files || []))} className="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-[#f5f5f7] file:text-[#1d1d1f] hover:file:bg-[#e8e8ed] cursor-pointer text-[#86868b] font-medium block mb-4" />
 
-                                {/* Grid de Miniaturas Extras (Atuais + Novas) */}
                                 <div className="flex flex-wrap gap-4">
-                                    {/* Fotos Extras Já Salvas no Banco */}
                                     {fotosExtrasAtuais.filter(f => !fotosParaDeletar.includes(f.id)).map(foto => (
                                         <div key={foto.id} className="relative w-24 h-24 bg-white border border-[#e5e5ea] rounded-xl overflow-hidden group shadow-sm">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -358,7 +428,6 @@ export default function EditarMaletaPage() {
                                         </div>
                                     ))}
 
-                                    {/* Novas Fotos Selecionadas para Subir */}
                                     {novasFotosExtras.map((file, idx) => (
                                         <div key={idx} className="relative w-24 h-24 bg-[#34c759]/10 border border-[#34c759]/30 rounded-xl flex flex-col items-center justify-center p-2 text-center shadow-sm">
                                             <span className="text-xl">📸</span>
