@@ -15,6 +15,7 @@ interface Funcionario {
 interface Atestado {
     id: string;
     funcionario_id: string;
+    tipo_registro?: string; // 'atestado' | 'declaracao'
     data_emissao: string;
     quantidade_dias: number;
     cid: string | null;
@@ -35,6 +36,7 @@ export default function ControleAtestadosPage() {
     const [pesquisa, setPesquisa] = useState('');
 
     // Estados do Formulário
+    const [tipoRegistro, setTipoRegistro] = useState<'atestado' | 'declaracao'>('atestado');
     const [funcionarioId, setFuncionarioId] = useState('');
     const [dataEmissao, setDataEmissao] = useState('');
     const [quantidadeDias, setQuantidadeDias] = useState('');
@@ -100,15 +102,20 @@ export default function ControleAtestadosPage() {
 
     const handleCadastrarAtestado = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!funcionarioId || !dataEmissao || !quantidadeDias || !justificativa.trim()) {
+
+        if (!funcionarioId || !dataEmissao || !justificativa.trim()) {
             setStatusFeed({ tipo: 'erro', texto: 'Preencha todos os campos obrigatórios.' });
             return;
         }
 
-        const diasNum = Number(quantidadeDias);
-        if (diasNum <= 0) {
-            setStatusFeed({ tipo: 'erro', texto: 'A quantidade de dias deve ser maior que zero.' });
-            return;
+        let diasNum = 0;
+
+        if (tipoRegistro === 'atestado') {
+            diasNum = Number(quantidadeDias);
+            if (diasNum <= 0) {
+                setStatusFeed({ tipo: 'erro', texto: 'Atestados exigem quantidade de dias maior que zero.' });
+                return;
+            }
         }
 
         setEnviando(true);
@@ -131,13 +138,14 @@ export default function ControleAtestadosPage() {
                 if (uploadData) urlsDocumentos.push(uploadData.path);
             }
 
-            // 1. Grava na tabela mestre de auditoria de atestados
+            // 1. Grava na tabela mestre de auditoria
             const { error: insertError } = await supabase
                 .from('atestados_medicos')
                 .insert([{
                     funcionario_id: funcionarioId,
+                    tipo_registro: tipoRegistro,
                     data_emissao: dataEmissao,
-                    quantidade_dias: diasNum,
+                    quantidade_dias: diasNum, // Será 0 se for declaração
                     cid: cid.trim().toUpperCase() || null,
                     justificativa: justificativa.trim(),
                     arquivos: urlsDocumentos
@@ -145,21 +153,39 @@ export default function ControleAtestadosPage() {
 
             if (insertError) throw insertError;
 
-            // 2. ENGENHARIA AUTOMÁTICA DE EXTENSÃO: Replica o atestado dia após dia na tabela de pausas
-            const lotePausasAtestado = [];
+            // 2. ENGENHARIA AUTOMÁTICA NA FOLHA DE PONTO
+            const lotePausas = [];
             const textoCid = cid.trim() ? ` (CID: ${cid.trim().toUpperCase()})` : '';
-            const observacaoFormatada = `ATESTADO: ${justificativa.trim().toUpperCase()}${textoCid}`;
 
-            for (let i = 0; i < diasNum; i++) {
+            if (tipoRegistro === 'atestado') {
+                const observacaoFormatada = `ATESTADO: ${justificativa.trim().toUpperCase()}${textoCid}`;
+                for (let i = 0; i < diasNum; i++) {
+                    const dataCorrente = new Date(dataEmissao + 'T00:00:00');
+                    dataCorrente.setDate(dataCorrente.getDate() + i);
+
+                    const anoStr = dataCorrente.getFullYear();
+                    const mesStr = String(dataCorrente.getMonth() + 1).padStart(2, '0');
+                    const diaStr = String(dataCorrente.getDate()).padStart(2, '0');
+
+                    lotePausas.push({
+                        funcionario_id: funcionarioId,
+                        nome: nomeCompleto,
+                        data: `${anoStr}-${mesStr}-${diaStr}T12:00:00Z`,
+                        minutos_ajuste: 0,
+                        tipo: 'justificativa',
+                        observacao: observacaoFormatada,
+                        origem: 'admin'
+                    });
+                }
+            } else {
+                // Se for Declaração, insere apenas UMA justificativa no dia correspondente
+                const observacaoFormatada = `DECLARAÇÃO DE COMPARECIMENTO: ${justificativa.trim().toUpperCase()}${textoCid}`;
                 const dataCorrente = new Date(dataEmissao + 'T00:00:00');
-                dataCorrente.setDate(dataCorrente.getDate() + i);
-
-                // Formata a data de forma segura ISO sem perder o dia por causa do timezone da borda
                 const anoStr = dataCorrente.getFullYear();
                 const mesStr = String(dataCorrente.getMonth() + 1).padStart(2, '0');
                 const diaStr = String(dataCorrente.getDate()).padStart(2, '0');
 
-                lotePausasAtestado.push({
+                lotePausas.push({
                     funcionario_id: funcionarioId,
                     nome: nomeCompleto,
                     data: `${anoStr}-${mesStr}-${diaStr}T12:00:00Z`,
@@ -170,14 +196,18 @@ export default function ControleAtestadosPage() {
                 });
             }
 
-            // Insere o lote completo de dias abonados direto na folha de ponto de uma só vez
-            const { error: errorLotePausas } = await supabase
-                .from('pausas')
-                .insert(lotePausasAtestado);
+            // Insere na folha de ponto
+            if (lotePausas.length > 0) {
+                const { error: errorLotePausas } = await supabase.from('pausas').insert(lotePausas);
+                if (errorLotePausas) throw errorLotePausas;
+            }
 
-            if (errorLotePausas) throw errorLotePausas;
-
-            setStatusFeed({ tipo: 'sucesso', texto: `Atestado de ${diasNum}d gravado e espelhado com sucesso na Folha de Ponto!` });
+            setStatusFeed({
+                tipo: 'sucesso',
+                texto: tipoRegistro === 'atestado'
+                    ? `Atestado de ${diasNum}d gravado e espelhado na Folha de Ponto!`
+                    : `Declaração gravada como justificativa na Folha de Ponto!`
+            });
 
             setFuncionarioId('');
             setDataEmissao('');
@@ -185,6 +215,7 @@ export default function ControleAtestadosPage() {
             setCid('');
             setJustificativa('');
             setArquivosSelecionados([]);
+            setTipoRegistro('atestado'); // Reseta para o padrão
 
             carregarDados();
 
@@ -224,10 +255,10 @@ export default function ControleAtestadosPage() {
                             ← Dashboard de RH
                         </Link>
                         <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f]">
-                            Controle de Atestados Médicos
+                            Controle Médico e Justificativas
                         </h1>
                         <p className="text-[10px] text-[#86868b] font-medium uppercase tracking-wide">
-                            Módulo de Justificativas Legais, Dispensas e Afastamentos Médicos
+                            Módulo de Atestados, Dispensas e Declarações de Comparecimento
                         </p>
                     </div>
                 </header>
@@ -257,9 +288,35 @@ export default function ControleAtestadosPage() {
 
                     {/* FORM CARD */}
                     <div className="bg-white border border-[#e5e5ea] rounded-2xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] lg:col-span-1">
-                        <h2 className="text-xs font-bold uppercase tracking-wider text-[#86868b] border-b border-[#f5f5f7] pb-3 mb-4 select-none">
-                            🩺 Lançar Novo Afastamento
+                        <h2 className="text-xs font-bold uppercase tracking-wider text-[#86868b] border-b border-[#f5f5f7] pb-3 mb-4 select-none flex items-center gap-2">
+                            <span>{tipoRegistro === 'atestado' ? '🩺' : '📄'}</span> Lançar Novo Documento
                         </h2>
+
+                        {/* SELETOR DE TIPO (ATESTADO X DECLARAÇÃO) */}
+                        <div className="flex bg-[#f5f5f7] p-1 rounded-lg border border-[#e5e5ea] mb-5">
+                            <button
+                                type="button"
+                                onClick={() => setTipoRegistro('atestado')}
+                                className={`flex-1 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                    tipoRegistro === 'atestado'
+                                        ? 'bg-white text-[#1d1d1f] shadow-sm border border-[#e5e5ea]'
+                                        : 'text-[#86868b] hover:text-[#1d1d1f]'
+                                }`}
+                            >
+                                Atestado
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setTipoRegistro('declaracao')}
+                                className={`flex-1 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                    tipoRegistro === 'declaracao'
+                                        ? 'bg-white text-[#1d1d1f] shadow-sm border border-[#e5e5ea]'
+                                        : 'text-[#86868b] hover:text-[#1d1d1f]'
+                                }`}
+                            >
+                                Declaração
+                            </button>
+                        </div>
 
                         {statusFeed.texto && (
                             <div className={`mb-4 p-3 rounded-xl text-center text-[11px] font-bold border transition-all ${
@@ -299,7 +356,7 @@ export default function ControleAtestadosPage() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Data Emissão *</label>
+                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Data Ocorrência *</label>
                                     <input
                                         type="date"
                                         value={dataEmissao}
@@ -320,31 +377,35 @@ export default function ControleAtestadosPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Total de Dias *</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        placeholder="Ex: 5"
-                                        value={quantidadeDias}
-                                        onChange={e => setQuantidadeDias(e.target.value)}
-                                        className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold text-center"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#007aff] ml-0.5">Data de Retorno</label>
-                                    <div className="w-full bg-[#007aff]/5 border border-[#007aff]/10 px-3 py-2 rounded-lg text-[#007aff] text-xs font-mono font-bold tracking-wide flex items-center justify-center h-[34px] select-none">
-                                        {calcularDataRetorno(dataEmissao, quantidadeDias)}
+                            {tipoRegistro === 'atestado' && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Total de Dias *</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            placeholder="Ex: 5"
+                                            value={quantidadeDias}
+                                            onChange={e => setQuantidadeDias(e.target.value)}
+                                            className="w-full bg-[#f5f5f7] border border-[#e5e5ea] focus:border-[#b4b4b9] px-3 py-2 rounded-lg outline-none text-[#1d1d1f] text-xs font-mono font-bold text-center"
+                                            required={tipoRegistro === 'atestado'}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="block text-[9px] font-bold uppercase tracking-wider text-[#007aff] ml-0.5">Data de Retorno</label>
+                                        <div className="w-full bg-[#007aff]/5 border border-[#007aff]/10 px-3 py-2 rounded-lg text-[#007aff] text-xs font-mono font-bold tracking-wide flex items-center justify-center h-[34px] select-none">
+                                            {calcularDataRetorno(dataEmissao, quantidadeDias)}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="space-y-1">
-                                <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">Justificativa / Motivo *</label>
+                                <label className="block text-[9px] font-bold uppercase tracking-wider text-[#86868b] ml-0.5">
+                                    {tipoRegistro === 'atestado' ? 'Justificativa / Motivo *' : 'Local / Motivo do Comparecimento *'}
+                                </label>
                                 <textarea
-                                    placeholder="Descreva o motivo do afastamento..."
+                                    placeholder={tipoRegistro === 'atestado' ? "Descreva o motivo do afastamento..." : "Ex: Exame admissional, Consulta médica, Doação de sangue..."}
                                     value={justificativa}
                                     onChange={e => setJustificativa(e.target.value)}
                                     rows={3}
@@ -382,7 +443,7 @@ export default function ControleAtestadosPage() {
                                     disabled={enviando}
                                     className="w-full bg-[#1d1d1f] active:bg-black text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
                                 >
-                                    {enviando ? "Processando..." : "Salvar Atestado Completo"}
+                                    {enviando ? "Processando..." : `Salvar ${tipoRegistro === 'atestado' ? 'Atestado' : 'Declaração'}`}
                                 </button>
                             </div>
                         </form>
@@ -391,7 +452,7 @@ export default function ControleAtestadosPage() {
                     {/* TABLE CARD */}
                     <div className="bg-white border border-[#e5e5ea] rounded-2xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] lg:col-span-2 min-h-[400px] flex flex-col overflow-hidden">
                         <h2 className="text-xs font-bold uppercase tracking-wider text-[#86868b] border-b border-[#f5f5f7] pb-3 mb-4 select-none">
-                            📋 Histórico de Afastamentos Cadastrados
+                            📋 Histórico de Documentos Lançados
                         </h2>
 
                         {carregando ? (
@@ -401,7 +462,7 @@ export default function ControleAtestadosPage() {
                             </div>
                         ) : atestadosFiltrados.length === 0 ? (
                             <div className="py-20 text-center flex-1 flex items-center justify-center">
-                                <p className="text-xs text-[#86868b] font-bold uppercase tracking-wide">Nenhum atestado localizado para o filtro atual.</p>
+                                <p className="text-xs text-[#86868b] font-bold uppercase tracking-wide">Nenhum documento localizado para o filtro atual.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto max-h-[520px]">
@@ -409,57 +470,71 @@ export default function ControleAtestadosPage() {
                                     <thead>
                                     <tr className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider text-[8px] font-bold select-none pb-3">
                                         <th className="pb-3 pl-1">Funcionário</th>
-                                        <th className="pb-3 text-center w-24">Emissão</th>
-                                        <th className="pb-3 text-center w-12">Dias</th>
-                                        <th className="pb-3 text-center w-24">Retorno</th>
+                                        <th className="pb-3 text-center w-24">Data / Emissão</th>
+                                        <th className="pb-3 text-center w-20">Dias/Tipo</th>
+                                        <th className="pb-3 text-center w-20">Retorno</th>
                                         <th className="pb-3 text-center w-16">CID</th>
-                                        <th className="pb-3">Justificativa</th>
+                                        <th className="pb-3">Motivo / Local</th>
                                         <th className="pb-3 text-right pr-1 w-24">Arquivos</th>
                                     </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#f5f5f7]">
-                                    {atestadosFiltrados.map(a => (
-                                        <tr key={a.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                                            <td className="py-3.5 pl-1">
-                                                <p className="font-bold text-[#1d1d1f] uppercase tracking-tight">
-                                                    {a.funcionarios ? `${a.funcionarios.nome} ${a.funcionarios.sobrenome}` : 'N/A'}
-                                                </p>
-                                                <span className="text-[9px] font-mono font-medium text-[#86868b] mt-0.5 block">ID: {a.funcionario_id}</span>
-                                            </td>
-                                            <td className="py-3.5 text-center font-mono text-[10px] text-[#86868b] font-semibold">
-                                                {new Date(a.data_emissao + 'T00:00:00').toLocaleDateString('pt-BR')}
-                                            </td>
-                                            <td className="py-3.5 text-center font-bold text-[#1d1d1f] font-mono text-xs">
-                                                {a.quantidade_dias}d
-                                            </td>
-                                            <td className="py-3.5 text-center font-mono font-bold text-[10px] text-[#248a3d]">
-                                                {calcularDataRetorno(a.data_emissao, String(a.quantidade_dias))}
-                                            </td>
-                                            <td className="py-3.5 text-center font-mono font-bold text-[#007aff] uppercase tracking-wide">
-                                                {a.cid || '---'}
-                                            </td>
-                                            <td className="py-3.5 text-[#86868b] font-medium max-w-[140px] truncate uppercase text-[10px] tracking-wide" title={a.justificativa}>
-                                                {a.justificativa}
-                                            </td>
-                                            <td className="py-3.5 text-right pr-1">
-                                                {a.arquivos && a.arquivos.length > 0 ? (
-                                                    <div className="flex flex-col gap-1 items-end">
-                                                        {a.arquivos.map((path, idx) => (
-                                                            <button
-                                                                key={idx}
-                                                                onClick={() => visualizarDocumento(path)}
-                                                                className="text-[8px] font-bold uppercase tracking-wider bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] px-2 py-1 rounded border border-[#e5e5ea] transition-colors"
-                                                            >
-                                                                Doc {idx + 1}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[8px] font-bold text-[#b4b4b9] uppercase tracking-wider mr-1 select-none">Nenhum</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {atestadosFiltrados.map(a => {
+                                        const isDeclaracao = a.tipo_registro === 'declaracao' || a.quantidade_dias === 0;
+
+                                        return (
+                                            <tr key={a.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                                                <td className="py-3.5 pl-1">
+                                                    <p className="font-bold text-[#1d1d1f] uppercase tracking-tight">
+                                                        {a.funcionarios ? `${a.funcionarios.nome} ${a.funcionarios.sobrenome}` : 'N/A'}
+                                                    </p>
+                                                    <span className="text-[9px] font-mono font-medium text-[#86868b] mt-0.5 block">ID: {a.funcionario_id}</span>
+                                                </td>
+                                                <td className="py-3.5 text-center font-mono text-[10px] text-[#86868b] font-semibold">
+                                                    {new Date(a.data_emissao + 'T00:00:00').toLocaleDateString('pt-BR')}
+                                                </td>
+                                                <td className="py-3.5 text-center font-bold text-[#1d1d1f] font-mono text-xs">
+                                                    {isDeclaracao ? (
+                                                        <span className="text-[8px] tracking-wider uppercase bg-[#f5f5f7] px-2 py-1 rounded text-[#86868b] border border-[#e5e5ea]">
+                                                            Declaração
+                                                        </span>
+                                                    ) : (
+                                                        `${a.quantidade_dias}d`
+                                                    )}
+                                                </td>
+                                                <td className="py-3.5 text-center font-mono font-bold text-[10px] text-[#248a3d]">
+                                                    {isDeclaracao ? (
+                                                        <span className="text-[#86868b] opacity-50">---</span>
+                                                    ) : (
+                                                        calcularDataRetorno(a.data_emissao, String(a.quantidade_dias))
+                                                    )}
+                                                </td>
+                                                <td className="py-3.5 text-center font-mono font-bold text-[#007aff] uppercase tracking-wide">
+                                                    {a.cid || '---'}
+                                                </td>
+                                                <td className="py-3.5 text-[#86868b] font-medium max-w-[140px] truncate uppercase text-[10px] tracking-wide" title={a.justificativa}>
+                                                    {a.justificativa}
+                                                </td>
+                                                <td className="py-3.5 text-right pr-1">
+                                                    {a.arquivos && a.arquivos.length > 0 ? (
+                                                        <div className="flex flex-col gap-1 items-end">
+                                                            {a.arquivos.map((path, idx) => (
+                                                                <button
+                                                                    key={idx}
+                                                                    onClick={() => visualizarDocumento(path)}
+                                                                    className="text-[8px] font-bold uppercase tracking-wider bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] px-2 py-1 rounded border border-[#e5e5ea] transition-colors"
+                                                                >
+                                                                    Doc {idx + 1}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-[8px] font-bold text-[#b4b4b9] uppercase tracking-wider mr-1 select-none">Nenhum</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                     </tbody>
                                 </table>
                             </div>
@@ -471,7 +546,7 @@ export default function ControleAtestadosPage() {
             {/* FOOTER */}
             <footer className="w-full max-w-7xl mx-auto border-t border-[#e5e5ea] pt-5 mt-8 flex flex-col sm:flex-row items-center justify-between text-[8px] text-[#86868b] uppercase font-bold tracking-wider gap-4 text-center sm:text-left select-none">
                 <div>GR Autopeças &amp; Serviços</div>
-                <div className="font-mono text-[#b4b4b9]">Módulo de Gestão de RH v2.7</div>
+                <div className="font-mono text-[#b4b4b9]">Módulo de Gestão de RH v2.8</div>
             </footer>
         </main>
     );
