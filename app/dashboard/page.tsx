@@ -92,13 +92,19 @@ export default function DashboardPage() {
     const _gf = _x('R0VTVE9SREVGUk9UQVM=');
     const _e = _x('RVNUT1FVRQ==');
 
-    const _0xvp = [_a, _g, _t, _gf];
+    // Variantes do cargo Auxiliar de Gerente (AUX_GERENTE, AUX GERENTE e AUXGERENTE)
+    const _ag1 = _x('QVVYX0dFUkVOVEU=');
+    const _ag2 = _x('QVVYIEdFUkVOVEU=');
+    const _ag3 = _x('QVVYR0VSRU5URQ==');
+
+    // Libera os cards correspondentes às telas permitidas
+    const _0xvp = [_a, _g, _t, _gf, _ag1, _ag2, _ag3];         // Ponto (Atrasos e Emergência)
     const _0xvrf = [_a, _g, _t, _m, _gf];
     const _0xvhf = [_a, _g, _t, _m, _gf];
     const _0xvf = [_a, _g, _gf];
-    const _0xvrh = [_a, _g];
+    const _0xvrh = [_a, _g, _ag1, _ag2, _ag3];                  // RH (Atestados e Fechamento)
     const _0xve = [_a, _g, _t, _m, _gf, _e];
-    const _0xvfnc = [_a, _g, _gf];
+    const _0xvfnc = [_a, _g, _gf, _ag1, _ag2, _ag3];             // Funcionários
     const _0xvc = [_a, _g, _t];
 
     return (
@@ -218,7 +224,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="mt-4 leading-snug">
                                 <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('TGlzdGEgZGUgRnVuY2lvbsOhcmlvcw==')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2FkYXN0cm8gZSBnZXJlbmNpYW1lbnRvIG9wZXJhY2lvbmFsIGRlIHBlc3NvYWwu')}</p>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2F1YXN0cm8gZSBnZXJlbmNpYW1lbnRvIG9wZXJhY2lvbmFsIGRlIHBlc3NvYWwu')}</p>
                             </div>
                         </Link>
                     )}
@@ -267,8 +273,3 @@ export default function DashboardPage() {
         </main>
     );
 }
-
-
-
-
-

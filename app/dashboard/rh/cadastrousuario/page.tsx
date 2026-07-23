@@ -33,6 +33,7 @@ export default function CadastroUsuarioPainelPage() {
     const cargosDisponiveis = [
         { id: "ADMIN", label: "ADMINISTRADOR (ACESSO TOTAL)" },
         { id: "GERENTE", label: "GERENTE OPERACIONAL" },
+        { id: "AUX_GERENTE", label: "AUXILIAR DE GERENTE (ACESSO RESTRITO)" },
         { id: "TECNICO", label: "TÉCNICO DE PÁTIO / ALMOXARIFADO" },
         { id: "MECANICO", label: "MECÂNICO / OPERADOR DE PISTA" },
         { id: "GESTORDEFROTAS", label: "GESTOR DE FROTAS & LOGÍSTICA" },

@@ -47,6 +47,28 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // ─── REGRA EXCLUSIVA DO AUX GERENTE ───
+    // Aceita 'AUX_GERENTE', 'AUX GERENTE' ou 'AUXGERENTE' para evitar problemas com formatação no banco
+    const isAuxGerente = cargo === 'AUX_GERENTE' || cargo === 'AUX GERENTE' || cargo === 'AUXGERENTE';
+    if (isAuxGerente) {
+        const rotasPermitidas = [
+            '/dashboard',
+            '/dashboard/funcionarios',
+            '/dashboard/rh/atestados',
+            '/dashboard/fechamento',
+            '/dashboard/ponto/atrasos',
+            '/dashboard/ponto/emergencia',
+        ];
+
+        const possuiAcesso = rotasPermitidas.some((rota) =>
+            pathname === rota || pathname.startsWith(`${rota}/`)
+        );
+
+        if (!possuiAcesso) {
+            return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
+        }
+    }
+
     // ─── MATRIZ DE SEGURANÇA REQUISITADA PELO JHON ───
 
     // Regra da Central de Auditoria e Logs (Apenas ADMIN)
@@ -57,25 +79,25 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Regra do RH e Cadastro de Usuários (Apenas Admin e Gerente)
+    // Regra do RH e Cadastro de Usuários (Admin, Gerente e Auxiliar de Gerente para atestados)
     if (pathname.startsWith('/dashboard/rh')) {
-        const autorizados = ['ADMIN', 'GERENTE'];
+        const autorizados = ['ADMIN', 'GERENTE', 'AUX_GERENTE', 'AUX GERENTE', 'AUXGERENTE'];
         if (!autorizados.includes(cargo)) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
         }
     }
 
-    // Regra do Fechamento Contábil (Apenas Admin e Gerente)
+    // Regra do Fechamento Contábil (Admin, Gerente e Auxiliar de Gerente)
     if (pathname.startsWith('/dashboard/fechamento')) {
-        const autorizados = ['ADMIN', 'GERENTE'];
+        const autorizados = ['ADMIN', 'GERENTE', 'AUX_GERENTE', 'AUX GERENTE', 'AUXGERENTE'];
         if (!autorizados.includes(cargo)) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
         }
     }
 
-    // Regra de Funcionários (Admin, Gerente e Gestor de Frotas liberados)
+    // Regra de Funcionários (Admin, Gerente, Gestor de Frotas e Auxiliar de Gerente)
     if (pathname.startsWith('/dashboard/funcionarios')) {
-        const autorizados = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS'];
+        const autorizados = ['ADMIN', 'GERENTE', 'GESTORDEFROTAS', 'AUX_GERENTE', 'AUX GERENTE', 'AUXGERENTE'];
         if (!autorizados.includes(cargo)) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
         }
@@ -89,17 +111,16 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Regra do Ponto Geral e Totem de Ponto (Admin, Gerente, Técnico e Gestor de Frotas liberados!)
+    // Regra do Ponto Geral e Totem de Ponto (Admin, Gerente, Técnico, Gestor de Frotas e Auxiliar de Gerente)
     if (pathname.startsWith('/dashboard/ponto')) {
-        const autorizados = ['ADMIN', 'GERENTE', 'TECNICO', 'GESTORDEFROTAS'];
+        const autorizados = ['ADMIN', 'GERENTE', 'TECNICO', 'GESTORDEFROTAS', 'AUX_GERENTE', 'AUX GERENTE', 'AUXGERENTE'];
         if (!autorizados.includes(cargo)) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
         }
     }
 
     // Nota: As rotas de ferramentas (/dashboard/ferramentas) estão liberadas
-    // para todos os cargos (Admin, Gerente, Tecnico, Mecanico, GestorDeFrotas).
-    // O Estoque não passará aqui por causa do primeiro bloqueio de segurança acima.
+    // para todos os demais cargos. O Estoque e o Aux Gerente já foram filtrados no topo do middleware.
 
     return response;
 }
