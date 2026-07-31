@@ -97,15 +97,21 @@ export default function DashboardPage() {
     const _ag2 = _x('QVVYIEdFUkVOVEU=');
     const _ag3 = _x('QVVYR0VSRU5URQ==');
 
+    // Variantes do cargo Supervisor Estoque (SUPERVISOR_ESTOQUE, SUPERVISOR ESTOQUE, SUPERVISORESTOQUE e SUPERVISOR)
+    const _se1 = _x('U1VQRVJWSVNPUl9FU1RPUVVF');
+    const _se2 = _x('U1VQRVJWSVNPUiBFU1RPUVVF');
+    const _se3 = _x('U1VQRVJWSVNPUkVTVE9RVUU=');
+    const _se4 = _x('U1VQRVJWSVNPUg==');
+
     // Libera os cards correspondentes às telas permitidas
     const _0xvp = [_a, _g, _t, _gf, _ag1, _ag2, _ag3];         // Ponto (Atrasos e Emergência)
-    const _0xvrf = [_a, _g, _t, _m, _gf];
-    const _0xvhf = [_a, _g, _t, _m, _gf];
-    const _0xvf = [_a, _g, _gf];
+    const _0xvrf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4]; // Retirada de Ferramenta
+    const _0xvhf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4]; // Ferramentas
+    const _0xvf = [_a, _g, _gf];                                // Frota
     const _0xvrh = [_a, _g, _ag1, _ag2, _ag3];                  // RH (Atestados e Fechamento)
-    const _0xve = [_a, _g, _t, _m, _gf, _e];
+    const _0xve = [_a, _g, _t, _m, _gf, _e, _se1, _se2, _se3, _se4]; // Estoque & Compras
     const _0xvfnc = [_a, _g, _gf, _ag1, _ag2, _ag3];             // Funcionários
-    const _0xvc = [_a, _g, _t];
+    const _0xvc = [_a, _g, _t];                                 // Checklist
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased flex flex-col lg:flex-row w-full selection:bg-black/5">
@@ -263,7 +269,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="mt-4 leading-snug">
                                 <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('R2VzdMOjbyBkZSBSSA==')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q29udHJhdG9zIGFkbWlzc2lvbmFpcyBlIHRlcm1vcyBsZWdhaXMu')}</p>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q29udHJvb3MgYWRtaXNzaW9uYWlzIGUgdGVybW9zIGxlZ2Fpcy4=')}</p>
                             </div>
                         </Link>
                     )}
