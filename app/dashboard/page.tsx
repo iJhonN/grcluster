@@ -92,26 +92,26 @@ export default function DashboardPage() {
     const _gf = _x('R0VTVE9SREVGUk9UQVM=');
     const _e = _x('RVNUT1FVRQ==');
 
-    // Variantes de Auxiliar de Gerente
+    // Variantes do cargo Auxiliar de Gerente (AUX_GERENTE, AUX GERENTE e AUXGERENTE)
     const _ag1 = _x('QVVYX0dFUkVOVEU=');
     const _ag2 = _x('QVVYIEdFUkVOVEU=');
     const _ag3 = _x('QVVYR0VSRU5URQ==');
 
-    // Variantes de Supervisor Estoque
+    // Variantes do cargo Supervisor Estoque (SUPERVISOR_ESTOQUE, SUPERVISOR ESTOQUE, SUPERVISORESTOQUE e SUPERVISOR)
     const _se1 = _x('U1VQRVJWSVNPUl9FU1RPUVVF');
     const _se2 = _x('U1VQRVJWSVNPUiBFU1RPUVVF');
     const _se3 = _x('U1VQRVJWSVNPUkVTVE9RVUU=');
     const _se4 = _x('U1VQRVJWSVNPUg==');
 
-    // Mapeamento de permissões (Supervisor de Estoque incluído no Ponto _0xvp)
-    const _0xvp = [_a, _g, _t, _gf, _ag1, _ag2, _ag3, _se1, _se2, _se3, _se4]; // Ponto, Pausas e Emergência
-    const _0xvrf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4];             // Retirada de Ferramenta
-    const _0xvhf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4];             // Ferramentas
-    const _0xvf = [_a, _g, _gf];                                            // Frota
-    const _0xvrh = [_a, _g, _ag1, _ag2, _ag3];                              // RH
-    const _0xve = [_a, _g, _t, _m, _gf, _e, _se1, _se2, _se3, _se4];         // Estoque & Compras
-    const _0xvfnc = [_a, _g, _gf, _ag1, _ag2, _ag3];                         // Funcionários
-    const _0xvc = [_a, _g, _t];                                             // Checklist
+    // Libera os cards correspondentes às telas permitidas
+    const _0xvp = [_a, _g, _t, _gf, _ag1, _ag2, _ag3];         // Ponto (Atrasos e Emergência)
+    const _0xvrf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4]; // Retirada de Ferramenta
+    const _0xvhf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4]; // Ferramentas
+    const _0xvf = [_a, _g, _gf];                                // Frota
+    const _0xvrh = [_a, _g, _ag1, _ag2, _ag3];                  // RH (Atestados e Fechamento)
+    const _0xve = [_a, _g, _t, _m, _gf, _e, _se1, _se2, _se3, _se4]; // Estoque & Compras
+    const _0xvfnc = [_a, _g, _gf, _ag1, _ag2, _ag3];             // Funcionários
+    const _0xvc = [_a, _g, _t];                                 // Checklist
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased flex flex-col lg:flex-row w-full selection:bg-black/5">
@@ -161,196 +161,120 @@ export default function DashboardPage() {
                 </div>
             </aside>
 
-            <section className="flex-1 p-4 sm:p-6 md:p-10 max-w-[1400px] flex flex-col gap-6 w-full z-10 overflow-y-auto">
+            <section className="flex-1 p-4 sm:p-6 md:p-10 max-w-[1400px] flex flex-col gap-4 sm:gap-6 w-full z-10 overflow-y-auto">
 
-                {/* SEÇÃO PONTO (AGORA VISÍVEL PARA SUPERVISOR ESTOQUE) */}
-                {_0xvp.includes(_0x2r) && (
-                    <div className="space-y-3">
-                        <div className="space-y-0.5 pl-1">
-                            <span className="text-[9px] font-bold uppercase tracking-widest text-[#86868b]">{_x('R2VzdMOjbyBkZSBQZXNzb2Fs')}</span>
-                            <h2 className="text-sm font-bold tracking-tight text-[#1d1d1f]">{_x('Q29udHJvbGUgZGUgUG9udG8=')}</h2>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 w-full">
-                            <Link href="/dashboard/ponto" className="bg-[#1d1d1f] border border-black p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-xl text-white">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">⏱️</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-white bg-white/10 px-2 py-0.5 rounded">{_x('VG90ZW0=')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity">{_x('Q29udHJvbGUgZGUgUG9udG8=')}</h3>
-                                    <p className="text-[11px] text-[#aeae23] mt-1 font-medium font-mono tracking-wide animate-pulse">{_x('4peHIFJFR0lTVFJPIE9CUklHQVTDk1JJTw==')}</p>
-                                </div>
-                            </Link>
-
-                            <Link href="/dashboard/ponto/pausas" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">☕</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">{_x('SW50ZXJ2YWxv')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('UGF1c2FzIGUgSW50ZXJ2YWxvcw==')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('UmVnaXN0cm8gZGUgcGF1c2FzLCBhbG1vcmNvIGUgaW50ZXJ2YWxvcy4=')}</p>
-                                </div>
-                            </Link>
-
-                            <Link href="/dashboard/ponto/emergencia" className="bg-white border border-[#ff3b30]/30 hover:border-[#ff3b30] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">🚨</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff3b30] bg-[#ff3b30]/10 px-2 py-0.5 rounded">{_x('RXhjZcO3ZXM=')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#ff3b30] group-hover:opacity-80 transition-opacity">{_x('UG9udG8gZGUgRW1lcmfDqm5jaWE=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('UmVnaXN0cm8gZXhjZXBjaW9uYWwgZGUgcG9udG8gZm9yYSBkbyBvdXJhcmlvLg==')}</p>
-                                </div>
-                            </Link>
-                        </div>
-                    </div>
-                )}
-
-                {/* SEÇÃO ESTOQUE & ALMOXARIFADO */}
-                {_0xve.includes(_0x2r) && (
-                    <div className="space-y-3">
-                        <div className="space-y-0.5 pl-1">
-                            <span className="text-[9px] font-bold uppercase tracking-widest text-[#86868b]">{_x('U3VwcGx5IENoYWlu')}</span>
-                            <h2 className="text-sm font-bold tracking-tight text-[#1d1d1f]">{_x('RXN0b3F1ZSAmIENvbXByYXM=')}</h2>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 w-full">
-                            <Link href="/dashboard/estoque" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">📦</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff9500] bg-[#ff9500]/5 px-2 py-0.5 rounded">{_x('UGFpbmVs')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('Vmlzw6NvIEdlcmFsIGRvIEVzdG9xdWU=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('SW52ZW50w6FyaW8gZSBmbHV4byB0cmlwbG8gZGUgY290YcOnw7Vlcy4=')}</p>
-                                </div>
-                            </Link>
-
-                            <Link href="/dashboard/estoque/movimentacoes" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">🔄</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/5 px-2 py-0.5 rounded">{_x('Rmx1eG8=')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('TW92aW1lbnRhw6fDtWVzIGRlIEVzdG9xdWU=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('RW50cmFkYXMsIHNhw6RkYXMgZSBiYWxhbnNvIGRlIGl0ZW5zLg==')}</p>
-                                </div>
-                            </Link>
-
-                            <Link href="/dashboard/estoque/cotacoes" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">📑</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#5856d6] bg-[#5856d6]/5 px-2 py-0.5 rounded">{_x('Q29tcHJhcw==')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('Q290YcOnw7VlcyBlIENvbXByYXM=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('R2VzdMOjbyBkZSBjb3Rhw6fDtWVzLCBwZWRpZG9zIGUgb3JjYW1lbnRvcy4=')}</p>
-                                </div>
-                            </Link>
-
-                            <Link href="/dashboard/estoque/produtos" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">🏷️</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#af52de] bg-[#af52de]/5 px-2 py-0.5 rounded">{_x('SXRlbnM=')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('Q2FkYXN0cm8gZGUgUHJvZHV0b3M=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2FkYXN0cm8sIGVkacOnw6OjbyBlIGNhdGVnb3JpYXMgZGUgSXRlbnMu')}</p>
-                                </div>
-                            </Link>
-                        </div>
-                    </div>
-                )}
-
-                {/* SEÇÃO FERRAMENTAS & OUTROS */}
-                <div className="space-y-3">
-                    <div className="space-y-0.5 pl-1">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-[#86868b]">{_x('T3V0cm9zIE3Ds2R1bG9z')}</span>
-                        <h2 className="text-sm font-bold tracking-tight text-[#1d1d1f]">{_x('T3BlcmHDp8O1ZXMgR2VyYWlz')}</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5 w-full">
-
-                        {_0xvrf.includes(_0x2r) && (
-                            <Link href="/dashboard/ferramentas/retirada" className="bg-white border-2 border-[#1d1d1f] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">🛠️</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/10 px-2 py-0.5 rounded font-black">{_x('Rmx1eG8=')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('UmV0aXJhZGEgZGUgRmVycmFtZW50YQ==')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2F1dGVsYXMgZSBkZXZvbHXDp8OjbyByw6FwaWRhIGRlIGF0aXZvcy4=')}</p>
-                                </div>
-                            </Link>
-                        )}
-
-                        {_0xvhf.includes(_0x2r) && (
-                            <Link href="/dashboard/ferramentas" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">⚙️</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">{_x('T2ZpY2luYQ==')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('RmVycmFtZW50YXM=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2FyZ2EgcGF0cmltb25pYWwgZSBoaXN0w7NyaWNvIGdlcmFsLg==')}</p>
-                                </div>
-                            </Link>
-                        )}
-
-                        {_0xvf.includes(_0x2r) && (
-                            <Link href="/dashboard/frota" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">🚚</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#5856d6] bg-[#5856d6]/5 px-2 py-0.5 rounded">{_x('TG9nw61zdGljYQ==')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('RnJvdGFzICYgUm90YXM=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q29udHJvbGUgZGUgdmlhZ2VucyBlIGNvbWJ1c3TDrXZlaXMu')}</p>
-                                </div>
-                            </Link>
-                        )}
-
-                        {_0xvfnc.includes(_0x2r) && (
-                            <Link href="/dashboard/funcionarios" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">👥</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">{_x('RXF1aXBl')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('TGlzdGEgZGUgRnVuY2lvbsOhcmlvcw==')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2FkYXN0cm8gZSBnZXJlbmNpYW1lbnRvIG9wZXJhY2lvbmFsIGRlIHBlc3NvYWwu')}</p>
-                                </div>
-                            </Link>
-                        )}
-
-                        {_0xvc.includes(_0x2r) && (
-                            <Link href="/dashboard/checklist/lista" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">📋</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-orange-600 bg-orange-600/10 px-2 py-0.5 rounded">{_x('UMOhdGlv')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('Q2hlY2tsaXN0IFByZXZlbnRpdmE=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('SGlzdMOzcmljbyBlIGxhdWRvcyBkZSByZXZpc8OjbyBkYSBmcm90YS4=')}</p>
-                                </div>
-                            </Link>
-                        )}
-
-                        {_0xvrh.includes(_0x2r) && (
-                            <Link href="/dashboard/rh" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-base">💼</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff2d55] bg-[#ff2d55]/5 px-2 py-0.5 rounded">{_x('RGlyZcOnw6Nv')}</span>
-                                </div>
-                                <div className="mt-4 leading-snug">
-                                    <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('R2VzdMOjbyBkZSBSSA==')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q29udHJvb2cgYWRtaXNzaW9uYWlzIGUgdGVybW9zIGxlZ2Fpcy4=')}</p>
-                                </div>
-                            </Link>
-                        )}
-
-                    </div>
+                <div className="space-y-0.5 pl-1">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#86868b]">{_x('R2VzdMOjbyBkZSBBdGl2b3M=')}</span>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight text-[#1d1d1f]">{_x('TcOzZHVsb3MgT3BlcmFjaW9uYWlz')}</h1>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 w-full">
+
+                    {_0xvp.includes(_0x2r) && (
+                        <Link href="/dashboard/ponto" className="bg-[#1d1d1f] border border-black p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-xl text-white">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">⏱️</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-white bg-white/10 px-2 py-0.5 rounded">{_x('VG90ZW0=')}</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity">{_x('Q29udHJvbGUgZGUgUG9udG8=')}</h3>
+                                <p className="text-[11px] text-[#aeae23] mt-1 font-medium font-mono tracking-wide animate-pulse">{_x('4peHIFJFR0lTVFJPIE9CUklHQVTDk1JJTw==')}</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {_0xvrf.includes(_0x2r) && (
+                        <Link href="/dashboard/ferramentas/retirada" className="bg-white border-2 border-[#1d1d1f] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">🛠️</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/10 px-2 py-0.5 rounded font-black">{_x('Rmx1eG8=')}</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('UmV0aXJhZGEgZGUgRmVycmFtZW50YQ==')}</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2F1dGVsYXMgZSBkZXZvbHXDp8OjbyByw6FwaWRhIGRlIGF0aXZvcy4=')}</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {_0xvhf.includes(_0x2r) && (
+                        <Link href="/dashboard/ferramentas" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">⚙️</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">{_x('T2ZpY2luYQ==')}</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('RmVycmFtZW50YXM=')}</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2FyZ2EgcGF0cmltb25pYWwgZSBoaXN0w7NyaWNvIGdlcmFsLg==')}</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {_0xvf.includes(_0x2r) && (
+                        <Link href="/dashboard/frota" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">🚚</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#5856d6] bg-[#5856d6]/5 px-2 py-0.5 rounded">{_x('TG9nw61zdGljYQ==')}</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('RnJvdGFzICYgUm90YXM=')}</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q29udHJvbGUgZGUgdmlhZ2VucyBlIGNvbWJ1c3TDrXZlaXMu')}</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {_0xvfnc.includes(_0x2r) && (
+                        <Link href="/dashboard/funcionarios" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">👥</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">{_x('RXF1aXBl')}</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('TGlzdGEgZGUgRnVuY2lvbsOhcmlvcw==')}</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2F1YXN0cm8gZSBnZXJlbmNpYW1lbnRvIG9wZXJhY2lvbmFsIGRlIHBlc3NvYWwu')}</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {_0xve.includes(_0x2r) && (
+                        <Link href="/dashboard/estoque" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">📦</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff9500] bg-[#ff9500]/5 px-2 py-0.5 rounded">{_x('QWxtb3hhcmlmYWRv')}</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('RXN0b3F1ZSAmIENvbXByYXM=')}</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('SW52ZW50w6FyaW8gZSBmbHV4byB0cmlwbG8gZGUgY290YcOnw7Vlcy4=')}</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {_0xvc.includes(_0x2r) && (
+                        <Link href="/dashboard/checklist/lista" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">📋</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-orange-600 bg-orange-600/10 px-2 py-0.5 rounded">{_x('UMOhdGlv')}</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('Q2hlY2tsaXN0IFByZXZlbnRpdmE=')}</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('SGlzdMOzcmljbyBlIGxhdWRvcyBkZSByZXZpc8OjbyBkYSBmcm90YS4=')}</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {_0xvrh.includes(_0x2r) && (
+                        <Link href="/dashboard/rh" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">💼</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff2d55] bg-[#ff2d55]/5 px-2 py-0.5 rounded">{_x('RGlyZcOnw6Nv')}</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('R2VzdMOjbyBkZSBSSA==')}</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q29udHJvb3MgYWRtaXNzaW9uYWlzIGUgdGVybW9zIGxlZ2Fpcy4=')}</p>
+                            </div>
+                        </Link>
+                    )}
+
+                </div>
             </section>
         </main>
     );
