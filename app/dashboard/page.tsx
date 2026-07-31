@@ -103,15 +103,15 @@ export default function DashboardPage() {
     const _se3 = _x('U1VQRVJWSVNPUkVTVE9RVUU=');
     const _se4 = _x('U1VQRVJWSVNPUg==');
 
-    // Mapeamento de permissões
-    const _0xvp = [_a, _g, _t, _gf, _ag1, _ag2, _ag3];
-    const _0xvrf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4];
-    const _0xvhf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4];
-    const _0xvf = [_a, _g, _gf];
-    const _0xvrh = [_a, _g, _ag1, _ag2, _ag3];
-    const _0xve = [_a, _g, _t, _m, _gf, _e, _se1, _se2, _se3, _se4];
-    const _0xvfnc = [_a, _g, _gf, _ag1, _ag2, _ag3];
-    const _0xvc = [_a, _g, _t];
+    // Mapeamento de permissões (Supervisor de Estoque incluído no Ponto _0xvp)
+    const _0xvp = [_a, _g, _t, _gf, _ag1, _ag2, _ag3, _se1, _se2, _se3, _se4]; // Ponto, Pausas e Emergência
+    const _0xvrf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4];             // Retirada de Ferramenta
+    const _0xvhf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4];             // Ferramentas
+    const _0xvf = [_a, _g, _gf];                                            // Frota
+    const _0xvrh = [_a, _g, _ag1, _ag2, _ag3];                              // RH
+    const _0xve = [_a, _g, _t, _m, _gf, _e, _se1, _se2, _se3, _se4];         // Estoque & Compras
+    const _0xvfnc = [_a, _g, _gf, _ag1, _ag2, _ag3];                         // Funcionários
+    const _0xvc = [_a, _g, _t];                                             // Checklist
 
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased flex flex-col lg:flex-row w-full selection:bg-black/5">
@@ -163,7 +163,7 @@ export default function DashboardPage() {
 
             <section className="flex-1 p-4 sm:p-6 md:p-10 max-w-[1400px] flex flex-col gap-6 w-full z-10 overflow-y-auto">
 
-                {/* SEÇÃO PONTO */}
+                {/* SEÇÃO PONTO (AGORA VISÍVEL PARA SUPERVISOR ESTOQUE) */}
                 {_0xvp.includes(_0x2r) && (
                     <div className="space-y-3">
                         <div className="space-y-0.5 pl-1">
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="mt-4 leading-snug">
                                     <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('Q2FkYXN0cm8gZGUgUHJvZHV0b3M=')}</h3>
-                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2FkYXN0cm8sIGVkacOnw6NvIGUgY2F0ZWdvcmlhcyBkZSBpdGVucy4=')}</p>
+                                    <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2FkYXN0cm8sIGVkacOnw6OjbyBlIGNhdGVnb3JpYXMgZGUgSXRlbnMu')}</p>
                                 </div>
                             </Link>
                         </div>
