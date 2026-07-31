@@ -47,6 +47,26 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // ─── REGRA EXCLUSIVA DO SUPERVISOR DE ESTOQUE ───
+    // Libera: /dashboard, /dashboard/estoque (e subrotas), /dashboard/ferramentas/retirada e /dashboard/ponto (inclui pausas e emergência)
+    const isSupervisorEstoque = cargo === 'SUPERVISOR_ESTOQUE' || cargo === 'SUPERVISOR ESTOQUE' || cargo === 'SUPERVISORESTOQUE';
+    if (isSupervisorEstoque) {
+        const rotasPermitidas = [
+            '/dashboard',
+            '/dashboard/estoque',
+            '/dashboard/ferramentas/retirada',
+            '/dashboard/ponto',
+        ];
+
+        const possuiAcesso = rotasPermitidas.some((rota) =>
+            pathname === rota || pathname.startsWith(`${rota}/`)
+        );
+
+        if (!possuiAcesso) {
+            return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
+        }
+    }
+
     // ─── REGRA EXCLUSIVA DO AUX GERENTE ───
     // Aceita 'AUX_GERENTE', 'AUX GERENTE' ou 'AUXGERENTE' para evitar problemas com formatação no banco
     const isAuxGerente = cargo === 'AUX_GERENTE' || cargo === 'AUX GERENTE' || cargo === 'AUXGERENTE';
@@ -111,16 +131,20 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Regra do Ponto Geral e Totem de Ponto (Admin, Gerente, Técnico, Gestor de Frotas e Auxiliar de Gerente)
+    // Regra do Ponto Geral e Totem de Ponto (Admin, Gerente, Técnico, Gestor de Frotas, Auxiliar de Gerente e Supervisor de Estoque)
     if (pathname.startsWith('/dashboard/ponto')) {
-        const autorizados = ['ADMIN', 'GERENTE', 'TECNICO', 'GESTORDEFROTAS', 'AUX_GERENTE', 'AUX GERENTE', 'AUXGERENTE'];
+        const autorizados = [
+            'ADMIN', 'GERENTE', 'TECNICO', 'GESTORDEFROTAS',
+            'AUX_GERENTE', 'AUX GERENTE', 'AUXGERENTE',
+            'SUPERVISOR_ESTOQUE', 'SUPERVISOR ESTOQUE', 'SUPERVISORESTOQUE'
+        ];
         if (!autorizados.includes(cargo)) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
         }
     }
 
     // Nota: As rotas de ferramentas (/dashboard/ferramentas) estão liberadas
-    // para todos os demais cargos. O Estoque e o Aux Gerente já foram filtrados no topo do middleware.
+    // para todos os demais cargos. O Estoque, Supervisor de Estoque e Aux Gerente já foram filtrados no topo do middleware.
 
     return response;
 }

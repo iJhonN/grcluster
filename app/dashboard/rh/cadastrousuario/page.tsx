@@ -34,6 +34,7 @@ export default function CadastroUsuarioPainelPage() {
         { id: "ADMIN", label: "ADMINISTRADOR (ACESSO TOTAL)" },
         { id: "GERENTE", label: "GERENTE OPERACIONAL" },
         { id: "AUX_GERENTE", label: "AUXILIAR DE GERENTE (ACESSO RESTRITO)" },
+        { id: "SUPERVISOR_ESTOQUE", label: "SUPERVISOR DE ESTOQUE" },
         { id: "TECNICO", label: "TÉCNICO DE PÁTIO / ALMOXARIFADO" },
         { id: "MECANICO", label: "MECÂNICO / OPERADOR DE PISTA" },
         { id: "GESTORDEFROTAS", label: "GESTOR DE FROTAS & LOGÍSTICA" },

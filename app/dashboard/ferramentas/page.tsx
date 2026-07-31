@@ -33,7 +33,7 @@ export default function HubFerramentasPage() {
         },
         {
             titulo: "Maletas de Mecânicos",
-            descricao: "Controle, auditoria semanal e checklist de inventário das maletas pessoais.",
+            descricao: "Controle, auditoria semanal e checklists de inventário das maletas pessoais.",
             icone: "🧰",
             rota: "/dashboard/ferramentas/maletas",
             tag: "Kits"

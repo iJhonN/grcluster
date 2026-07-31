@@ -308,7 +308,7 @@ export default function ChecklistPage() {
                 .select('id')
                 .single();
 
-            if (errorCabecalho || !novaRevisao) throw new Error(errorCabecalho?.message || 'Falha ao registrar cabeçalho do checklist.');
+            if (errorCabecalho || !novaRevisao) throw new Error(errorCabecalho?.message || 'Falha ao registrar cabeçalho do checklists.');
 
             const revisaoId = novaRevisao.id;
 
