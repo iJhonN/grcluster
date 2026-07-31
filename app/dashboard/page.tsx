@@ -1,275 +1,298 @@
 "use client";
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
 export const dynamic = 'force-dynamic';
 
-const _x = (b: string) => typeof window !== 'undefined' ? decodeURIComponent(escape(atob(b))) : '';
+// Cargos do Sistema
+const ROLES = {
+    ADMIN: 'ADMIN',
+    GERENTE: 'GERENTE',
+    TECNICO: 'TECNICO',
+    MECANICO: 'MECANICO',
+    GESTOR_FROTAS: 'GESTORDEFROTAS',
+    ESTOQUE: 'ESTOQUE',
+    // Variantes Auxiliar de Gerente
+    AUX_GERENTE_1: 'AUX_GERENTE',
+    AUX_GERENTE_2: 'AUX GERENTE',
+    AUX_GERENTE_3: 'AUXGERENTE',
+    // Variantes Supervisor Estoque
+    SUPERVISOR_1: 'SUPERVISOR_ESTOQUE',
+    SUPERVISOR_2: 'SUPERVISOR ESTOQUE',
+    SUPERVISOR_3: 'SUPERVISORESTOQUE',
+    SUPERVISOR_4: 'SUPERVISOR',
+};
 
 export default function DashboardPage() {
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const _h = window.location.hostname;
-            const _safe = _h === 'localhost' || _h === '127.0.0.1' || _h.endsWith('.local');
-            if (!_safe && !_h.includes('grcluster') && !_h.includes('grpecas')) {
-                throw new TypeError('Invalid React Node tree hierarchy.');
-            }
-        }
-    }, []);
-
-    const [_0x1n, _0x1s] = useState(_x('U2luY3Jvbml6YW5kby4uLg=='));
-    const [_0x2r, _0x2s] = useState('...');
-    const [_0x3c, _0x3s] = useState(true);
+    const [nomeUsuario, setNomeUsuario] = useState('Sincronizando...');
+    const [cargoUsuario, setCargoUsuario] = useState('...');
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    const client = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabase = useMemo(
+        () => createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        ),
+        []
     );
 
     useEffect(() => {
-        let _active = true;
+        let isSubscribed = true;
 
-        async function _fetch() {
+        async function loadUserData() {
             try {
-                const { data: { user } } = await (client as any)[_x('YXV0aA==')][_x('Z2V0VXNlcg==')]();
+                const { data: { user } } = await supabase.auth.getUser();
 
                 if (!user) {
-                    if (_active) router.push('/');
+                    if (isSubscribed) router.push('/');
                     return;
                 }
 
-                const query = (client as any)[_x('ZnJvbQ==')](_x('dXN1YXJpb3NfcGFpbmVs'))
-                    [_x('c2VsZWN0')](_x('bm9tZSwgY2FyZ28='))
-                    [_x('ZXE')]('id', user.id)
-                    [_x('bWF5YmVTaW5nbGU')]();
+                const { data: profile } = await supabase
+                    .from('usuarios_painel')
+                    .select('nome, cargo')
+                    .eq('id', user.id)
+                    .maybeSingle();
 
-                const { data: profile } = await query;
-
-                if (_active) {
+                if (isSubscribed) {
                     if (profile) {
-                        _0x1s(profile.nome);
-                        _0x2s(profile.cargo.toUpperCase());
+                        setNomeUsuario(profile.nome);
+                        setCargoUsuario(profile.cargo.toUpperCase());
                     } else {
-                        _0x1s(user.email?.split('@')[0] || _x('T3BlcmFkb3I='));
-                        _0x2s(_x('TUVDQU5JQ08='));
+                        setNomeUsuario(user.email?.split('@')[0] || 'Operador');
+                        setCargoUsuario(ROLES.MECANICO);
                     }
-                    _0x3s(false);
+                    setLoading(false);
                 }
             } catch (error) {
-                console.error(error);
-                if (_active) _0x3s(false);
+                console.error('Erro ao carregar usuário:', error);
+                if (isSubscribed) setLoading(false);
             }
         }
 
-        _fetch();
-        return () => { _active = false; };
-    }, [router, client]);
+        loadUserData();
+        return () => { isSubscribed = false; };
+    }, [router, supabase]);
 
-    const _logout = async () => {
-        await (client as any)[_x('YXV0aA==')][_x('c2lnbk91dA==')]();
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
         router.push('/');
         router.refresh();
     };
 
-    if (_0x3c) {
+    // Matriz de Permissões por Módulo
+    const permissoesPonto = [
+        ROLES.ADMIN, ROLES.GERENTE, ROLES.TECNICO, ROLES.GESTOR_FROTAS,
+        ROLES.AUX_GERENTE_1, ROLES.AUX_GERENTE_2, ROLES.AUX_GERENTE_3
+    ];
+
+    const permissoesRetiradaFerramentas = [
+        ROLES.ADMIN, ROLES.GERENTE, ROLES.TECNICO, ROLES.MECANICO, ROLES.GESTOR_FROTAS,
+        ROLES.SUPERVISOR_1, ROLES.SUPERVISOR_2, ROLES.SUPERVISOR_3, ROLES.SUPERVISOR_4
+    ];
+
+    const permissoesFerramentas = [
+        ROLES.ADMIN, ROLES.GERENTE, ROLES.TECNICO, ROLES.MECANICO, ROLES.GESTOR_FROTAS,
+        ROLES.SUPERVISOR_1, ROLES.SUPERVISOR_2, ROLES.SUPERVISOR_3, ROLES.SUPERVISOR_4
+    ];
+
+    const permissoesFrota = [ROLES.ADMIN, ROLES.GERENTE, ROLES.GESTOR_FROTAS];
+
+    const permissoesFuncionarios = [
+        ROLES.ADMIN, ROLES.GERENTE, ROLES.GESTOR_FROTAS,
+        ROLES.AUX_GERENTE_1, ROLES.AUX_GERENTE_2, ROLES.AUX_GERENTE_3
+    ];
+
+    const permissoesEstoque = [
+        ROLES.ADMIN, ROLES.GERENTE, ROLES.TECNICO, ROLES.MECANICO, ROLES.GESTOR_FROTAS,
+        ROLES.ESTOQUE, ROLES.SUPERVISOR_1, ROLES.SUPERVISOR_2, ROLES.SUPERVISOR_3, ROLES.SUPERVISOR_4
+    ];
+
+    const permissoesChecklist = [ROLES.ADMIN, ROLES.GERENTE, ROLES.TECNICO];
+
+    const permissoesRH = [
+        ROLES.ADMIN, ROLES.GERENTE,
+        ROLES.AUX_GERENTE_1, ROLES.AUX_GERENTE_2, ROLES.AUX_GERENTE_3
+    ];
+
+    if (loading) {
         return (
             <main className="min-h-screen bg-[#f5f5f7] flex items-center justify-center font-sans">
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-5 h-5 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-[10px] text-[#86868b] uppercase tracking-widest font-semibold font-mono">{_x('R1IgU1lTVEVN')}</span>
+                    <span className="text-[10px] text-[#86868b] uppercase tracking-widest font-semibold font-mono">
+                        GR SYSTEM
+                    </span>
                 </div>
             </main>
         );
     }
 
-    const _a = _x('QURNSU4=');
-    const _g = _x('R0VSRU5URQ==');
-    const _t = _x('VEVDTklDTw==');
-    const _m = _x('TUVDQU5JQ08=');
-    const _gf = _x('R0VTVE9SREVGUk9UQVM=');
-    const _e = _x('RVNUT1FVRQ==');
-
-    // Variantes do cargo Auxiliar de Gerente (AUX_GERENTE, AUX GERENTE e AUXGERENTE)
-    const _ag1 = _x('QVVYX0dFUkVOVEU=');
-    const _ag2 = _x('QVVYIEdFUkVOVEU=');
-    const _ag3 = _x('QVVYR0VSRU5URQ==');
-
-    // Variantes do cargo Supervisor Estoque (SUPERVISOR_ESTOQUE, SUPERVISOR ESTOQUE, SUPERVISORESTOQUE e SUPERVISOR)
-    const _se1 = _x('U1VQRVJWSVNPUl9FU1RPUVVF');
-    const _se2 = _x('U1VQRVJWSVNPUiBFU1RPUVVF');
-    const _se3 = _x('U1VQRVJWSVNPUkVTVE9RVUU=');
-    const _se4 = _x('U1VQRVJWSVNPUg==');
-
-    // Libera os cards correspondentes às telas permitidas
-    const _0xvp = [_a, _g, _t, _gf, _ag1, _ag2, _ag3];         // Ponto (Atrasos e Emergência)
-    const _0xvrf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4]; // Retirada de Ferramenta
-    const _0xvhf = [_a, _g, _t, _m, _gf, _se1, _se2, _se3, _se4]; // Ferramentas
-    const _0xvf = [_a, _g, _gf];                                // Frota
-    const _0xvrh = [_a, _g, _ag1, _ag2, _ag3];                  // RH (Atestados e Fechamento)
-    const _0xve = [_a, _g, _t, _m, _gf, _e, _se1, _se2, _se3, _se4]; // Estoque & Compras
-    const _0xvfnc = [_a, _g, _gf, _ag1, _ag2, _ag3];             // Funcionários
-    const _0xvc = [_a, _g, _t];                                 // Checklist
-
     return (
         <main className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased flex flex-col lg:flex-row w-full selection:bg-black/5">
 
+            {/* Topbar Mobile */}
             <div className="w-full bg-white border-b border-[#e5e5ea] flex lg:hidden items-center justify-between px-4 py-3 z-20 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-7 h-7 bg-[#1d1d1f] rounded-md flex items-center justify-center text-white font-bold text-xs select-none shrink-0">
-                        {_x('R1I=')}
+                        GR
                     </div>
                     <div className="leading-tight min-w-0">
-                        <h2 className="text-xs font-bold text-[#1d1d1f] truncate">{_0x1n}</h2>
-                        <p className="text-[9px] font-mono font-bold text-[#86868b] truncate mt-0.5">[{_0x2r}]</p>
+                        <h2 className="text-xs font-bold text-[#1d1d1f] truncate">{nomeUsuario}</h2>
+                        <p className="text-[9px] font-mono font-bold text-[#86868b] truncate mt-0.5">[{cargoUsuario}]</p>
                     </div>
                 </div>
                 <button
-                    onClick={_logout}
+                    onClick={handleLogout}
                     className="bg-[#f5f5f7] active:bg-[#e8e8ed] text-[#1d1d1f] text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md transition-colors shrink-0"
                 >
-                    {_x('U2Fpcg==')}
+                    Sair
                 </button>
             </div>
 
+            {/* Sidebar Desktop */}
             <aside className="hidden lg:flex w-[280px] bg-white border-r border-[#e5e5ea] flex-col justify-between p-6 shrink-0 z-20">
                 <div className="space-y-8 w-full">
                     <div className="flex items-center gap-3 border-b border-[#f5f5f7] pb-5">
                         <div className="w-8 h-8 bg-[#1d1d1f] rounded-lg flex items-center justify-center text-white font-bold text-xs select-none">
-                            {_x('R1I=')}
+                            GR
                         </div>
                         <div className="min-w-0 leading-tight">
-                            <h2 className="text-xs font-bold text-[#1d1d1f] tracking-tight truncate">{_0x1n}</h2>
-                            <p className="text-[9px] font-mono font-bold text-[#86868b] tracking-wider mt-0.5">[{_0x2r}]</p>
+                            <h2 className="text-xs font-bold text-[#1d1d1f] tracking-tight truncate">{nomeUsuario}</h2>
+                            <p className="text-[9px] font-mono font-bold text-[#86868b] tracking-wider mt-0.5">[{cargoUsuario}]</p>
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-[#86868b]">{_x('QW1iaWVudGU=')}</span>
-                        <h3 className="text-sm font-bold tracking-tight text-[#1d1d1f]">{_x('R1IgQ2x1c3Rlcg==')}</h3>
-                        <p className="text-[11px] text-[#86868b] leading-normal font-medium">{_x('UGFpbmVsIHVuaWZpY2FkbyBwYXJhIG1vbml0b3JhbWVudG8gZGUgZnJvdGFzLCBhbG1veGFyaWZhZG8gZSBww6F0aW8u')}</p>
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-[#86868b]">Ambiente</span>
+                        <h3 className="text-sm font-bold tracking-tight text-[#1d1d1f]">GR Cluster</h3>
+                        <p className="text-[11px] text-[#86868b] leading-normal font-medium">
+                            Painel unificado para monitoramento de frotas, almoxarifado e pátio.
+                        </p>
                     </div>
                 </div>
                 <div className="pt-4 flex items-center justify-between w-full">
                     <button
-                        onClick={_logout}
+                        onClick={handleLogout}
                         className="bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-[10px] font-bold uppercase tracking-wider px-4 py-2 rounded-lg transition-all active:scale-95 text-center w-full"
                     >
-                        {_x('RW5jZXJyYXIgU2Vzc8Ojbw==')}
+                        Encerrar Sessão
                     </button>
                 </div>
             </aside>
 
+            {/* Conteúdo Principal */}
             <section className="flex-1 p-4 sm:p-6 md:p-10 max-w-[1400px] flex flex-col gap-4 sm:gap-6 w-full z-10 overflow-y-auto">
-
                 <div className="space-y-0.5 pl-1">
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#86868b]">{_x('R2VzdMOjbyBkZSBBdGl2b3M=')}</span>
-                    <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight text-[#1d1d1f]">{_x('TcOzZHVsb3MgT3BlcmFjaW9uYWlz')}</h1>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#86868b]">Gestão de Ativos</span>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight text-[#1d1d1f]">Módulos Operacionais</h1>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 w-full">
 
-                    {_0xvp.includes(_0x2r) && (
+                    {permissoesPonto.includes(cargoUsuario) && (
                         <Link href="/dashboard/ponto" className="bg-[#1d1d1f] border border-black p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-xl text-white">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">⏱️</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-white bg-white/10 px-2 py-0.5 rounded">{_x('VG90ZW0=')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-white bg-white/10 px-2 py-0.5 rounded">Totem</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity">{_x('Q29udHJvbGUgZGUgUG9udG8=')}</h3>
-                                <p className="text-[11px] text-[#aeae23] mt-1 font-medium font-mono tracking-wide animate-pulse">{_x('4peHIFJFR0lTVFJPIE9CUklHQVTDk1JJTw==')}</p>
+                                <h3 className="text-xs font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity">Controle de Ponto</h3>
+                                <p className="text-[11px] text-[#aeae23] mt-1 font-medium font-mono tracking-wide animate-pulse">❖ REGISTRO OBRIGATÓRIO</p>
                             </div>
                         </Link>
                     )}
 
-                    {_0xvrf.includes(_0x2r) && (
+                    {permissoesRetiradaFerramentas.includes(cargoUsuario) && (
                         <Link href="/dashboard/ferramentas/retirada" className="bg-white border-2 border-[#1d1d1f] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">🛠️</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/10 px-2 py-0.5 rounded font-black">{_x('Rmx1eG8=')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/10 px-2 py-0.5 rounded font-black">Fluxo</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('UmV0aXJhZGEgZGUgRmVycmFtZW50YQ==')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2F1dGVsYXMgZSBkZXZvbHXDp8OjbyByw6FwaWRhIGRlIGF0aXZvcy4=')}</p>
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Retirada de Ferramenta</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Cautelas e devolução rápida de ativos.</p>
                             </div>
                         </Link>
                     )}
 
-                    {_0xvhf.includes(_0x2r) && (
+                    {permissoesFerramentas.includes(cargoUsuario) && (
                         <Link href="/dashboard/ferramentas" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">⚙️</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">{_x('T2ZpY2luYQ==')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">Oficina</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('RmVycmFtZW50YXM=')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2FyZ2EgcGF0cmltb25pYWwgZSBoaXN0w7NyaWNvIGdlcmFsLg==')}</p>
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Ferramentas</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Carga patrimonial e histórico geral.</p>
                             </div>
                         </Link>
                     )}
 
-                    {_0xvf.includes(_0x2r) && (
+                    {permissoesFrota.includes(cargoUsuario) && (
                         <Link href="/dashboard/frota" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">🚚</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#5856d6] bg-[#5856d6]/5 px-2 py-0.5 rounded">{_x('TG9nw61zdGljYQ==')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#5856d6] bg-[#5856d6]/5 px-2 py-0.5 rounded">Logística</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('RnJvdGFzICYgUm90YXM=')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q29udHJvbGUgZGUgdmlhZ2VucyBlIGNvbWJ1c3TDrXZlaXMu')}</p>
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Frotas & Rotas</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Controle de viagens e combustíveis.</p>
                             </div>
                         </Link>
                     )}
 
-                    {_0xvfnc.includes(_0x2r) && (
+                    {permissoesFuncionarios.includes(cargoUsuario) && (
                         <Link href="/dashboard/funcionarios" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">👥</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">{_x('RXF1aXBl')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#007aff] bg-[#007aff]/5 px-2 py-0.5 rounded">Equipe</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('TGlzdGEgZGUgRnVuY2lvbsOhcmlvcw==')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q2F1YXN0cm8gZSBnZXJlbmNpYW1lbnRvIG9wZXJhY2lvbmFsIGRlIHBlc3NvYWwu')}</p>
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Lista de Funcionários</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Cadastro e gerenciamento operacional de pessoal.</p>
                             </div>
                         </Link>
                     )}
 
-                    {_0xve.includes(_0x2r) && (
+                    {permissoesEstoque.includes(cargoUsuario) && (
                         <Link href="/dashboard/estoque" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">📦</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff9500] bg-[#ff9500]/5 px-2 py-0.5 rounded">{_x('QWxtb3hhcmlmYWRv')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff9500] bg-[#ff9500]/5 px-2 py-0.5 rounded">Almoxarifado</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('RXN0b3F1ZSAmIENvbXByYXM=')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('SW52ZW50w6FyaW8gZSBmbHV4byB0cmlwbG8gZGUgY290YcOnw7Vlcy4=')}</p>
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Estoque & Compras</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Inventário e fluxo triplo de cotações.</p>
                             </div>
                         </Link>
                     )}
 
-                    {_0xvc.includes(_0x2r) && (
+                    {permissoesChecklist.includes(cargoUsuario) && (
                         <Link href="/dashboard/checklist/lista" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">📋</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-orange-600 bg-orange-600/10 px-2 py-0.5 rounded">{_x('UMOhdGlv')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-orange-600 bg-orange-600/10 px-2 py-0.5 rounded">Pátio</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('Q2hlY2tsaXN0IFByZXZlbnRpdmE=')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('SGlzdMOzcmljbyBlIGxhdWRvcyBkZSByZXZpc8OjbyBkYSBmcm90YS4=')}</p>
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Checklist Preventiva</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Histórico e laudos de revisão da frota.</p>
                             </div>
                         </Link>
                     )}
 
-                    {_0xvrh.includes(_0x2r) && (
+                    {permissoesRH.includes(cargoUsuario) && (
                         <Link href="/dashboard/rh" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
                             <div className="flex items-center justify-between w-full">
                                 <span className="text-base">💼</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff2d55] bg-[#ff2d55]/5 px-2 py-0.5 rounded">{_x('RGlyZcOnw6Nv')}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff2d55] bg-[#ff2d55]/5 px-2 py-0.5 rounded">Direção</span>
                             </div>
                             <div className="mt-4 leading-snug">
-                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">{_x('R2VzdMOjbyBkZSBSSA==')}</h3>
-                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">{_x('Q29udHJvb3MgYWRtaXNzaW9uYWlzIGUgdGVybW9zIGxlZ2Fpcy4=')}</p>
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Gestão de RH</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Controles admissionais e termos legais.</p>
                             </div>
                         </Link>
                     )}
