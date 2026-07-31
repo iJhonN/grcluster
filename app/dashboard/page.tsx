@@ -87,7 +87,20 @@ export default function DashboardPage() {
     // Matriz de Permissões por Módulo
     const permissoesPonto = [
         ROLES.ADMIN, ROLES.GERENTE, ROLES.TECNICO, ROLES.GESTOR_FROTAS,
-        ROLES.AUX_GERENTE_1, ROLES.AUX_GERENTE_2, ROLES.AUX_GERENTE_3
+        ROLES.AUX_GERENTE_1, ROLES.AUX_GERENTE_2, ROLES.AUX_GERENTE_3,
+        ROLES.SUPERVISOR_1, ROLES.SUPERVISOR_2, ROLES.SUPERVISOR_3, ROLES.SUPERVISOR_4
+    ];
+
+    const permissoesPontoEmergencia = [
+        ROLES.ADMIN, ROLES.GERENTE, ROLES.TECNICO, ROLES.GESTOR_FROTAS,
+        ROLES.AUX_GERENTE_1, ROLES.AUX_GERENTE_2, ROLES.AUX_GERENTE_3,
+        ROLES.SUPERVISOR_1, ROLES.SUPERVISOR_2, ROLES.SUPERVISOR_3, ROLES.SUPERVISOR_4
+    ];
+
+    const permissoesPontoPausas = [
+        ROLES.ADMIN, ROLES.GERENTE, ROLES.TECNICO, ROLES.GESTOR_FROTAS,
+        ROLES.AUX_GERENTE_1, ROLES.AUX_GERENTE_2, ROLES.AUX_GERENTE_3,
+        ROLES.SUPERVISOR_1, ROLES.SUPERVISOR_2, ROLES.SUPERVISOR_3, ROLES.SUPERVISOR_4
     ];
 
     const permissoesRetiradaFerramentas = [
@@ -202,6 +215,32 @@ export default function DashboardPage() {
                             <div className="mt-4 leading-snug">
                                 <h3 className="text-xs font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity">Controle de Ponto</h3>
                                 <p className="text-[11px] text-[#aeae23] mt-1 font-medium font-mono tracking-wide animate-pulse">❖ REGISTRO OBRIGATÓRIO</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {permissoesPontoEmergencia.includes(cargoUsuario) && (
+                        <Link href="/dashboard/ponto/emergencia" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">🚨</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#ff3b30] bg-[#ff3b30]/10 px-2 py-0.5 rounded">Exceção</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Ponto Emergência</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Registro manual e exceções de marcação.</p>
+                            </div>
+                        </Link>
+                    )}
+
+                    {permissoesPontoPausas.includes(cargoUsuario) && (
+                        <Link href="/dashboard/ponto/pausas" className="bg-white border border-[#e5e5ea] hover:border-[#b4b4b9] p-5 rounded-2xl flex flex-col justify-between min-h-[140px] sm:min-h-[150px] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-base">☕</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-[#34c759] bg-[#34c759]/10 px-2 py-0.5 rounded">Intervalo</span>
+                            </div>
+                            <div className="mt-4 leading-snug">
+                                <h3 className="text-xs font-bold tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">Controle de Pausas</h3>
+                                <p className="text-[11px] text-[#86868b] mt-1 font-medium">Gestão de intervalos e horários de almoço.</p>
                             </div>
                         </Link>
                     )}
