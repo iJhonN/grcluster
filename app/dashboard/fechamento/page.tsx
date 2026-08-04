@@ -13,6 +13,12 @@ interface HoraExtraManual { id: number; funcionario_id: string; data_referencia:
 interface BancoHorasMovimentacao { id: number; funcionario_id: string; data_evento: string; minutos_ajuste: number; tipo_hora: 'DIURNA' | 'NOTURNA'; motivo: string; }
 interface DiaCompetencia { dia: number; mes: number; ano: number; label: string; diaSemanaLabel: string; isFimDeSemana: boolean; isDomingo: boolean; }
 
+// Instância movida para fora do componente para evitar renders infinitos
+const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 function FechamentoMensal() {
     const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
     const [pontos, setPontos] = useState<RegistroPonto[]>([]);
@@ -25,29 +31,20 @@ function FechamentoMensal() {
     const [pesquisa, setPesquisa] = useState('');
 
     const dataAtual = new Date();
-    const mesInicial = dataAtual.getDate() > 15 ? dataAtual.getMonth() + 2 : dataAtual.getMonth() + 1;
-    const [mesSelecionado, setMesSelecionado] = useState(mesInicial > 12 ? 1 : mesInicial);
-    const [anoSelecionado, setAnoSelecionado] = useState(mesInicial > 12 ? dataAtual.getFullYear() + 1 : dataAtual.getFullYear());
-
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    // Agora o mês selecionado inicial é o mês corrente normal (1 a 12)
+    const [mesSelecionado, setMesSelecionado] = useState(dataAtual.getMonth() + 1);
+    const [anoSelecionado, setAnoSelecionado] = useState(dataAtual.getFullYear());
 
     useEffect(() => {
         const carregarDadosDoCiclo = async () => {
             setCarregando(true);
             try {
-                let mesInicio = mesSelecionado - 1;
-                let anoInicio = anoSelecionado;
+                // Descobre o último dia do mês selecionado (28, 29, 30 ou 31)
+                const ultimoDia = new Date(anoSelecionado, mesSelecionado, 0).getDate();
 
-                if (mesInicio === 0) {
-                    mesInicio = 12;
-                    anoInicio -= 1;
-                }
-
-                const dataInicioFiltro = `${anoInicio}-${String(mesInicio).padStart(2, '0')}-16T00:00:00-03:00`;
-                const dataFimFiltro = `${anoSelecionado}-${String(mesSelecionado).padStart(2, '0')}-15T23:59:59-03:00`;
+                // Filtro vai do dia 01 00:00:00 até o último dia 23:59:59 do mês
+                const dataInicioFiltro = `${anoSelecionado}-${String(mesSelecionado).padStart(2, '0')}-01T00:00:00-03:00`;
+                const dataFimFiltro = `${anoSelecionado}-${String(mesSelecionado).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}T23:59:59-03:00`;
 
                 // MOTOR DE PAGINAÇÃO: Fura o limite de 1000 linhas do Supabase
                 const buscarComPaginacao = async (tabela: string, colunas: string, colunaFiltroData: string) => {
@@ -69,7 +66,6 @@ function FechamentoMensal() {
                         if (data && data.length > 0) {
                             todosOsDados = [...todosOsDados, ...data];
                             from += (step + 1);
-                            // Se a busca retornar menos linhas que o tamanho do passo, a tabela terminou
                             if (data.length <= step) temMais = false;
                         } else {
                             temMais = false;
@@ -102,38 +98,22 @@ function FechamentoMensal() {
             }
         };
         carregarDadosDoCiclo();
-    }, [supabase, mesSelecionado, anoSelecionado]);
+    }, [mesSelecionado, anoSelecionado]);
 
+    // Gera os dias do mês: do dia 1 ao último dia (30/31/28/29)
     const diasDaCompetencia = useMemo((): DiaCompetencia[] => {
         const dias: DiaCompetencia[] = [];
         const diasSemana = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
-        let mesAnterior = mesSelecionado - 1;
-        let anoAnterior = anoSelecionado;
-        if (mesAnterior === 0) {
-            mesAnterior = 12;
-            anoAnterior -= 1;
-        }
+        const totalDiasDoMes = new Date(anoSelecionado, mesSelecionado, 0).getDate();
 
-        const totalDiasMesAnterior = new Date(anoAnterior, mesAnterior, 0).getDate();
-
-        for (let d = 16; d <= totalDiasMesAnterior; d++) {
-            const dataObj = new Date(anoAnterior, mesAnterior - 1, d);
-            const diaSemana = dataObj.getDay();
-            dias.push({
-                dia: d, mes: mesAnterior, ano: anoAnterior,
-                label: `${String(d).padStart(2, '0')}/${String(mesAnterior).padStart(2, '0')}`,
-                diaSemanaLabel: diasSemana[diaSemana],
-                isFimDeSemana: diaSemana === 0 || diaSemana === 6,
-                isDomingo: diaSemana === 0
-            });
-        }
-
-        for (let d = 1; d <= 15; d++) {
+        for (let d = 1; d <= totalDiasDoMes; d++) {
             const dataObj = new Date(anoSelecionado, mesSelecionado - 1, d);
             const diaSemana = dataObj.getDay();
             dias.push({
-                dia: d, mes: mesSelecionado, ano: anoSelecionado,
+                dia: d,
+                mes: mesSelecionado,
+                ano: anoSelecionado,
                 label: `${String(d).padStart(2, '0')}/${String(mesSelecionado).padStart(2, '0')}`,
                 diaSemanaLabel: diasSemana[diaSemana],
                 isFimDeSemana: diaSemana === 0 || diaSemana === 6,
@@ -305,6 +285,13 @@ function FechamentoMensal() {
         return funcionarios.filter(f => `${f.nome} ${f.sobrenome}`.toLowerCase().includes(termo) || String(f.id).includes(termo));
     }, [funcionarios, pesquisa]);
 
+    const nomesMeses = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
+
+    const ultimoDiaCompetencia = new Date(anoSelecionado, mesSelecionado, 0).getDate();
+
     return (
         <main className="min-h-screen bg-black text-white p-4 font-sans print:bg-white print:text-black print:p-0 w-full">
             <header className="max-w-[1400px] mx-auto mb-6 bg-slate-900/40 p-5 rounded-[25px] border border-white/5 print:hidden">
@@ -316,8 +303,8 @@ function FechamentoMensal() {
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
                         <input type="text" placeholder="Buscar por nome ou ID..." value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} className="bg-black border border-white/10 px-4 py-2 rounded-xl font-bold text-white text-sm outline-none focus:border-orange-500 w-full sm:w-64" />
                         <select value={mesSelecionado} onChange={(e) => setMesSelecionado(Number(e.target.value))} className="bg-black border border-white/10 px-3 py-2 rounded-xl font-bold text-white text-sm outline-none cursor-pointer">
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                                <option key={m} value={m}>Ciclo até 15/{String(m).padStart(2, '0')}</option>
+                            {nomesMeses.map((nome, i) => (
+                                <option key={i + 1} value={i + 1}>{nome} ({anoSelecionado})</option>
                             ))}
                         </select>
                         <button onClick={() => window.print()} className="bg-orange-600 px-5 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-orange-500 transition-all">🖨️ Imprimir</button>
@@ -348,7 +335,7 @@ function FechamentoMensal() {
                                         <h3 className="text-base print:text-sm font-black uppercase italic text-black leading-none">{func.nome} {func.sobrenome}</h3>
                                         <p className="text-[10px] print:text-[9px] font-bold text-orange-600 uppercase tracking-wide leading-none">{func.cargo} • ID: {func.id}</p>
                                         <p className="text-xs print:text-[10px] font-black uppercase tracking-wider text-slate-800">
-                                            Período: 16/{String(mesSelecionado === 1 ? 12 : mesSelecionado - 1).padStart(2, '0')} a 15/{String(mesSelecionado).padStart(2, '0')}/{anoSelecionado}
+                                            Período: 01/{String(mesSelecionado).padStart(2, '0')} a {String(ultimoDiaCompetencia).padStart(2, '0')}/{String(mesSelecionado).padStart(2, '0')}/{anoSelecionado}
                                         </p>
                                     </div>
                                 </div>
