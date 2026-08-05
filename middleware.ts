@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/request';
 import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
@@ -131,6 +131,18 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // Regra Específica do Controle de Pausas (TÉCNICO NÃO tem acesso)
+    if (pathname.startsWith('/dashboard/ponto/pausas')) {
+        const autorizadosPausas = [
+            'ADMIN', 'GERENTE', 'GESTORDEFROTAS',
+            'AUX_GERENTE', 'AUX GERENTE', 'AUXGERENTE',
+            'SUPERVISOR_ESTOQUE', 'SUPERVISOR ESTOQUE', 'SUPERVISORESTOQUE', 'SUPERVISOR'
+        ];
+        if (!autorizadosPausas.includes(cargo)) {
+            return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
+        }
+    }
+
     // Regra do Ponto Geral e Totem de Ponto (Admin, Gerente, Técnico, Gestor de Frotas, Auxiliar de Gerente e Supervisor de Estoque)
     if (pathname.startsWith('/dashboard/ponto')) {
         const autorizados = [
@@ -142,9 +154,6 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/dashboard?erro=privilegio', request.url));
         }
     }
-
-    // Nota: As rotas de ferramentas (/dashboard/ferramentas) estão liberadas
-    // para todos os demais cargos. O Estoque, Supervisor de Estoque e Aux Gerente já foram filtrados no topo do middleware.
 
     return response;
 }
