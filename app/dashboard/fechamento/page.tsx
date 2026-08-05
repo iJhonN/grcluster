@@ -326,8 +326,8 @@ function FechamentoMensal() {
                             <div key={func.id} className="bg-white text-black p-4 sm:p-6 print:p-4 mb-6 border border-slate-200 rounded-[24px] print:border-slate-300 print:break-inside-avoid print:page-break-after-always shadow-md w-full">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-black pb-3 mb-4 text-xs w-full">
                                     <div className="space-y-1">
-                                        <h2 className="text-base print:text-sm font-black uppercase tracking-tight text-black leading-none">GR AUTOPECAS LTDA</h2>
-                                        <p className="text-[10px] print:text-[9px] font-bold text-slate-700 font-mono">CNPJ: 51.415.349/0001-25</p>
+                                        <h2 className="text-base print:text-sm font-black uppercase tracking-tight text-black leading-none">R F DE S SILVA SERVICOS</h2>
+                                        <p className="text-[10px] print:text-[9px] font-bold text-slate-700 font-mono">CNPJ: 58.267.344/0001-41</p>
                                         <p className="text-[9px] print:text-[8px] text-slate-500 leading-tight">Rua Coronel Vicente Ramos, Nº1552 — Arapiraca - AL</p>
                                     </div>
                                     <div className="text-left sm:text-right space-y-1">
