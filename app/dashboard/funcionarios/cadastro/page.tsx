@@ -207,6 +207,7 @@ export default function CadastroFuncionarioPage() {
                                     <option value="Técnico de OS">Técnico de OS</option>
                                     <option value="TI">TI</option>
                                     <option value="Vendedor">Vendedor</option>
+                                    <option value="Vendedor">Motorista</option>
                                 </select>
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] pointer-events-none">
                                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
